@@ -16,19 +16,24 @@ Phase 1 has started. This is the first vertical slice, not completion of the ful
 - Static migration contract tests and tenant-context unit tests.
 - Generated TypeScript database types from the hosted schema.
 - Transaction-wrapped pgTAP coverage for owner, technician, anonymous, and cross-tenant access paths.
+- Authenticated responsive web workspace with tenant-aware navigation and route protection.
+- Customer list/search/create/edit/archive flows with address, notes, and email-consent fields.
+- Service catalog list/search/create/edit/archive flows with integer-cent pricing, duration, tax behavior, and availability.
+- Server actions derive tenant identity from the authenticated membership and scope every resource mutation by tenant.
+- Shared loading, error, empty, validation, pending, and destructive-action confirmation states for the new workspace flows.
 
 ## Still required for Phase 1
 
 - Run the pgTAP RLS suite on a workstation/CI runner with Docker or Podman. The hosted CLI test path still uses a pgTAP container.
 - Member invitation tokens, invitation acceptance, role changes, and immediate deactivation.
 - Staff skills, availability, service areas, and team management UI/API.
-- Customer and service CRUD/search UI/API, including empty/loading/error states.
 - Business-hours editor, profile/settings completion, audit viewer, rate limiting, and observability.
 - Mobile authentication integration and relevant authorization tests.
+- Customer detail jobs, invoices, and lifetime-paid totals remain dependent on Phase 2 and Phase 3 data models.
 
 ## Current verification
 
-- Formatting, ESLint, strict TypeScript, unit/contract tests, and production builds pass.
+- Formatting, ESLint, strict TypeScript, 25 unit/contract tests, and all production builds pass.
 - The supplied Supabase URL and publishable key are valid; email signup is enabled and email confirmation is required.
 - The GitHub remote is connected and its existing initial commit has been preserved as project history.
 - The Supabase CLI is authenticated and linked; migration `202610120001` is applied remotely and `supabase db lint --linked` reports no schema errors.

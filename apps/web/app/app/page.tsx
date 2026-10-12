@@ -1,43 +1,43 @@
-import { redirect } from 'next/navigation';
-import { z } from 'zod';
+import Link from 'next/link';
 
-import { createClient } from '../../lib/supabase/server';
-import { DashboardPreview } from '../page';
+import { requireTenantContext } from '../../lib/auth/tenant-context';
 
 export const dynamic = 'force-dynamic';
 
-const membershipSchema = z.object({
-  role: z.enum(['owner', 'office', 'technician']),
-  tenants: z.object({ display_name: z.string() }),
-});
-
 export default async function AuthenticatedDashboardPage() {
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const claims = claimsData?.claims;
-  if (!claims?.sub) redirect('/login');
-
-  const { data } = await supabase
-    .from('memberships')
-    .select('role, tenants!inner(display_name)')
-    .eq('user_id', claims.sub)
-    .eq('status', 'active')
-    .maybeSingle();
-
-  const parsedMembership = membershipSchema.safeParse(data);
-  if (!parsedMembership.success) redirect('/onboarding');
-
-  const metadataName =
-    typeof claims.user_metadata?.full_name === 'string'
-      ? claims.user_metadata.full_name
-      : null;
-  const fallbackName =
-    typeof claims.email === 'string' ? claims.email.split('@')[0] : 'Owner';
+  const context = await requireTenantContext();
 
   return (
-    <DashboardPreview
-      tenantName={parsedMembership.data.tenants.display_name}
-      userName={metadataName ?? fallbackName}
-    />
+    <div className="workspace-page">
+      <div className="workspace-heading">
+        <div>
+          <p className="workspace-kicker">Overview</p>
+          <h1>Welcome back, {context.userName.split(' ')[0] ?? 'there'}</h1>
+          <p>Build your operating data before scheduling the first job.</p>
+        </div>
+      </div>
+
+      <section className="setup-grid" aria-label="Phase 1 setup">
+        {context.role !== 'technician' ? (
+          <Link className="setup-card" href="/app/customers">
+            <span>01</span>
+            <h2>Customers</h2>
+            <p>
+              Add customer contact details, addresses, notes, and preferences.
+            </p>
+          </Link>
+        ) : null}
+        <Link className="setup-card" href="/app/services">
+          <span>02</span>
+          <h2>Services</h2>
+          <p>Configure prices, duration, and tax behavior for offered work.</p>
+        </Link>
+        <div className="setup-card setup-card-pending">
+          <span>03</span>
+          <h2>Team</h2>
+          <p>Invitations and staff profiles are the next Phase 1 slice.</p>
+        </div>
+      </section>
+    </div>
   );
 }

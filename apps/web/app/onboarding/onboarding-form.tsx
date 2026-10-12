@@ -3,7 +3,9 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 
-import { completeOnboardingAction, initialOnboardingState } from './actions';
+import { type OnboardingFormState, completeOnboardingAction } from './actions';
+
+const initialOnboardingState: OnboardingFormState = { status: 'idle' };
 
 const serviceCategories = [
   'HVAC',

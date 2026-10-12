@@ -11,8 +11,6 @@ export interface OnboardingFormState {
   readonly status: 'idle' | 'error';
 }
 
-export const initialOnboardingState: OnboardingFormState = { status: 'idle' };
-
 const onboardingSchema = z.object({
   businessEmail: z.email('Enter a valid business email.').trim().toLowerCase(),
   city: z.string().trim().min(2, 'Enter a city.').max(100),

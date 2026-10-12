@@ -7,11 +7,12 @@ import { useFormStatus } from 'react-dom';
 import {
   type AuthFormState,
   forgotPasswordAction,
-  initialAuthFormState,
   loginAction,
   signupAction,
   updatePasswordAction,
 } from './actions';
+
+const initialAuthFormState: AuthFormState = { status: 'idle' };
 
 function SubmitButton({
   label,

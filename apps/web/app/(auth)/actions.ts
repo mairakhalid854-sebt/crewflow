@@ -11,8 +11,6 @@ export interface AuthFormState {
   readonly status: 'idle' | 'error' | 'success';
 }
 
-export const initialAuthFormState: AuthFormState = { status: 'idle' };
-
 const emailSchema = z
   .email('Enter a valid email address.')
   .trim()

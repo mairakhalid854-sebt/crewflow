@@ -4,3 +4,4 @@ dist
 coverage
 package-lock.json
 CrewFlow_PRD.md
+apps/web/next-env.d.ts
