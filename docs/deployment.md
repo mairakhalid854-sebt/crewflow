@@ -44,5 +44,5 @@ The Supabase access token, database password, service-role key, SMTP credentials
 - Generated database types match the hosted schema. Full pgTAP execution awaits Docker/Podman on a test runner.
 - Vercel project `saas-team-crew-flow/crewflow` is linked and the protected Preview deployment at `https://crewflow-kn03f04wn-saas-team-crew-flow.vercel.app` builds successfully.
 - Preview Supabase public variables are configured in Vercel. Supabase Auth allows localhost and the Vercel team preview-host pattern; undeclared hosted Auth/MFA/pooler settings were left unchanged.
-- Vercel's GitHub App still needs repository access before commit-triggered deployments can be enabled. Until then, reviewed previews can be deployed through the authenticated CLI.
+- Vercel's GitHub App is connected to `mairakhalid854-sebt/crewflow`. Ongoing work is pushed to the `staging` branch for protected Preview deployments; `main` is reserved for reviewed production promotion.
 - A custom domain is optional for staging; the generated Vercel hostname is sufficient.

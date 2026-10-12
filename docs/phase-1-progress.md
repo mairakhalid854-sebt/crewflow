@@ -39,7 +39,7 @@ Phase 1 has started. This is the first vertical slice, not completion of the ful
 - The Supabase CLI is authenticated and linked; migration `202610120001` is applied remotely and `supabase db lint --linked` reports no schema errors.
 - Anonymous REST access to `tenants` is denied at the grant boundary. Full authenticated pgTAP isolation tests are pending because Docker/Podman is not installed.
 - A protected Vercel Preview build is live and passes authenticated smoke requests; Supabase Auth permits the Vercel team preview-host pattern.
-- Automatic Git-triggered Vercel deployment still requires granting the Vercel GitHub App access to the repository.
+- Vercel's GitHub App is connected; the `staging` branch is used to verify automatic protected Preview deployments without prematurely promoting `main` to production.
 - Production promotion and mobile release remain blocked by the acceptance gaps and Expo transitive high-severity dependency advisories recorded in `docs/risks.md`.
 
 ## Configuration needed
