@@ -1,13 +1,15 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 
+import type { Database } from '@crewflow/database';
+
 import { getSupabasePublicConfig } from './config';
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const { publishableKey, url } = getSupabasePublicConfig();
 
-  const supabase = createServerClient(url, publishableKey, {
+  const supabase = createServerClient<Database>(url, publishableKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

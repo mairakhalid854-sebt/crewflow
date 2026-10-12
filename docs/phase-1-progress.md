@@ -14,11 +14,12 @@ Phase 1 has started. This is the first vertical slice, not completion of the ful
 - Immutable `tenant_id` triggers and one-active-tenant membership constraint for the v1 account model.
 - NestJS tenant-context service that derives tenant scope from membership and rejects cross-tenant resource access.
 - Static migration contract tests and tenant-context unit tests.
+- Generated TypeScript database types from the hosted schema.
+- Transaction-wrapped pgTAP coverage for owner, technician, anonymous, and cross-tenant access paths.
 
 ## Still required for Phase 1
 
-- Configure a real development Supabase project or run the local stack with Docker, then execute the migration and end-to-end RLS isolation tests against PostgreSQL.
-- Generate committed Supabase TypeScript database types from the verified schema.
+- Run the pgTAP RLS suite on a workstation/CI runner with Docker or Podman. The hosted CLI test path still uses a pgTAP container.
 - Member invitation tokens, invitation acceptance, role changes, and immediate deactivation.
 - Staff skills, availability, service areas, and team management UI/API.
 - Customer and service CRUD/search UI/API, including empty/loading/error states.
@@ -30,7 +31,8 @@ Phase 1 has started. This is the first vertical slice, not completion of the ful
 - Formatting, ESLint, strict TypeScript, unit/contract tests, and production builds pass.
 - The supplied Supabase URL and publishable key are valid; email signup is enabled and email confirmation is required.
 - The GitHub remote is connected and its existing initial commit has been preserved as project history.
-- Database runtime/RLS tests are pending because Docker is not installed and the Supabase CLI is not yet authenticated/linked to the hosted project.
+- The Supabase CLI is authenticated and linked; migration `202610120001` is applied remotely and `supabase db lint --linked` reports no schema errors.
+- Anonymous REST access to `tenants` is denied at the grant boundary. Full authenticated pgTAP isolation tests are pending because Docker/Podman is not installed.
 - Deployment remains blocked by the Expo transitive high-severity dependency advisories recorded in `docs/risks.md`.
 
 ## Configuration needed

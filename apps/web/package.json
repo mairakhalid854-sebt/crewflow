@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@crewflow/database": "*",
     "@crewflow/types": "*",
     "@crewflow/ui": "*",
     "@supabase/ssr": "^0.12.7",

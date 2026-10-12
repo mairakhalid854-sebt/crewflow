@@ -39,7 +39,8 @@ The Supabase access token, database password, service-role key, SMTP credentials
 ## Current external state
 
 - Supabase project URL and publishable key respond successfully; email signup is enabled and email confirmation is required.
+- The repository is linked to Supabase project `mlgfyxsqorualqwbecmp`; migration `202610120001` is applied and the hosted schema lint is clean.
 - GitHub remote `mairakhalid854-sebt/crewflow` is connected locally.
-- Supabase CLI authentication and database migration push are pending.
+- Generated database types match the hosted schema. Full pgTAP execution awaits Docker/Podman on a test runner.
 - Vercel project creation/linking and preview deployment are pending.
 - A custom domain is optional for staging; the generated Vercel hostname is sufficient.

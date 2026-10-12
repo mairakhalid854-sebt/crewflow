@@ -11,6 +11,7 @@ export default tseslint.config(
       '**/dist/**',
       '**/generated/**',
       '**/node_modules/**',
+      'packages/database/src/database.types.ts',
     ],
   },
   eslint.configs.recommended,
