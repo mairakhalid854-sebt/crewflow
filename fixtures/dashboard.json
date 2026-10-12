@@ -1,0 +1,25 @@
+{
+  "tenant": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "displayName": "BrightSide HVAC",
+    "timeZone": "America/Chicago"
+  },
+  "jobs": [
+    {
+      "id": "10000000-0000-4000-8000-000000000001",
+      "tenantId": "00000000-0000-4000-8000-000000000001",
+      "customerName": "Olivia Carter",
+      "serviceName": "AC diagnostic",
+      "startsAt": "2026-10-12T14:00:00.000Z",
+      "status": "in_progress"
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000002",
+      "tenantId": "00000000-0000-4000-8000-000000000001",
+      "customerName": "Noah Williams",
+      "serviceName": "Water heater repair",
+      "startsAt": "2026-10-12T16:30:00.000Z",
+      "status": "scheduled"
+    }
+  ]
+}

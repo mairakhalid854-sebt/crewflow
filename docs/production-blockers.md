@@ -1,0 +1,16 @@
+# Decisions blocking production rollout
+
+These do not block local Phase 0 development, but they block claims of production readiness or relevant live integrations.
+
+1. Legal entity/person registration, tax advice, Paddle seller approval, and Pakistan payout verification.
+2. Subscription plans, monthly/annual prices, trials, grace behavior, seat limits, and AI budgets.
+3. Transactional email provider, sending domain, and deliverability setup.
+4. Whether v1 remains external business-owned payment URLs/manual records only, or adds an eligible direct-to-business merchant integration.
+5. Service-business tax configuration, off-platform payment wording, and refund/reconciliation ownership.
+6. Mobile offline scope for the first release.
+7. AI provider/model, retention, knowledge-document limits, and monthly cost caps.
+8. Contact consent, reminder, review solicitation, privacy, and cross-border processing policies approved by counsel.
+9. Final brand/domain clearance, privacy policy, and terms.
+10. Mapping/geocoding provider and budget if travel estimates are required.
+11. Exact approved job state machine and cancellation/refund policy.
+12. Public review destination and provider rules.

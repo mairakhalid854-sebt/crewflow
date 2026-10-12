@@ -1,0 +1,35 @@
+:root {
+  --cf-background: #f6f8fc;
+  --cf-border: #e2e8f0;
+  --cf-danger: #dc2626;
+  --cf-info: #2563eb;
+  --cf-muted: #64748b;
+  --cf-navy: #11223c;
+  --cf-primary: #1769f4;
+  --cf-primary-deep: #0d4cc4;
+  --cf-success: #16a34a;
+  --cf-surface: #ffffff;
+  --cf-warning: #d97706;
+  --cf-radius-card: 12px;
+  --cf-radius-control: 10px;
+  --cf-shadow-card: 0 1px 2px rgb(15 23 42 / 4%), 0 8px 24px rgb(15 23 42 / 5%);
+  --cf-space: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--cf-primary) 36%, transparent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

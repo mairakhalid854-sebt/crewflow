@@ -1,0 +1,22 @@
+node_modules/
+.next/
+dist/
+coverage/
+.expo/
+.turbo/
+*.tsbuildinfo
+
+.env
+.env.*
+!.env.example
+
+*.log
+.DS_Store
+Thumbs.db
+
+# Local infrastructure data
+.data/
+supabase/.temp/
+
+# Generated Prisma client
+packages/database/generated/

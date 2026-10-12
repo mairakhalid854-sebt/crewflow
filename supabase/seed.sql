@@ -1,0 +1,2 @@
+-- Intentionally empty in Phase 1.
+-- Use synthetic data only; never commit copied customer or production records.

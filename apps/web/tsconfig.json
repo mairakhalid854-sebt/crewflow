@@ -1,0 +1,17 @@
+{
+  "extends": "../../packages/tsconfig/react.json",
+  "compilerOptions": {
+    "incremental": true,
+    "jsx": "preserve",
+    "plugins": [{ "name": "next" }],
+    "tsBuildInfoFile": ".next/cache/tsconfig.tsbuildinfo"
+  },
+  "include": [
+    "next-env.d.ts",
+    "next.config.ts",
+    ".next/types/**/*.ts",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": ["node_modules"]
+}
