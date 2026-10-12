@@ -14,7 +14,7 @@ Supabase staging and production must be separate projects before real customer d
 
 ## Component targets
 
-- Web: Vercel project rooted at `apps/web`, initially using its generated `*.vercel.app` hostname.
+- Web: Vercel project built from the repository root with workspace-aware `vercel.json`; the deployed Next.js app lives in `apps/web` and initially uses a generated `*.vercel.app` hostname.
 - Identity/database: Supabase, deployed only from committed files under `supabase/migrations`.
 - API and worker: Railway services after their Phase 1/2 runtime responsibilities exist. They are not deployable product services yet.
 - Mobile: Expo EAS internal builds first; store submission remains blocked until mobile security advisories and store prerequisites are cleared.
@@ -42,5 +42,7 @@ The Supabase access token, database password, service-role key, SMTP credentials
 - The repository is linked to Supabase project `mlgfyxsqorualqwbecmp`; migration `202610120001` is applied and the hosted schema lint is clean.
 - GitHub remote `mairakhalid854-sebt/crewflow` is connected locally.
 - Generated database types match the hosted schema. Full pgTAP execution awaits Docker/Podman on a test runner.
-- Vercel project creation/linking and preview deployment are pending.
+- Vercel project `saas-team-crew-flow/crewflow` is linked and the protected Preview deployment at `https://crewflow-kn03f04wn-saas-team-crew-flow.vercel.app` builds successfully.
+- Preview Supabase public variables are configured in Vercel. Supabase Auth allows localhost and the Vercel team preview-host pattern; undeclared hosted Auth/MFA/pooler settings were left unchanged.
+- Vercel's GitHub App still needs repository access before commit-triggered deployments can be enabled. Until then, reviewed previews can be deployed through the authenticated CLI.
 - A custom domain is optional for staging; the generated Vercel hostname is sufficient.

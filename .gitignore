@@ -4,6 +4,7 @@ dist/
 coverage/
 .expo/
 .turbo/
+.vercel/
 *.tsbuildinfo
 
 .env

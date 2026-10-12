@@ -34,10 +34,13 @@ const loginSchema = z.object({
 });
 
 function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(
-    /\/$/,
-    '',
-  );
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (configuredUrl) return configuredUrl.replace(/\/$/, '');
+
+  const vercelUrl = process.env.VERCEL_URL;
+  if (vercelUrl) return `https://${vercelUrl.replace(/\/$/, '')}`;
+
+  return 'http://localhost:3000';
 }
 
 function validationFailure(error: z.ZodError): AuthFormState {
