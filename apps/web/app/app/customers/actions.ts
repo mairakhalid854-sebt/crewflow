@@ -34,7 +34,7 @@ const customerSchema = z.object({
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^$|^[A-Z]{2}$/, 'Use a two-letter state code.'),
+    .regex(/^$|^[A-Z]{2}$/, 'Select a state.'),
   streetAddress: z.string().trim().max(180).default(''),
 });
 

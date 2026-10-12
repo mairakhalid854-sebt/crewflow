@@ -21,6 +21,16 @@ const navItems: readonly {
     roles: ['owner', 'office'],
   },
   { href: '/app/services', label: 'Services' },
+  {
+    href: '/app/team',
+    label: 'Team',
+    roles: ['owner', 'office'],
+  },
+  {
+    href: '/app/audit',
+    label: 'Audit trail',
+    roles: ['owner', 'office'],
+  },
 ];
 
 export default async function AuthenticatedAppLayout({

@@ -1,0 +1,109 @@
+.invite-shell {
+  min-height: 100vh;
+  padding: 32px 20px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at top left, rgb(57 217 138 / 18%), transparent 34%),
+    #f4f7f5;
+}
+
+.invite-card {
+  width: min(520px, 100%);
+  padding: clamp(28px, 6vw, 48px);
+  border: 1px solid #d8e4dd;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(16 40 31 / 10%);
+}
+
+.invite-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #10281f;
+  font-size: 1.1rem;
+  font-weight: 850;
+}
+
+.invite-brand span {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #39d98a;
+}
+
+.invite-kicker {
+  margin: 44px 0 10px;
+  color: #158253;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+}
+
+.invite-card h1 {
+  margin: 0 0 14px;
+  color: #17231e;
+  font-size: clamp(2rem, 7vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.invite-copy,
+.invite-security,
+.invite-actions > p {
+  color: #63756c;
+  line-height: 1.6;
+}
+
+.invite-actions {
+  margin-top: 28px;
+  display: grid;
+  gap: 13px;
+}
+
+.invite-actions form,
+.invite-actions form button {
+  width: 100%;
+}
+
+.invite-actions a:not(.invite-primary) {
+  color: #137349;
+  font-weight: 750;
+  text-align: center;
+}
+
+.invite-primary,
+.invite-actions button {
+  padding: 13px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #187d51;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  text-align: center;
+  cursor: pointer;
+}
+
+.invite-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.invite-error {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff0ed;
+  color: #9b261e;
+  font-weight: 700;
+}
+
+.invite-security {
+  margin: 28px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid #e2e9e5;
+  font-size: 0.82rem;
+}

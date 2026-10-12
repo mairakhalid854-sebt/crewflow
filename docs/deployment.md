@@ -39,7 +39,7 @@ The Supabase access token, database password, service-role key, SMTP credentials
 ## Current external state
 
 - Supabase project URL and publishable key respond successfully; email signup is enabled and email confirmation is required.
-- The repository is linked to Supabase project `mlgfyxsqorualqwbecmp`; migration `202610120001` is applied and the hosted schema lint is clean.
+- The repository is linked to Supabase project `mlgfyxsqorualqwbecmp`; migrations `202610120001` and `202610120002` are applied and the hosted schema lint is clean.
 - GitHub remote `mairakhalid854-sebt/crewflow` is connected locally.
 - Generated database types match the hosted schema. Full pgTAP execution awaits Docker/Podman on a test runner.
 - Vercel project `saas-team-crew-flow/crewflow` is linked and the protected Preview deployment at `https://crewflow-kn03f04wn-saas-team-crew-flow.vercel.app` builds successfully.

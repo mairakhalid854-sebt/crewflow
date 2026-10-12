@@ -3,6 +3,8 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 
+import { UsLocationFields } from '../../components/us-location-fields';
+
 import { type OnboardingFormState, completeOnboardingAction } from './actions';
 
 const initialOnboardingState: OnboardingFormState = { status: 'idle' };
@@ -62,14 +64,13 @@ export function OnboardingForm() {
             Street address
             <input name="streetAddress" required />
           </label>
-          <label>
-            City
-            <input name="city" required />
-          </label>
-          <label>
-            State
-            <input maxLength={2} name="stateCode" placeholder="CA" required />
-          </label>
+          <UsLocationFields
+            cityErrorId="city-error"
+            cityErrors={state.fieldErrors?.city}
+            required
+            stateErrorId="state-code-error"
+            stateErrors={state.fieldErrors?.stateCode}
+          />
           <label>
             ZIP code
             <input

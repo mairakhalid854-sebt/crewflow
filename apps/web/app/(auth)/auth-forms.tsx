@@ -49,10 +49,11 @@ function StatusMessage({ state }: Readonly<{ state: AuthFormState }>) {
   );
 }
 
-export function SignupForm() {
+export function SignupForm({ nextPath }: Readonly<{ nextPath?: string }>) {
   const [state, action] = useActionState(signupAction, initialAuthFormState);
   return (
     <form action={action} className="auth-form">
+      {nextPath ? <input name="next" type="hidden" value={nextPath} /> : null}
       <label htmlFor="fullName">Full name</label>
       <input autoComplete="name" id="fullName" name="fullName" required />
       <FieldError errors={state.fieldErrors?.fullName} />
@@ -83,16 +84,24 @@ export function SignupForm() {
         pendingLabel="Creating account…"
       />
       <p className="auth-switch">
-        Already registered? <Link href="/login">Sign in</Link>
+        Already registered?{' '}
+        <Link
+          href={
+            nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : '/login'
+          }
+        >
+          Sign in
+        </Link>
       </p>
     </form>
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ nextPath }: Readonly<{ nextPath?: string }>) {
   const [state, action] = useActionState(loginAction, initialAuthFormState);
   return (
     <form action={action} className="auth-form">
+      {nextPath ? <input name="next" type="hidden" value={nextPath} /> : null}
       <label htmlFor="email">Work email</label>
       <input
         autoComplete="email"
@@ -118,7 +127,16 @@ export function LoginForm() {
       <StatusMessage state={state} />
       <SubmitButton label="Sign in" pendingLabel="Signing in…" />
       <p className="auth-switch">
-        New to CrewFlow? <Link href="/signup">Create an account</Link>
+        New to CrewFlow?{' '}
+        <Link
+          href={
+            nextPath
+              ? `/signup?next=${encodeURIComponent(nextPath)}`
+              : '/signup'
+          }
+        >
+          Create an account
+        </Link>
       </p>
     </form>
   );

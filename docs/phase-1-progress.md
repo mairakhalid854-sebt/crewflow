@@ -2,7 +2,9 @@
 
 Updated: 2026-10-12
 
-Phase 1 has started. This is the first vertical slice, not completion of the full PRD or Phase 1.
+Phase 1 is actively in development. Identity, tenancy, customer/service setup,
+and the team-management foundation are implemented; the remaining acceptance
+gates below still prevent calling the full PRD or Phase 1 complete.
 
 ## Delivered in this slice
 
@@ -21,13 +23,18 @@ Phase 1 has started. This is the first vertical slice, not completion of the ful
 - Service catalog list/search/create/edit/archive flows with integer-cent pricing, duration, tax behavior, and availability.
 - Server actions derive tenant identity from the authenticated membership and scope every resource mutation by tenant.
 - Shared loading, error, empty, validation, pending, and destructive-action confirmation states for the new workspace flows.
+- US-only country, dependent state, and state-filtered city selection for company onboarding and customer addresses.
+- Owner-created 72-hour invitation links whose raw tokens are returned once and stored only as SHA-256 hashes.
+- Invite-aware signup/login/email-confirmation flow and verified-email invitation acceptance.
+- Owner-only role changes, invitation revocation, last-owner protection, and immediate membership deactivation.
+- Staff profiles with skills, service-area ZIP codes, weekly availability, retained history, and Owner/Office editing UI.
+- Audit triggers for Customer and Service changes plus a tenant-scoped audit viewer for Owner/Office roles.
 
 ## Still required for Phase 1
 
 - Run the pgTAP RLS suite on a workstation/CI runner with Docker or Podman. The hosted CLI test path still uses a pgTAP container.
-- Member invitation tokens, invitation acceptance, role changes, and immediate deactivation.
-- Staff skills, availability, service areas, and team management UI/API.
-- Business-hours editor, profile/settings completion, audit viewer, rate limiting, and observability.
+- Transactional email delivery for invitation links; links are currently copied by the owner and sent privately until an email provider is configured.
+- Business-hours editor, company/profile settings completion, rate limiting, and observability.
 - Mobile authentication integration and relevant authorization tests.
 - Customer detail jobs, invoices, and lifetime-paid totals remain dependent on Phase 2 and Phase 3 data models.
 
@@ -36,7 +43,7 @@ Phase 1 has started. This is the first vertical slice, not completion of the ful
 - Formatting, ESLint, strict TypeScript, 25 unit/contract tests, and all production builds pass.
 - The supplied Supabase URL and publishable key are valid; email signup is enabled and email confirmation is required.
 - The GitHub remote is connected and its existing initial commit has been preserved as project history.
-- The Supabase CLI is authenticated and linked; migration `202610120001` is applied remotely and `supabase db lint --linked` reports no schema errors.
+- The Supabase CLI is authenticated and linked; migrations `202610120001` and `202610120002` are applied remotely and `supabase db lint --linked` reports no schema errors.
 - Anonymous REST access to `tenants` is denied at the grant boundary. Full authenticated pgTAP isolation tests are pending because Docker/Podman is not installed.
 - A protected Vercel Preview build is live and passes authenticated smoke requests; Supabase Auth permits the Vercel team preview-host pattern.
 - Vercel's GitHub App is connected; the `staging` branch is used to verify automatic protected Preview deployments without prematurely promoting `main` to production.

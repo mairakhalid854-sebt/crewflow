@@ -3,6 +3,8 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
+import { appUrl } from '../../lib/app-url';
+import { safeNextPath } from '../../lib/auth/safe-next-path';
 import { createClient } from '../../lib/supabase/server';
 
 export interface AuthFormState {
@@ -33,16 +35,6 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Enter your password.'),
 });
 
-function appUrl(): string {
-  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (configuredUrl) return configuredUrl.replace(/\/$/, '');
-
-  const vercelUrl = process.env.VERCEL_URL;
-  if (vercelUrl) return `https://${vercelUrl.replace(/\/$/, '')}`;
-
-  return 'http://localhost:3000';
-}
-
 function validationFailure(error: z.ZodError): AuthFormState {
   return {
     fieldErrors: error.flatten().fieldErrors,
@@ -63,12 +55,14 @@ export async function signupAction(
 
   if (!parsed.success) return validationFailure(parsed.error);
 
+  const next = safeNextPath(formData.get('next'));
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     options: {
       data: { full_name: parsed.data.fullName },
-      emailRedirectTo: `${appUrl()}/auth/confirm`,
+      emailRedirectTo: `${appUrl()}/auth/confirm?next=${encodeURIComponent(next)}`,
     },
     password: parsed.data.password,
   });
@@ -98,6 +92,8 @@ export async function loginAction(
 
   if (!parsed.success) return validationFailure(parsed.error);
 
+  const next = safeNextPath(formData.get('next'));
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
 
@@ -108,7 +104,7 @@ export async function loginAction(
     };
   }
 
-  redirect('/onboarding');
+  redirect(next);
 }
 
 export async function forgotPasswordAction(

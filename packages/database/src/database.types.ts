@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -11,6 +11,31 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: '14.18';
+  };
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
   public: {
     Tables: {
@@ -285,6 +310,158 @@ export type Database = {
           },
         ];
       };
+      staff_availability: {
+        Row: {
+          created_at: string;
+          day_of_week: number;
+          ends_at: string | null;
+          id: string;
+          is_available: boolean;
+          membership_id: string;
+          starts_at: string | null;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          day_of_week: number;
+          ends_at?: string | null;
+          id?: string;
+          is_available?: boolean;
+          membership_id: string;
+          starts_at?: string | null;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          day_of_week?: number;
+          ends_at?: string | null;
+          id?: string;
+          is_available?: boolean;
+          membership_id?: string;
+          starts_at?: string | null;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'staff_availability_membership_tenant_fk';
+            columns: ['membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'staff_profiles';
+            referencedColumns: ['membership_id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'staff_availability_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      staff_profiles: {
+        Row: {
+          availability_notes: string | null;
+          created_at: string;
+          full_name: string;
+          membership_id: string;
+          service_area_postal_codes: string[];
+          skills: string[];
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          availability_notes?: string | null;
+          created_at?: string;
+          full_name: string;
+          membership_id: string;
+          service_area_postal_codes?: string[];
+          skills?: string[];
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          availability_notes?: string | null;
+          created_at?: string;
+          full_name?: string;
+          membership_id?: string;
+          service_area_postal_codes?: string[];
+          skills?: string[];
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'staff_profiles_membership_id_fkey';
+            columns: ['membership_id'];
+            isOneToOne: true;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'staff_profiles_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      team_invitations: {
+        Row: {
+          accepted_at: string | null;
+          accepted_by_user_id: string | null;
+          created_at: string;
+          email: string;
+          expires_at: string;
+          id: string;
+          invited_by_user_id: string | null;
+          revoked_at: string | null;
+          role: Database['public']['Enums']['membership_role'];
+          tenant_id: string;
+          token_hash: string;
+          updated_at: string;
+        };
+        Insert: {
+          accepted_at?: string | null;
+          accepted_by_user_id?: string | null;
+          created_at?: string;
+          email: string;
+          expires_at: string;
+          id?: string;
+          invited_by_user_id?: string | null;
+          revoked_at?: string | null;
+          role: Database['public']['Enums']['membership_role'];
+          tenant_id: string;
+          token_hash: string;
+          updated_at?: string;
+        };
+        Update: {
+          accepted_at?: string | null;
+          accepted_by_user_id?: string | null;
+          created_at?: string;
+          email?: string;
+          expires_at?: string;
+          id?: string;
+          invited_by_user_id?: string | null;
+          revoked_at?: string | null;
+          role?: Database['public']['Enums']['membership_role'];
+          tenant_id?: string;
+          token_hash?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'team_invitations_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenant_settings: {
         Row: {
           ai_monthly_budget_cents: number;
@@ -388,6 +565,22 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      accept_team_invitation: {
+        Args: { invitation_token: string };
+        Returns: string;
+      };
+      create_team_invitation: {
+        Args: {
+          expiry_hours?: number;
+          invitee_email: string;
+          invitee_role: Database['public']['Enums']['membership_role'];
+        };
+        Returns: {
+          invitation_expires_at: string;
+          invitation_id: string;
+          invitation_token: string;
+        }[];
+      };
       create_tenant_with_owner: {
         Args: {
           business_email: string;
@@ -410,6 +603,32 @@ export type Database = {
           target_tenant_id: string;
         };
         Returns: boolean;
+      };
+      deactivate_team_member: {
+        Args: { target_membership_id: string };
+        Returns: undefined;
+      };
+      revoke_team_invitation: {
+        Args: { target_invitation_id: string };
+        Returns: undefined;
+      };
+      update_staff_details: {
+        Args: {
+          staff_availability_notes: string;
+          staff_full_name: string;
+          staff_service_area_postal_codes: string[];
+          staff_skills: string[];
+          target_membership_id: string;
+          weekly_schedule: Json;
+        };
+        Returns: undefined;
+      };
+      update_team_member_role: {
+        Args: {
+          new_role: Database['public']['Enums']['membership_role'];
+          target_membership_id: string;
+        };
+        Returns: undefined;
       };
     };
     Enums: {
@@ -541,6 +760,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       membership_role: ['owner', 'office', 'technician'],

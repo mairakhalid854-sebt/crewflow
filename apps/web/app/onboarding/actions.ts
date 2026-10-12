@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
+import { isUsCityForState } from '../../lib/location/us-locations';
 import { createClient } from '../../lib/supabase/server';
 
 export interface OnboardingFormState {
@@ -11,40 +12,48 @@ export interface OnboardingFormState {
   readonly status: 'idle' | 'error';
 }
 
-const onboardingSchema = z.object({
-  businessEmail: z.email('Enter a valid business email.').trim().toLowerCase(),
-  city: z.string().trim().min(2, 'Enter a city.').max(100),
-  displayName: z.string().trim().min(2, 'Enter a display name.').max(120),
-  legalName: z
-    .string()
-    .trim()
-    .min(2, 'Enter the legal business name.')
-    .max(160),
-  phone: z.string().trim().max(30),
-  postalCode: z
-    .string()
-    .trim()
-    .regex(/^\d{5}(-\d{4})?$/, 'Enter a valid US ZIP code.'),
-  serviceCategories: z
-    .array(z.string())
-    .min(1, 'Select at least one service category.'),
-  stateCode: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^[A-Z]{2}$/, 'Use a two-letter state code.'),
-  streetAddress: z.string().trim().min(3, 'Enter a street address.').max(180),
-  taxRatePercent: z.coerce.number().min(0).max(100),
-  timeZone: z.enum([
-    'America/New_York',
-    'America/Chicago',
-    'America/Denver',
-    'America/Phoenix',
-    'America/Los_Angeles',
-    'America/Anchorage',
-    'Pacific/Honolulu',
-  ]),
-});
+const onboardingSchema = z
+  .object({
+    businessEmail: z
+      .email('Enter a valid business email.')
+      .trim()
+      .toLowerCase(),
+    city: z.string().trim().min(2, 'Select a city.').max(100),
+    displayName: z.string().trim().min(2, 'Enter a display name.').max(120),
+    legalName: z
+      .string()
+      .trim()
+      .min(2, 'Enter the legal business name.')
+      .max(160),
+    phone: z.string().trim().max(30),
+    postalCode: z
+      .string()
+      .trim()
+      .regex(/^\d{5}(-\d{4})?$/, 'Enter a valid US ZIP code.'),
+    serviceCategories: z
+      .array(z.string())
+      .min(1, 'Select at least one service category.'),
+    stateCode: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{2}$/, 'Select a state.'),
+    streetAddress: z.string().trim().min(3, 'Enter a street address.').max(180),
+    taxRatePercent: z.coerce.number().min(0).max(100),
+    timeZone: z.enum([
+      'America/New_York',
+      'America/Chicago',
+      'America/Denver',
+      'America/Phoenix',
+      'America/Los_Angeles',
+      'America/Anchorage',
+      'Pacific/Honolulu',
+    ]),
+  })
+  .refine((value) => isUsCityForState(value.city, value.stateCode), {
+    message: 'Select a city in the chosen state.',
+    path: ['city'],
+  });
 
 export async function completeOnboardingAction(
   _previousState: OnboardingFormState,
