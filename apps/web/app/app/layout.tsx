@@ -31,6 +31,11 @@ const navItems: readonly {
     label: 'Audit trail',
     roles: ['owner', 'office'],
   },
+  {
+    href: '/app/settings',
+    label: 'Settings',
+    roles: ['owner'],
+  },
 ];
 
 export default async function AuthenticatedAppLayout({

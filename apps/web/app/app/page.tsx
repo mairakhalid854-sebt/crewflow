@@ -32,11 +32,20 @@ export default async function AuthenticatedDashboardPage() {
           <h2>Services</h2>
           <p>Configure prices, duration, and tax behavior for offered work.</p>
         </Link>
-        <div className="setup-card setup-card-pending">
-          <span>03</span>
-          <h2>Team</h2>
-          <p>Invitations and staff profiles are the next Phase 1 slice.</p>
-        </div>
+        {context.role !== 'technician' ? (
+          <Link className="setup-card" href="/app/team">
+            <span>03</span>
+            <h2>Team</h2>
+            <p>Invite people, assign roles, and configure staff coverage.</p>
+          </Link>
+        ) : null}
+        {context.role === 'owner' ? (
+          <Link className="setup-card" href="/app/settings">
+            <span>04</span>
+            <h2>Company settings</h2>
+            <p>Review business hours, tax defaults, and workspace policy.</p>
+          </Link>
+        ) : null}
       </section>
     </div>
   );

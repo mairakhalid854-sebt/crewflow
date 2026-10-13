@@ -612,6 +612,26 @@ export type Database = {
         Args: { target_invitation_id: string };
         Returns: undefined;
       };
+      update_company_settings: {
+        Args: {
+          input_ai_monthly_budget_cents: number;
+          input_ai_operations_enabled: boolean;
+          input_business_email: string;
+          input_city: string;
+          input_display_name: string;
+          input_legal_name: string;
+          input_notifications_enabled: boolean;
+          input_phone: string;
+          input_postal_code: string;
+          input_service_categories: string[];
+          input_state_code: string;
+          input_street_address: string;
+          input_tax_rate_bps: number;
+          input_time_zone: string;
+          input_weekly_hours: Json;
+        };
+        Returns: undefined;
+      };
       update_staff_details: {
         Args: {
           staff_availability_notes: string;
