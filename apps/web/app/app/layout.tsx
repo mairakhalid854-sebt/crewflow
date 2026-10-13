@@ -31,6 +31,7 @@ const navItems: readonly {
     label: 'Audit trail',
     roles: ['owner', 'office'],
   },
+  { href: '/app/profile', label: 'My profile' },
   {
     href: '/app/settings',
     label: 'Settings',
