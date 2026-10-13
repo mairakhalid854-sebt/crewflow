@@ -19,6 +19,8 @@ Supabase staging and production must be separate projects before real customer d
 - API and worker: Railway services after their Phase 1/2 runtime responsibilities exist. They are not deployable product services yet.
 - Mobile: Expo EAS internal builds first; store submission remains blocked until mobile security advisories and store prerequisites are cleared.
 
+The native app owns the `crewflow` URL scheme with Android package and iOS bundle identifier `com.crewflow.mobile`. Supabase Auth must allow the exact `crewflow://auth/reset` redirect before testing password recovery in an installed development or internal build. Expo Go does not provide a stable custom-scheme callback and is not the acceptance-test target for this flow.
+
 ## Staging sequence
 
 1. Run the repository quality gate and the deployable-workspace production audit.
@@ -30,7 +32,8 @@ Supabase staging and production must be separate projects before real customer d
 7. Set Vercel preview/production environment variables from `apps/web/.env.example`.
 8. Deploy a preview, then add its HTTPS callback URL to Supabase Auth URL Configuration.
 9. Test signup, email confirmation, reset, onboarding, logout, and unauthorized tenant access.
-10. Promote the same reviewed commit to production only after all release blockers are closed.
+10. Build the mobile development/internal client and smoke-test `crewflow://auth/reset` on a physical device.
+11. Promote the same reviewed commit to production only after all release blockers are closed.
 
 ## Secrets
 
@@ -43,6 +46,6 @@ The Supabase access token, database password, service-role key, SMTP credentials
 - GitHub remote `mairakhalid854-sebt/crewflow` is connected locally.
 - Generated database types match the hosted schema. Full pgTAP execution awaits Docker/Podman on a test runner.
 - Vercel project `saas-team-crew-flow/crewflow` is linked and the protected Preview deployment at `https://crewflow-kn03f04wn-saas-team-crew-flow.vercel.app` builds successfully.
-- Preview Supabase public variables are configured in Vercel. Supabase Auth allows localhost and the Vercel team preview-host pattern; undeclared hosted Auth/MFA/pooler settings were left unchanged.
+- Preview Supabase public variables are configured in Vercel. Supabase Auth allows localhost, the Vercel team preview-host pattern, and the exact `crewflow://auth/reset` mobile recovery callback; undeclared hosted Auth/MFA/pooler settings were left unchanged.
 - Vercel's GitHub App is connected to `mairakhalid854-sebt/crewflow`. Ongoing work is pushed to the `staging` branch for protected Preview deployments; `main` is reserved for reviewed production promotion.
 - A custom domain is optional for staging; the generated Vercel hostname is sufficient.
