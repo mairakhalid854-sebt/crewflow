@@ -30,6 +30,14 @@ npm run check
 
 This checks formatting, lint rules, strict TypeScript, unit tests, and builds. The CI workflow repeats these gates. Docker services are required once database integration tests are introduced in Phase 1.
 
+## Contribution workflow
+
+Every feature or fix must use a short-lived branch and a meaningful
+Conventional Commit. Pull requests merge into `staging`; production promotion
+is a separate `staging` to `main` pull request. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the required branch, commit, test, and
+deployment flow.
+
 ## Current scope
 
 - Architectural decisions and phased requirement mapping
