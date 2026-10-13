@@ -25,6 +25,6 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.redirect(
-    new URL('/login?error=invalid_or_expired_link', request.url),
+    new URL('/forgot-password?error=invalid_or_expired_link', request.url),
   );
 }

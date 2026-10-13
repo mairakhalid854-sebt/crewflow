@@ -186,11 +186,20 @@ export function UpdatePasswordForm() {
         10+ characters with upper, lower, and number.
       </p>
       <FieldError errors={state.fieldErrors?.password} />
+      <label htmlFor="confirmPassword">Confirm new password</label>
+      <input
+        autoComplete="new-password"
+        id="confirmPassword"
+        name="confirmPassword"
+        required
+        type="password"
+      />
+      <FieldError errors={state.fieldErrors?.confirmPassword} />
       <StatusMessage state={state} />
       <SubmitButton label="Update password" pendingLabel="Updating…" />
       {state.status === 'success' ? (
         <p className="auth-switch">
-          <Link href="/onboarding">Continue</Link>
+          <Link href="/app">Continue to CrewFlow</Link>
         </p>
       ) : null}
     </form>

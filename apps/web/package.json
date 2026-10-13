@@ -5,6 +5,7 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
