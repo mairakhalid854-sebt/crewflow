@@ -1,6 +1,6 @@
 # Phase 1 progress: identity and tenancy
 
-Updated: 2026-10-12
+Updated: 2026-10-13
 
 Phase 1 is actively in development. Identity, tenancy, customer/service setup,
 and the team-management foundation are implemented; the remaining acceptance
@@ -35,13 +35,14 @@ gates below still prevent calling the full PRD or Phase 1 complete.
 - Self-service personal profile editing for every active role, synchronized to authentication metadata and staff directory names.
 - Password recovery lands on a public recovery page with matching new-password confirmation and server-side session validation.
 - Mobile email/password sign-in persists encrypted, chunked sessions and verifies an active tenant membership before granting crew access.
+- Mobile password recovery uses an allow-listed CrewFlow deep link, validates recovery credentials, confirms matching passwords, and preserves account-enumeration protection.
 
 ## Still required for Phase 1
 
 - Run the pgTAP RLS suite on a workstation/CI runner with Docker or Podman. The hosted CLI test path still uses a pgTAP container.
 - Transactional email delivery for invitation links; links are currently copied by the owner and sent privately until an email provider is configured.
 - Rate limiting and observability.
-- Mobile password recovery deep links and device-level sign-in smoke tests.
+- Installed-build password-recovery and Office/Technician device smoke tests. Owner sign-in and active-membership authorization passed on a physical device on 2026-10-13.
 - Customer detail jobs, invoices, and lifetime-paid totals remain dependent on Phase 2 and Phase 3 data models.
 
 ## Current verification
@@ -51,6 +52,7 @@ gates below still prevent calling the full PRD or Phase 1 complete.
 - The GitHub remote is connected and its existing initial commit has been preserved as project history.
 - The Supabase CLI is authenticated and linked; migrations through `202610130002` are applied remotely and `supabase db lint --linked` reports no schema errors.
 - Anonymous REST access to `tenants` is denied at the grant boundary. Full authenticated pgTAP isolation tests are pending because Docker/Podman is not installed.
+- Owner email/password sign-in and active membership verification pass on a physical mobile device.
 - A protected Vercel Preview build is live and passes authenticated smoke requests; Supabase Auth permits the Vercel team preview-host pattern.
 - Vercel's GitHub App is connected; the `staging` branch is used to verify automatic protected Preview deployments without prematurely promoting `main` to production.
 - Production promotion and mobile release remain blocked by the acceptance gaps and Expo transitive high-severity dependency advisories recorded in `docs/risks.md`.
