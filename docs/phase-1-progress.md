@@ -33,6 +33,7 @@ gates below still prevent calling the full PRD or Phase 1 complete.
 - Transactional seven-day business-hours editor with server/database validation and a settings audit event.
 - Strict owner-only database policy for company business-hours changes.
 - Self-service personal profile editing for every active role, synchronized to authentication metadata and staff directory names.
+- Password recovery lands on a public recovery page with matching new-password confirmation and server-side session validation.
 
 ## Still required for Phase 1
 

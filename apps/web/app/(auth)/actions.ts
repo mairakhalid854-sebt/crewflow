@@ -4,6 +4,10 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { appUrl } from '../../lib/app-url';
+import {
+  passwordSchema,
+  updatePasswordSchema,
+} from '../../lib/auth/password-validation';
 import { safeNextPath } from '../../lib/auth/safe-next-path';
 import { createClient } from '../../lib/supabase/server';
 
@@ -17,13 +21,6 @@ const emailSchema = z
   .email('Enter a valid email address.')
   .trim()
   .toLowerCase();
-const passwordSchema = z
-  .string()
-  .min(10, 'Use at least 10 characters.')
-  .regex(/[a-z]/, 'Include a lowercase letter.')
-  .regex(/[A-Z]/, 'Include an uppercase letter.')
-  .regex(/[0-9]/, 'Include a number.');
-
 const signupSchema = z.object({
   email: emailSchema,
   fullName: z.string().trim().min(2, 'Enter your full name.').max(120),
@@ -130,14 +127,19 @@ export async function updatePasswordAction(
   _previousState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const parsed = passwordSchema.safeParse(formData.get('password'));
+  const parsed = updatePasswordSchema.safeParse({
+    confirmPassword: formData.get('confirmPassword'),
+    password: formData.get('password'),
+  });
   if (!parsed.success) return validationFailure(parsed.error);
 
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
   if (!claimsData?.claims) redirect('/login');
 
-  const { error } = await supabase.auth.updateUser({ password: parsed.data });
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
   if (error) {
     return {
       message: 'Password could not be updated. Request a new link.',
