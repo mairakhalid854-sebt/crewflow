@@ -16,7 +16,9 @@ CrewFlow is a multi-tenant field-service-management platform for US home-service
 4. Run `docker compose up -d redis` for the queue dependency.
 5. Run `npm run dev:web` and `npm run dev:api` in separate terminals.
 6. Open `/signup` to exercise registration, verification, login, and company onboarding.
-7. Optionally run `npm run dev:mobile` after installing the Expo Go client or configuring a simulator.
+7. For mobile development, create `apps/mobile/.env.local` with the two
+   `EXPO_PUBLIC_SUPABASE_*` values shown in `.env.example`. Then run
+   `npm run dev:mobile` after installing Expo Go or configuring a simulator.
 
 The web app runs at `http://localhost:3000`; the API defaults to `http://localhost:3001/v1/health`.
 
@@ -43,6 +45,7 @@ deployment flow.
 - Architectural decisions and phased requirement mapping
 - Next.js, NestJS, Expo, and worker application shells
 - Supabase email/password authentication with confirmation, login, reset, logout server actions, and protected routes
+- Expo mobile email/password sign-in with encrypted session persistence and active-membership authorization
 - Atomic company onboarding and owner membership creation
 - PostgreSQL tenant schema, role-based RLS policies, immutable tenant ownership, and audit foundation
 - NestJS tenant-context guard service with fail-closed isolation tests

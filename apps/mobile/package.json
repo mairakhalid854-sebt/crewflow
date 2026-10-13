@@ -2,15 +2,20 @@
   "name": "@crewflow/mobile",
   "version": "0.0.0",
   "private": true,
-  "main": "node_modules/expo/AppEntry.js",
+  "main": "expo/AppEntry",
   "scripts": {
     "start": "expo start",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@crewflow/database": "*",
+    "@supabase/supabase-js": "^2.117.3",
     "expo": "~57.0.21",
+    "expo-secure-store": "~57.0.4",
     "react": "19.2.3",
-    "react-native": "0.86.3"
+    "react-native": "0.86.3",
+    "react-native-url-polyfill": "^4.0.0"
   },
   "devDependencies": {
     "@types/react": "latest"
