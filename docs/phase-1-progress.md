@@ -34,18 +34,19 @@ gates below still prevent calling the full PRD or Phase 1 complete.
 - Strict owner-only database policy for company business-hours changes.
 - Self-service personal profile editing for every active role, synchronized to authentication metadata and staff directory names.
 - Password recovery lands on a public recovery page with matching new-password confirmation and server-side session validation.
+- Mobile email/password sign-in persists encrypted, chunked sessions and verifies an active tenant membership before granting crew access.
 
 ## Still required for Phase 1
 
 - Run the pgTAP RLS suite on a workstation/CI runner with Docker or Podman. The hosted CLI test path still uses a pgTAP container.
 - Transactional email delivery for invitation links; links are currently copied by the owner and sent privately until an email provider is configured.
 - Rate limiting and observability.
-- Mobile authentication integration and relevant authorization tests.
+- Mobile password recovery deep links and device-level sign-in smoke tests.
 - Customer detail jobs, invoices, and lifetime-paid totals remain dependent on Phase 2 and Phase 3 data models.
 
 ## Current verification
 
-- Formatting, ESLint, strict TypeScript, 44 unit/contract tests, and all production builds pass.
+- Formatting, ESLint, strict TypeScript, unit/contract tests, and all production builds pass.
 - The supplied Supabase URL and publishable key are valid; email signup is enabled and email confirmation is required.
 - The GitHub remote is connected and its existing initial commit has been preserved as project history.
 - The Supabase CLI is authenticated and linked; migrations through `202610130002` are applied remotely and `supabase db lint --linked` reports no schema errors.
