@@ -27,8 +27,11 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Audit production dependencies
+      - name: Audit deployable production dependencies
         run: npm run audit:production
+
+      - name: Monitor blocked mobile advisories
+        run: npm run audit:mobile
 
   quality:
     name: Format, lint, typecheck, test, build
