@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 
+import { ConsoleLogger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module.js';
@@ -14,6 +15,13 @@ if (
   throw new Error('API_PORT must be an integer between 1 and 65535');
 }
 
-const app = await NestFactory.create(AppModule, { abortOnError: true });
+const productionLogger = new ConsoleLogger({
+  json: process.env.NODE_ENV === 'production',
+  logLevels: ['log', 'warn', 'error', 'fatal'],
+});
+const app = await NestFactory.create(AppModule, {
+  abortOnError: true,
+  logger: productionLogger,
+});
 app.enableShutdownHooks();
 await app.listen(requestedPort);

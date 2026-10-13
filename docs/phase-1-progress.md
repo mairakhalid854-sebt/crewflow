@@ -36,12 +36,13 @@ gates below still prevent calling the full PRD or Phase 1 complete.
 - Password recovery lands on a public recovery page with matching new-password confirmation and server-side session validation.
 - Mobile email/password sign-in persists encrypted, chunked sessions and verifies an active tenant membership before granting crew access.
 - Mobile password recovery uses an allow-listed CrewFlow deep link, validates recovery credentials, confirms matching passwords, and preserves account-enumeration protection.
+- Supabase Auth rate limits are complemented by a global API request limiter with bounded configuration, correlation IDs, PII-safe request completion logs, and JSON production logging.
 
 ## Still required for Phase 1
 
 - Run the pgTAP RLS suite on a workstation/CI runner with Docker or Podman. The hosted CLI test path still uses a pgTAP container.
 - Transactional email delivery for invitation links; links are currently copied by the owner and sent privately until an email provider is configured.
-- Rate limiting and observability.
+- External centralized log/alert delivery and a distributed edge/Redis limiter are required before horizontally scaling or publicly exposing the API; the current API limiter is intentionally process-local.
 - Installed-build password-recovery and Office/Technician device smoke tests. Owner sign-in and active-membership authorization passed on a physical device on 2026-10-13.
 - Customer detail jobs, invoices, and lifetime-paid totals remain dependent on Phase 2 and Phase 3 data models.
 

@@ -21,6 +21,13 @@ Supabase staging and production must be separate projects before real customer d
 
 The native app owns the `crewflow` URL scheme with Android package and iOS bundle identifier `com.crewflow.mobile`. Supabase Auth must allow the exact `crewflow://auth/reset` redirect before testing password recovery in an installed development or internal build. Expo Go does not provide a stable custom-scheme callback and is not the acceptance-test target for this flow.
 
+## Runtime guardrails
+
+- Supabase Auth enforces its configured sign-in, token, and email rate limits before the application receives an authenticated session.
+- Every NestJS API route has a default process-local limit of 120 requests per 60 seconds. `API_RATE_LIMIT_MAX` and `API_RATE_LIMIT_WINDOW_MS` accept bounded integer overrides and fail startup on unsafe values.
+- API responses carry `x-correlation-id`. Only UUID-shaped incoming values are preserved; other values are replaced. Completion logs contain the correlation ID, method, path without query data, status, and duration—never cookies, request bodies, query values, or customer identifiers.
+- Production API logs are newline-delimited JSON on stdout for a hosting log drain. Before more than one API replica or public traffic, configure a shared Redis limiter or provider WAF and a centralized log/alert destination; process-local counters do not coordinate across replicas.
+
 ## Staging sequence
 
 1. Run the repository quality gate and the deployable-workspace production audit.
@@ -45,7 +52,7 @@ The Supabase access token, database password, service-role key, SMTP credentials
 - The repository is linked to Supabase project `mlgfyxsqorualqwbecmp`; migrations `202610120001` and `202610120002` are applied and the hosted schema lint is clean.
 - GitHub remote `mairakhalid854-sebt/crewflow` is connected locally.
 - Generated database types match the hosted schema. Full pgTAP execution awaits Docker/Podman on a test runner.
-- Vercel project `saas-team-crew-flow/crewflow` is linked and the protected Preview deployment at `https://crewflow-kn03f04wn-saas-team-crew-flow.vercel.app` builds successfully.
+- Vercel project `saas-team-crew-flow/crewflow` is linked and the protected Preview alias at `https://crewflow-git-staging-saas-team-crew-flow.vercel.app` builds successfully from `staging`.
 - Preview Supabase public variables are configured in Vercel. Supabase Auth allows localhost, the Vercel team preview-host pattern, and the exact `crewflow://auth/reset` mobile recovery callback; undeclared hosted Auth/MFA/pooler settings were left unchanged.
 - Vercel's GitHub App is connected to `mairakhalid854-sebt/crewflow`. Ongoing work is pushed to the `staging` branch for protected Preview deployments; `main` is reserved for reviewed production promotion.
 - A custom domain is optional for staging; the generated Vercel hostname is sufficient.
