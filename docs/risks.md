@@ -2,18 +2,20 @@
 
 ## R-001: Stable Expo toolchain dependency advisories
 
-- Status: Open; blocks deployment and mobile release
+- Status: Open; blocks mobile deployment and release
 - Observed: 2026-10-12
 - Scope: Expo SDK 57 / Metro transitive build tooling
 
-`npm audit --omit=dev` reports high-severity advisories in transitive `braces` and `node-forge` packages, plus a moderate `uuid` advisory. npm currently offers only a breaking downgrade to Expo 44, which is not an acceptable remediation. No production mobile build or deployment is authorized while high findings remain.
+`npm audit --omit=dev --workspace @crewflow/mobile` reports high-severity advisories in transitive `braces` and `node-forge` packages, plus a moderate `uuid` advisory. npm currently offers only a breaking downgrade to Expo 44, which is not an acceptable remediation. These packages belong to the Expo/Metro native build toolchain and are not included in the deployed web, API, or worker services. No production mobile build or deployment is authorized while high findings remain.
 
 Mitigation:
 
-1. Keep the production dependency audit as a blocking CI job.
-2. Track patched stable Expo/Metro packages and update promptly.
-3. Re-run application type checks, native builds, and device smoke tests after upgrading.
-4. Do not use `npm audit fix --force` to accept an unreviewed downgrade.
+1. Keep a strict blocking audit for the deployable web, API, and worker workspaces.
+2. Monitor the three exact mobile advisories in CI with package, severity, and advisory-source validation; any new advisory or metadata change fails CI.
+3. Expire the temporary review on 2026-10-27 so CI cannot silently carry the exception indefinitely.
+4. Track patched stable Expo/Metro packages and update promptly.
+5. Re-run application type checks, native builds, and device smoke tests after upgrading.
+6. Do not use `npm audit fix --force` to accept an unreviewed downgrade.
 
 ## R-002: Local infrastructure unverified in current workstation
 
