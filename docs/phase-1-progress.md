@@ -31,21 +31,23 @@ gates below still prevent calling the full PRD or Phase 1 complete.
 - Audit triggers for Customer and Service changes plus a tenant-scoped audit viewer for Owner/Office roles.
 - Owner-only company settings for business identity, dependent US state/city address, service categories, tax, notifications, and opt-in AI budget policy.
 - Transactional seven-day business-hours editor with server/database validation and a settings audit event.
+- Strict owner-only database policy for company business-hours changes.
+- Self-service personal profile editing for every active role, synchronized to authentication metadata and staff directory names.
 
 ## Still required for Phase 1
 
 - Run the pgTAP RLS suite on a workstation/CI runner with Docker or Podman. The hosted CLI test path still uses a pgTAP container.
 - Transactional email delivery for invitation links; links are currently copied by the owner and sent privately until an email provider is configured.
-- Personal profile settings, rate limiting, and observability.
+- Rate limiting and observability.
 - Mobile authentication integration and relevant authorization tests.
 - Customer detail jobs, invoices, and lifetime-paid totals remain dependent on Phase 2 and Phase 3 data models.
 
 ## Current verification
 
-- Formatting, ESLint, strict TypeScript, 38 unit/contract tests, and all production builds pass.
+- Formatting, ESLint, strict TypeScript, 44 unit/contract tests, and all production builds pass.
 - The supplied Supabase URL and publishable key are valid; email signup is enabled and email confirmation is required.
 - The GitHub remote is connected and its existing initial commit has been preserved as project history.
-- The Supabase CLI is authenticated and linked; migrations `202610120001`, `202610120002`, and `202610120003` are applied remotely and `supabase db lint --linked` reports no schema errors.
+- The Supabase CLI is authenticated and linked; migrations through `202610130002` are applied remotely and `supabase db lint --linked` reports no schema errors.
 - Anonymous REST access to `tenants` is denied at the grant boundary. Full authenticated pgTAP isolation tests are pending because Docker/Podman is not installed.
 - A protected Vercel Preview build is live and passes authenticated smoke requests; Supabase Auth permits the Vercel team preview-host pattern.
 - Vercel's GitHub App is connected; the `staging` branch is used to verify automatic protected Preview deployments without prematurely promoting `main` to production.
