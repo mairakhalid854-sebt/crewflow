@@ -95,14 +95,27 @@ function scheduleValues(
   return { end, start };
 }
 
-function databaseFailure(code?: string): JobFormState {
+function databaseFailure(code?: string, detail?: string): JobFormState {
+  const normalizedDetail = detail?.toLocaleLowerCase() ?? '';
+  let message = 'Job could not be saved. Please try again.';
+  if (code === '23P01') {
+    message = 'This technician already has a job in that time slot.';
+  } else if (normalizedDetail.includes('weekly availability')) {
+    message = "Selected time is outside the technician's weekly availability.";
+  } else if (normalizedDetail.includes('time off')) {
+    message = 'Selected time overlaps approved technician time off.';
+  } else if (normalizedDetail.includes('required service skills')) {
+    message =
+      'Technician is missing one or more skills required by this service.';
+  } else if (normalizedDetail.includes('same local day')) {
+    message = 'A scheduled job must start and end on the same business day.';
+  } else if (code === '23503' || code === '23514' || code === '22023') {
+    message =
+      'Customer, service, technician, schedule, or status is no longer valid.';
+  }
+
   return {
-    message:
-      code === '23P01'
-        ? 'This technician already has a job in that time slot.'
-        : code === '23503' || code === '23514' || code === '22023'
-          ? 'Customer, service, technician, schedule, or status is no longer valid.'
-          : 'Job could not be saved. Please try again.',
+    message,
     status: 'error',
   };
 }
@@ -148,7 +161,7 @@ export async function createJobAction(
     .select('id')
     .single();
 
-  if (error) return databaseFailure(error.code);
+  if (error) return databaseFailure(error.code, error.message);
   revalidatePath('/app');
   revalidatePath('/app/jobs');
   redirect(`/app/jobs/${data.id}`);
@@ -201,7 +214,7 @@ export async function updateJobAction(
     .select('id')
     .maybeSingle();
 
-  if (error) return databaseFailure(error.code);
+  if (error) return databaseFailure(error.code, error.message);
   if (!data) return { message: 'Job was not found.', status: 'error' };
 
   revalidatePath('/app');
@@ -248,7 +261,7 @@ export async function updateJobStatusAction(
     .select('id')
     .maybeSingle();
 
-  if (error) return databaseFailure(error.code);
+  if (error) return databaseFailure(error.code, error.message);
   if (!data) {
     return {
       message: 'The job changed elsewhere. Refresh and try again.',

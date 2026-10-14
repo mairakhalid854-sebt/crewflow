@@ -1,4 +1,5 @@
 const localDateTimePattern = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
+const calendarDatePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 interface DateTimeParts {
   readonly day: number;
@@ -28,6 +29,45 @@ function partsInTimeZone(date: Date, timeZone: string): DateTimeParts {
     month: value('month'),
     year: value('year'),
   };
+}
+
+function two(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+export function businessDateString(date: Date, timeZone: string): string {
+  const parts = partsInTimeZone(date, timeZone);
+  return `${parts.year}-${two(parts.month)}-${two(parts.day)}`;
+}
+
+export function addCalendarDays(value: string, amount: number): string | null {
+  const match = calendarDatePattern.exec(value);
+  if (!match || !Number.isInteger(amount)) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() + 1 !== month ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  date.setUTCDate(date.getUTCDate() + amount);
+  return `${date.getUTCFullYear()}-${two(date.getUTCMonth() + 1)}-${two(date.getUTCDate())}`;
+}
+
+export function startOfCalendarWeek(value: string): string | null {
+  const normalized = addCalendarDays(value, 0);
+  if (!normalized) return null;
+  const match = calendarDatePattern.exec(normalized);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const dayOfWeek = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return addCalendarDays(normalized, -dayOfWeek);
 }
 
 function sameParts(left: DateTimeParts, right: DateTimeParts): boolean {
@@ -97,6 +137,5 @@ export function isoToLocalDateTime(
 ): string {
   if (!value) return '';
   const parts = partsInTimeZone(new Date(value), timeZone);
-  const two = (part: number) => String(part).padStart(2, '0');
   return `${parts.year}-${two(parts.month)}-${two(parts.day)}T${two(parts.hour)}:${two(parts.minute)}`;
 }

@@ -856,6 +856,320 @@
   gap: 7px;
 }
 
+.time-off-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.time-off-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.time-off-form label > span {
+  color: #385247;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.time-off-form input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #bdcec5;
+  border-radius: 9px;
+  background: #fff;
+  color: #17231e;
+  font: inherit;
+}
+
+.time-off-form .form-status {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.time-off-list {
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.time-off-list li {
+  padding: 14px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid #edf1ee;
+}
+
+.time-off-list li > div,
+.time-off-cancel-form {
+  display: grid;
+  gap: 4px;
+}
+
+.time-off-list span,
+.time-off-list small,
+.time-off-empty {
+  color: #64756d;
+}
+
+.time-off-empty {
+  margin: 20px 0 0;
+}
+
+.time-off-cancel-form {
+  justify-items: end;
+}
+
+.time-off-cancel-form .error,
+.time-off-form .error {
+  color: #a02d24;
+}
+
+.time-off-cancel-form .success {
+  color: #12653f;
+}
+
+.dispatch-page {
+  width: min(1500px, 100%);
+}
+
+.dispatch-heading {
+  margin-bottom: 20px;
+}
+
+.dispatch-toolbar {
+  margin-bottom: 14px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #dbe5df;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.dispatch-navigation,
+.dispatch-view-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dispatch-navigation a,
+.dispatch-view-switcher a {
+  padding: 8px 11px;
+  border: 1px solid #d7e1dc;
+  border-radius: 8px;
+  color: #294238;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.dispatch-navigation strong {
+  margin-left: 6px;
+}
+
+.dispatch-view-switcher a[aria-current='page'] {
+  border-color: #187d51;
+  background: #e6f7ed;
+  color: #12653f;
+}
+
+.dispatch-search {
+  padding: 14px;
+}
+
+.dispatch-search > div {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+}
+
+.dispatch-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(700px, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.dispatch-queue,
+.dispatch-board {
+  border: 1px solid #dbe5df;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 40px rgb(20 47 36 / 5%);
+}
+
+.dispatch-queue {
+  padding: 18px;
+}
+
+.dispatch-queue > div:first-child {
+  position: relative;
+}
+
+.dispatch-queue h2 {
+  margin: 4px 0 0;
+  font-size: 1.18rem;
+}
+
+.dispatch-queue > div:first-child > span {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 28px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #e6f7ed;
+  color: #12653f;
+  font-weight: 850;
+  text-align: center;
+}
+
+.dispatch-queue ul {
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+  list-style: none;
+}
+
+.dispatch-queue li a {
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid #e0e8e3;
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.dispatch-queue li a:hover,
+.dispatch-job-card:hover {
+  border-color: #83b69f;
+  box-shadow: 0 8px 18px rgb(20 47 36 / 9%);
+}
+
+.dispatch-queue span,
+.dispatch-queue small {
+  color: #64756d;
+}
+
+.dispatch-board {
+  overflow-x: auto;
+}
+
+.dispatch-grid {
+  min-width: 700px;
+  display: grid;
+  grid-template-columns: 150px repeat(var(--dispatch-days), minmax(160px, 1fr));
+}
+
+.dispatch-grid-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 1px solid #dbe5df;
+  background: #f8fbf9;
+  color: #52675d;
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.dispatch-grid-header > div,
+.dispatch-technician-row > div {
+  padding: 13px;
+  border-right: 1px solid #e5ece8;
+}
+
+.dispatch-grid-header > div:last-child,
+.dispatch-technician-row > div:last-child {
+  border-right: 0;
+}
+
+.dispatch-grid-header .is-today {
+  background: #e6f7ed;
+  color: #12653f;
+}
+
+.dispatch-technician-row {
+  border-bottom: 1px solid #e5ece8;
+}
+
+.dispatch-technician-row:last-child {
+  border-bottom: 0;
+}
+
+.dispatch-technician-name {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  background: #fcfdfc;
+}
+
+.dispatch-technician-name a {
+  color: #137349;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.dispatch-day-cell {
+  min-height: 150px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.dispatch-job-card {
+  padding: 10px;
+  display: grid;
+  gap: 3px;
+  border: 1px solid #c9ddd2;
+  border-left: 4px solid #26865d;
+  border-radius: 9px;
+  background: #f1faf5;
+  color: inherit;
+  text-decoration: none;
+}
+
+.dispatch-job-card time,
+.dispatch-job-card span,
+.dispatch-job-card small {
+  color: #5c7166;
+  font-size: 0.76rem;
+}
+
+.dispatch-priority-high,
+.dispatch-priority-urgent {
+  border-left-color: #c8493e;
+  background: #fff7f5;
+}
+
+.dispatch-time-off {
+  padding: 8px;
+  border-radius: 8px;
+  background: #f3eefe;
+  color: #67469c;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.dispatch-open-slot,
+.dispatch-empty {
+  color: #829188;
+  font-size: 0.84rem;
+}
+
+.dispatch-empty-board {
+  padding: 42px 20px;
+  text-align: center;
+}
+
 .settings-page {
   max-width: 980px;
 }
@@ -1066,6 +1380,23 @@
     grid-template-columns: 1fr;
   }
 
+  .time-off-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dispatch-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dispatch-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dispatch-queue ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .job-filters > div,
   .job-detail-grid {
     grid-template-columns: 1fr;
@@ -1099,5 +1430,24 @@
 
   .dashboard-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .time-off-form,
+  .dispatch-search > div,
+  .dispatch-queue ul {
+    grid-template-columns: 1fr;
+  }
+
+  .time-off-list li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .time-off-cancel-form {
+    justify-items: start;
+  }
+
+  .dispatch-navigation {
+    flex-wrap: wrap;
   }
 }

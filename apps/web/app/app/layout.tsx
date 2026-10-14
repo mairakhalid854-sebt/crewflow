@@ -17,6 +17,11 @@ const navItems: readonly {
   { href: '/app', label: 'Overview' },
   { href: '/app/jobs', label: 'Jobs' },
   {
+    href: '/app/dispatch',
+    label: 'Dispatch',
+    roles: ['owner', 'office'],
+  },
+  {
     href: '/app/customers',
     label: 'Customers',
     roles: ['owner', 'office'],

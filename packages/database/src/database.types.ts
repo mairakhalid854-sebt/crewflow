@@ -352,6 +352,7 @@ export type Database = {
           id: string;
           is_enabled: boolean;
           name: string;
+          required_skills: string[];
           tax_behavior: Database['public']['Enums']['tax_behavior'];
           tenant_id: string;
           unit_price_cents: number;
@@ -365,6 +366,7 @@ export type Database = {
           id?: string;
           is_enabled?: boolean;
           name: string;
+          required_skills?: string[];
           tax_behavior?: Database['public']['Enums']['tax_behavior'];
           tenant_id: string;
           unit_price_cents: number;
@@ -378,6 +380,7 @@ export type Database = {
           id?: string;
           is_enabled?: boolean;
           name?: string;
+          required_skills?: string[];
           tax_behavior?: Database['public']['Enums']['tax_behavior'];
           tenant_id?: string;
           unit_price_cents?: number;
@@ -437,6 +440,60 @@ export type Database = {
           },
           {
             foreignKeyName: 'staff_availability_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      staff_time_off: {
+        Row: {
+          cancelled_at: string | null;
+          created_at: string;
+          created_by_user_id: string | null;
+          ends_at: string;
+          id: string;
+          membership_id: string;
+          reason: string | null;
+          starts_at: string;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          cancelled_at?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          ends_at: string;
+          id?: string;
+          membership_id: string;
+          reason?: string | null;
+          starts_at: string;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          cancelled_at?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          ends_at?: string;
+          id?: string;
+          membership_id?: string;
+          reason?: string | null;
+          starts_at?: string;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'staff_time_off_membership_tenant_fk';
+            columns: ['membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'staff_time_off_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
