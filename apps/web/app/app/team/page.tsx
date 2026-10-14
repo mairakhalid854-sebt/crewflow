@@ -84,7 +84,8 @@ export default async function TeamPage() {
               <h2>Invite a team member</h2>
               <p>
                 Links expire after 72 hours and only work for the invited,
-                verified email address.
+                verified email address. The invitee chooses their own password;
+                passwords are never sent by CrewFlow.
               </p>
             </div>
           </div>
@@ -164,7 +165,10 @@ export default async function TeamPage() {
           <div className="team-panel-heading">
             <div>
               <h2>Recent invitations</h2>
-              <p>Tokens are never displayed again after link creation.</p>
+              <p>
+                Pending means the CrewFlow invitation is not accepted yet.
+                Vercel deployment access does not activate a team member.
+              </p>
             </div>
           </div>
           {invitations.length ? (

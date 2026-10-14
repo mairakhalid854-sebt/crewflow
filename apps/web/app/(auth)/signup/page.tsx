@@ -20,9 +20,11 @@ export default async function SignupPage({
           : 'Start your CrewFlow workspace'}
       </h2>
       <p className="auth-intro">
-        Your email must be verified before company setup.
+        {joiningTeam
+          ? 'Choose your own password. After email verification, you will return to accept the team invitation.'
+          : 'Your email must be verified before company setup.'}
       </p>
-      <SignupForm nextPath={nextPath} />
+      <SignupForm joiningTeam={joiningTeam} nextPath={nextPath} />
     </div>
   );
 }

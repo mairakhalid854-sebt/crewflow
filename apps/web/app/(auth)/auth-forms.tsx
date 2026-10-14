@@ -49,7 +49,10 @@ function StatusMessage({ state }: Readonly<{ state: AuthFormState }>) {
   );
 }
 
-export function SignupForm({ nextPath }: Readonly<{ nextPath?: string }>) {
+export function SignupForm({
+  joiningTeam = false,
+  nextPath,
+}: Readonly<{ joiningTeam?: boolean; nextPath?: string }>) {
   const [state, action] = useActionState(signupAction, initialAuthFormState);
   return (
     <form action={action} className="auth-form">
@@ -80,7 +83,7 @@ export function SignupForm({ nextPath }: Readonly<{ nextPath?: string }>) {
       <FieldError errors={state.fieldErrors?.password} />
       <StatusMessage state={state} />
       <SubmitButton
-        label="Create owner account"
+        label={joiningTeam ? 'Create team account' : 'Create owner account'}
         pendingLabel="Creating account…"
       />
       <p className="auth-switch">
