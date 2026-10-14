@@ -15,6 +15,7 @@ const navItems: readonly {
   roles?: readonly MembershipRole[];
 }[] = [
   { href: '/app', label: 'Overview' },
+  { href: '/app/jobs', label: 'Jobs' },
   {
     href: '/app/customers',
     label: 'Customers',

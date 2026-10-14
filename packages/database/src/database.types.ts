@@ -192,6 +192,89 @@ export type Database = {
           },
         ];
       };
+      jobs: {
+        Row: {
+          archived_at: string | null;
+          assigned_membership_id: string | null;
+          created_at: string;
+          created_by_user_id: string | null;
+          customer_id: string;
+          description: string | null;
+          id: string;
+          priority: Database['public']['Enums']['job_priority'];
+          scheduled_end_at: string | null;
+          scheduled_start_at: string | null;
+          service_id: string | null;
+          status: Database['public']['Enums']['job_status'];
+          tenant_id: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          archived_at?: string | null;
+          assigned_membership_id?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          customer_id: string;
+          description?: string | null;
+          id?: string;
+          priority?: Database['public']['Enums']['job_priority'];
+          scheduled_end_at?: string | null;
+          scheduled_start_at?: string | null;
+          service_id?: string | null;
+          status?: Database['public']['Enums']['job_status'];
+          tenant_id: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          archived_at?: string | null;
+          assigned_membership_id?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          customer_id?: string;
+          description?: string | null;
+          id?: string;
+          priority?: Database['public']['Enums']['job_priority'];
+          scheduled_end_at?: string | null;
+          scheduled_start_at?: string | null;
+          service_id?: string | null;
+          status?: Database['public']['Enums']['job_status'];
+          tenant_id?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'jobs_assignee_tenant_fk';
+            columns: ['assigned_membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'jobs_customer_tenant_fk';
+            columns: ['customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'jobs_service_tenant_fk';
+            columns: ['service_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'services';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'jobs_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       memberships: {
         Row: {
           created_at: string;
@@ -652,6 +735,16 @@ export type Database = {
       };
     };
     Enums: {
+      job_priority: 'low' | 'normal' | 'high' | 'urgent';
+      job_status:
+        | 'new'
+        | 'quoted'
+        | 'accepted'
+        | 'scheduled'
+        | 'in_progress'
+        | 'completed'
+        | 'closed'
+        | 'cancelled';
       membership_role: 'owner' | 'office' | 'technician';
       membership_status: 'invited' | 'active' | 'deactivated';
       tax_behavior: 'exclusive' | 'inclusive' | 'non_taxable';
@@ -785,6 +878,17 @@ export const Constants = {
   },
   public: {
     Enums: {
+      job_priority: ['low', 'normal', 'high', 'urgent'],
+      job_status: [
+        'new',
+        'quoted',
+        'accepted',
+        'scheduled',
+        'in_progress',
+        'completed',
+        'closed',
+        'cancelled',
+      ],
       membership_role: ['owner', 'office', 'technician'],
       membership_status: ['invited', 'active', 'deactivated'],
       tax_behavior: ['exclusive', 'inclusive', 'non_taxable'],
