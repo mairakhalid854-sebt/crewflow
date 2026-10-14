@@ -72,8 +72,9 @@ export async function signupAction(
   }
 
   return {
-    message:
-      'Check your email to verify your account, then continue to sign in.',
+    message: next.startsWith('/invite/')
+      ? 'Check your email. The verification link will return you to accept the team invitation.'
+      : 'Check your email to verify your account, then continue to sign in.',
     status: 'success',
   };
 }

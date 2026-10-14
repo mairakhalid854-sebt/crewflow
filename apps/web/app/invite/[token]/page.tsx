@@ -29,8 +29,9 @@ export default async function InvitationPage({
         <p className="invite-kicker">TEAM INVITATION</p>
         <h1>Join your crew’s workspace</h1>
         <p className="invite-copy">
-          Sign in with the exact email address that received this link. The
-          invitation is single-use and expires automatically.
+          Use the exact email address that received this link. New team members
+          choose their own password before accepting. The invitation is
+          single-use and expires automatically.
         </p>
 
         {!validTokenShape ? (
@@ -54,7 +55,7 @@ export default async function InvitationPage({
               Sign in to accept
             </Link>
             <Link href={`/signup?next=${encodeURIComponent(nextPath)}`}>
-              New to CrewFlow? Create an account
+              New to CrewFlow? Choose a password and create an account
             </Link>
           </div>
         )}

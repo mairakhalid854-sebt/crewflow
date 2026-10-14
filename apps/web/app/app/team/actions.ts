@@ -6,6 +6,7 @@ import { z } from 'zod';
 import type { Json } from '@crewflow/database';
 
 import { appUrl } from '../../../lib/app-url';
+import { invitationSignupUrl } from '../../../lib/auth/invitation-url';
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
 import { createClient } from '../../../lib/supabase/server';
 
@@ -74,8 +75,9 @@ export async function createInvitationAction(
   revalidatePath('/app/team');
   return {
     expiresAt: invitation.invitation_expires_at,
-    inviteUrl: `${appUrl()}/invite/${invitation.invitation_token}`,
-    message: 'Secure invitation link created. Copy and send it privately.',
+    inviteUrl: invitationSignupUrl(appUrl(), invitation.invitation_token),
+    message:
+      'Team signup link created. The invitee will choose a password, verify their email, and accept the invitation.',
     status: 'success',
   };
 }
