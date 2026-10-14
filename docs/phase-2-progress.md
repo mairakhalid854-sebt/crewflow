@@ -2,9 +2,9 @@
 
 Updated: 2026-10-14
 
-Phase 2 is in development. The first vertical slice delivers tenant-safe job
-records, workflow control, assignments, schedule conflict prevention, and the
-initial responsive web experience.
+Phase 2 is in development. The web scheduling slice now delivers tenant-safe
+job records, workflow control, assignments, a responsive daily/weekly dispatch
+board, and database-enforced dispatch rules.
 
 ## Delivered in this slice
 
@@ -23,14 +23,25 @@ initial responsive web experience.
 - Immutable job activity events for creation, edits, scheduling, status
   changes, and archival.
 - Dashboard job metrics and customer-detail job history.
+- Daily and weekly technician dispatch board with date navigation, search,
+  job-detail links, and an explicit needs-dispatch queue.
+- Service-level required skills matched case-insensitively against technician
+  skills before assignment.
+- Weekly availability validation in the company's IANA time zone and
+  same-business-day schedule enforcement.
+- Audited technician time-off creation/cancellation with overlap protection and
+  automatic schedule blocking.
+- Actionable assignment errors for overlap, availability, time-off, skill, and
+  same-day violations.
 - Static migration contract tests and pgTAP coverage for tenant and technician
   job access.
 
 ## Still required for Phase 2
 
-- Daily and weekly drag/drop dispatch board and an explicit unassigned queue.
-- Skill, weekly availability, time-off, and service-area validation during
-  assignment. Mapping and travel estimates remain provider-dependent.
+- Optional direct drag/drop rescheduling enhancement; board cards currently
+  open the validated job editor for time-slot assignment.
+- Service-area validation during assignment. Mapping and travel estimates
+  remain provider-dependent and degrade gracefully while no vendor is chosen.
 - Mobile assigned-job list using the new RLS policies.
 - Run the pgTAP suite on Docker/Podman-enabled CI or a development workstation.
 - Broader schedule concurrency and state-machine integration tests against a
@@ -43,9 +54,10 @@ initial responsive web experience.
 - FR-020: Partial — core job fields, filters, detail, assignment, and activity
   are live; quote/invoice/report/media sections depend on later phases.
 - FR-021: Delivered for the proposed lifecycle.
-- FR-022: Partial — time-slot assignment and conflict-safe writes are live;
-  daily/weekly board remains.
-- FR-023: Partial — active technician validation is live; skills, time-off, and
-  travel checks remain.
+- FR-022: Delivered — daily/weekly per-technician board, searchable dispatch
+  queue, time-slot assignment, and conflict-safe writes are live.
+- FR-023: Partial — active technician, service skills, weekly availability,
+  time-off, and overlap checks are live; optional service-area/travel checks
+  await a configured eligible mapping vendor.
 - FR-024: Delivered for material job changes in this slice.
 - FR-050: Web/RLS foundation only; mobile list remains.

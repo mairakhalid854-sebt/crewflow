@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { requireTenantContext } from '../../../../lib/auth/tenant-context';
 import { createClient } from '../../../../lib/supabase/server';
 import { StaffDetailsForm } from '../staff-details-form';
+import { TimeOffPanel } from '../time-off-panel';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,8 @@ export default async function StaffDetailsPage({
   const { id } = await params;
   const context = await requireTenantContext(['owner', 'office']);
   const supabase = await createClient();
-  const [membershipResult, profileResult, availabilityResult] =
+  const recentCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const [membershipResult, profileResult, availabilityResult, timeOffResult] =
     await Promise.all([
       supabase
         .from('memberships')
@@ -33,12 +35,20 @@ export default async function StaffDetailsPage({
         .eq('membership_id', id)
         .eq('tenant_id', context.tenantId)
         .order('day_of_week'),
+      supabase
+        .from('staff_time_off')
+        .select('*')
+        .eq('membership_id', id)
+        .eq('tenant_id', context.tenantId)
+        .gte('ends_at', recentCutoff.toISOString())
+        .order('starts_at'),
     ]);
 
   if (
     membershipResult.error ||
     profileResult.error ||
-    availabilityResult.error
+    availabilityResult.error ||
+    timeOffResult.error
   ) {
     throw new Error('Unable to load staff details.');
   }
@@ -69,6 +79,15 @@ export default async function StaffDetailsPage({
           <p>The retained staff record is read-only.</p>
         </div>
       )}
+
+      {membershipResult.data.role === 'technician' ? (
+        <TimeOffPanel
+          canAdd={membershipResult.data.status === 'active'}
+          membershipId={membershipResult.data.id}
+          timeOff={timeOffResult.data ?? []}
+          timeZone={context.timeZone}
+        />
+      ) : null}
     </div>
   );
 }
