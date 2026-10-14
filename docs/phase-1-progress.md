@@ -44,7 +44,8 @@ gates below still prevent calling the full PRD or Phase 1 complete.
 - Transactional email delivery for invitation links; links are currently copied by the owner and sent privately until an email provider is configured.
 - External centralized log/alert delivery and a distributed edge/Redis limiter are required before horizontally scaling or publicly exposing the API; the current API limiter is intentionally process-local.
 - Installed-build password-recovery and Office/Technician device smoke tests. Owner sign-in and active-membership authorization passed on a physical device on 2026-10-13.
-- Customer detail jobs, invoices, and lifetime-paid totals remain dependent on Phase 2 and Phase 3 data models.
+- Customer detail jobs are now delivered by the first Phase 2 slice; invoices
+  and lifetime-paid totals remain dependent on the Phase 3 data model.
 
 ## Current verification
 

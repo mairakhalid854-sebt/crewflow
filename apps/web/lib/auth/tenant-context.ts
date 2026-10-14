@@ -10,6 +10,7 @@ export interface WebTenantContext {
   readonly role: MembershipRole;
   readonly tenantId: string;
   readonly tenantName: string;
+  readonly timeZone: string;
   readonly userId: string;
   readonly userName: string;
 }
@@ -24,7 +25,7 @@ export async function requireTenantContext(
 
   const { data, error } = await supabase
     .from('memberships')
-    .select('role, tenant_id, tenants!inner(display_name)')
+    .select('role, tenant_id, tenants!inner(display_name, time_zone)')
     .eq('user_id', claims.sub)
     .eq('status', 'active')
     .maybeSingle();
@@ -47,6 +48,7 @@ export async function requireTenantContext(
     role: data.role,
     tenantId: data.tenant_id,
     tenantName: data.tenants.display_name,
+    timeZone: data.tenants.time_zone,
     userId: claims.sub,
     userName: metadataName ?? fallbackName,
   };
