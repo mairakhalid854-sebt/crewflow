@@ -27,6 +27,9 @@ board, and database-enforced dispatch rules.
   job-detail links, and an explicit needs-dispatch queue.
 - Service-level required skills matched case-insensitively against technician
   skills before assignment.
+- Configured technician service-area ZIP validation during assignment,
+  including five-digit coverage of ZIP+4 customer addresses and actionable
+  errors when customer address data is incomplete.
 - Weekly availability validation in the company's IANA time zone and
   same-business-day schedule enforcement.
 - Audited technician time-off creation/cancellation with overlap protection and
@@ -45,8 +48,8 @@ board, and database-enforced dispatch rules.
 
 - Optional direct drag/drop rescheduling enhancement; board cards currently
   open the validated job editor for time-slot assignment.
-- Service-area validation during assignment. Mapping and travel estimates
-  remain provider-dependent and degrade gracefully while no vendor is chosen.
+- Mapping and travel estimates remain provider-dependent and degrade
+  gracefully while no eligible vendor is chosen.
 - Installed-build technician job-list smoke test on Android and iOS hardware or
   simulators.
 - Run the pgTAP suite on Docker/Podman-enabled CI or a development workstation.
@@ -62,9 +65,9 @@ board, and database-enforced dispatch rules.
 - FR-021: Delivered for the proposed lifecycle.
 - FR-022: Delivered — daily/weekly per-technician board, searchable dispatch
   queue, time-slot assignment, and conflict-safe writes are live.
-- FR-023: Partial — active technician, service skills, weekly availability,
-  time-off, and overlap checks are live; optional service-area/travel checks
-  await a configured eligible mapping vendor.
+- FR-023: Partial — active technician, service skills, configured ZIP service
+  areas, weekly availability, time-off, and overlap checks are live; optional
+  travel estimates await a configured eligible mapping vendor.
 - FR-024: Delivered for material job changes in this slice.
 - FR-050: Partial - mobile technician sign-in, active membership enforcement,
   assigned-job list and read-only job details are delivered; status actions,

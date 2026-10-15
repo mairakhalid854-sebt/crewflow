@@ -107,6 +107,10 @@ function databaseFailure(code?: string, detail?: string): JobFormState {
   } else if (normalizedDetail.includes('required service skills')) {
     message =
       'Technician is missing one or more skills required by this service.';
+  } else if (normalizedDetail.includes('service area')) {
+    message = normalizedDetail.includes('customer postal code is required')
+      ? 'Add a customer ZIP code before assigning this technician.'
+      : "This technician's service area does not cover the customer ZIP code.";
   } else if (normalizedDetail.includes('same local day')) {
     message = 'A scheduled job must start and end on the same business day.';
   } else if (code === '23503' || code === '23514' || code === '22023') {
