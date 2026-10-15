@@ -170,6 +170,32 @@
   font-size: 13px;
   line-height: 1.5;
 }
+
+.public-report-content {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.public-report-section {
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.public-report-section h2 {
+  margin: 0 0 8px;
+  color: #11223c;
+  font-size: 16px;
+}
+
+.public-report-section p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
 .public-quote-unavailable {
   text-align: center;
 }

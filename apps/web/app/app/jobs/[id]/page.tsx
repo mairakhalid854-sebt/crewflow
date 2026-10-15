@@ -11,6 +11,7 @@ import { JobForm } from '../job-form';
 import { jobStatusLabels } from '../job-status';
 import { JobStatusForm } from '../job-status-form';
 import { QuotePanel } from '../quote-panel';
+import { WorkReportPanel } from '../report-panel';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,6 +50,7 @@ export default async function JobDetailPage({
     activityResult,
     quoteResult,
     invoiceResult,
+    reportResult,
   ] = await Promise.all([
     supabase
       .from('customers')
@@ -96,6 +98,16 @@ export default async function JobDetailPage({
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle(),
+    context.role === 'technician'
+      ? Promise.resolve({ data: null, error: null })
+      : supabase
+          .from('work_reports')
+          .select('*')
+          .eq('tenant_id', context.tenantId)
+          .eq('job_id', id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
   ]);
 
   if (
@@ -105,7 +117,8 @@ export default async function JobDetailPage({
     profilesResult.error ||
     activityResult.error ||
     quoteResult.error ||
-    invoiceResult.error
+    invoiceResult.error ||
+    reportResult.error
   ) {
     throw new Error('Job details could not be loaded.');
   }
@@ -259,6 +272,11 @@ export default async function JobDetailPage({
             jobId={job.id}
             lines={quoteLines ?? []}
             quote={latestQuote}
+          />
+          <WorkReportPanel
+            jobId={job.id}
+            jobStatus={job.status}
+            report={reportResult.data ?? undefined}
           />
           <InvoicePanel
             invoice={latestInvoice}

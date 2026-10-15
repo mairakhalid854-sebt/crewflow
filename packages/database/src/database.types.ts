@@ -247,9 +247,18 @@ export type Database = {
         ];
       };
       invoice_number_counters: {
-        Row: { next_number: number; tenant_id: string };
-        Insert: { next_number?: number; tenant_id: string };
-        Update: { next_number?: number; tenant_id?: string };
+        Row: {
+          next_number: number;
+          tenant_id: string;
+        };
+        Insert: {
+          next_number?: number;
+          tenant_id: string;
+        };
+        Update: {
+          next_number?: number;
+          tenant_id?: string;
+        };
         Relationships: [
           {
             foreignKeyName: 'invoice_number_counters_tenant_id_fkey';
@@ -440,6 +449,53 @@ export type Database = {
           },
         ];
       };
+      memberships: {
+        Row: {
+          created_at: string;
+          deactivated_at: string | null;
+          id: string;
+          invited_by_user_id: string | null;
+          joined_at: string | null;
+          role: Database['public']['Enums']['membership_role'];
+          status: Database['public']['Enums']['membership_status'];
+          tenant_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          deactivated_at?: string | null;
+          id?: string;
+          invited_by_user_id?: string | null;
+          joined_at?: string | null;
+          role: Database['public']['Enums']['membership_role'];
+          status?: Database['public']['Enums']['membership_status'];
+          tenant_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          deactivated_at?: string | null;
+          id?: string;
+          invited_by_user_id?: string | null;
+          joined_at?: string | null;
+          role?: Database['public']['Enums']['membership_role'];
+          status?: Database['public']['Enums']['membership_status'];
+          tenant_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'memberships_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       payment_records: {
         Row: {
           amount_cents: number;
@@ -499,6 +555,27 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      profiles: {
+        Row: {
+          created_at: string;
+          full_name: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          full_name?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          full_name?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
       };
       quote_line_items: {
         Row: {
@@ -642,74 +719,6 @@ export type Database = {
           },
         ];
       };
-      memberships: {
-        Row: {
-          created_at: string;
-          deactivated_at: string | null;
-          id: string;
-          invited_by_user_id: string | null;
-          joined_at: string | null;
-          role: Database['public']['Enums']['membership_role'];
-          status: Database['public']['Enums']['membership_status'];
-          tenant_id: string;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          created_at?: string;
-          deactivated_at?: string | null;
-          id?: string;
-          invited_by_user_id?: string | null;
-          joined_at?: string | null;
-          role: Database['public']['Enums']['membership_role'];
-          status?: Database['public']['Enums']['membership_status'];
-          tenant_id: string;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          created_at?: string;
-          deactivated_at?: string | null;
-          id?: string;
-          invited_by_user_id?: string | null;
-          joined_at?: string | null;
-          role?: Database['public']['Enums']['membership_role'];
-          status?: Database['public']['Enums']['membership_status'];
-          tenant_id?: string;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'memberships_tenant_id_fkey';
-            columns: ['tenant_id'];
-            isOneToOne: false;
-            referencedRelation: 'tenants';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      profiles: {
-        Row: {
-          created_at: string;
-          full_name: string;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          created_at?: string;
-          full_name?: string;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          created_at?: string;
-          full_name?: string;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
       services: {
         Row: {
           archived_at: string | null;
@@ -814,6 +823,54 @@ export type Database = {
           },
         ];
       };
+      staff_profiles: {
+        Row: {
+          availability_notes: string | null;
+          created_at: string;
+          full_name: string;
+          membership_id: string;
+          service_area_postal_codes: string[];
+          skills: string[];
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          availability_notes?: string | null;
+          created_at?: string;
+          full_name: string;
+          membership_id: string;
+          service_area_postal_codes?: string[];
+          skills?: string[];
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          availability_notes?: string | null;
+          created_at?: string;
+          full_name?: string;
+          membership_id?: string;
+          service_area_postal_codes?: string[];
+          skills?: string[];
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'staff_profiles_membership_id_fkey';
+            columns: ['membership_id'];
+            isOneToOne: true;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'staff_profiles_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       staff_time_off: {
         Row: {
           cancelled_at: string | null;
@@ -861,54 +918,6 @@ export type Database = {
           },
           {
             foreignKeyName: 'staff_time_off_tenant_id_fkey';
-            columns: ['tenant_id'];
-            isOneToOne: false;
-            referencedRelation: 'tenants';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      staff_profiles: {
-        Row: {
-          availability_notes: string | null;
-          created_at: string;
-          full_name: string;
-          membership_id: string;
-          service_area_postal_codes: string[];
-          skills: string[];
-          tenant_id: string;
-          updated_at: string;
-        };
-        Insert: {
-          availability_notes?: string | null;
-          created_at?: string;
-          full_name: string;
-          membership_id: string;
-          service_area_postal_codes?: string[];
-          skills?: string[];
-          tenant_id: string;
-          updated_at?: string;
-        };
-        Update: {
-          availability_notes?: string | null;
-          created_at?: string;
-          full_name?: string;
-          membership_id?: string;
-          service_area_postal_codes?: string[];
-          skills?: string[];
-          tenant_id?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'staff_profiles_membership_id_fkey';
-            columns: ['membership_id'];
-            isOneToOne: true;
-            referencedRelation: 'memberships';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'staff_profiles_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
@@ -1067,6 +1076,85 @@ export type Database = {
         };
         Relationships: [];
       };
+      work_reports: {
+        Row: {
+          approved_at: string | null;
+          approved_by_user_id: string | null;
+          created_at: string;
+          created_by_user_id: string | null;
+          customer_id: string;
+          id: string;
+          job_id: string;
+          parts_used: string | null;
+          public_token_hash: string | null;
+          recommendations: string | null;
+          sent_at: string | null;
+          status: Database['public']['Enums']['work_report_status'];
+          summary: string;
+          tenant_id: string;
+          updated_at: string;
+          work_performed: string;
+        };
+        Insert: {
+          approved_at?: string | null;
+          approved_by_user_id?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          customer_id: string;
+          id?: string;
+          job_id: string;
+          parts_used?: string | null;
+          public_token_hash?: string | null;
+          recommendations?: string | null;
+          sent_at?: string | null;
+          status?: Database['public']['Enums']['work_report_status'];
+          summary: string;
+          tenant_id: string;
+          updated_at?: string;
+          work_performed: string;
+        };
+        Update: {
+          approved_at?: string | null;
+          approved_by_user_id?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          customer_id?: string;
+          id?: string;
+          job_id?: string;
+          parts_used?: string | null;
+          public_token_hash?: string | null;
+          recommendations?: string | null;
+          sent_at?: string | null;
+          status?: Database['public']['Enums']['work_report_status'];
+          summary?: string;
+          tenant_id?: string;
+          updated_at?: string;
+          work_performed?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'work_reports_customer_tenant_fk';
+            columns: ['customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'work_reports_job_tenant_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'work_reports_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1104,10 +1192,6 @@ export type Database = {
         };
         Returns: string;
       };
-      decide_public_quote: {
-        Args: { quote_decision: string; quote_token: string };
-        Returns: string;
-      };
       current_user_has_tenant_role: {
         Args: {
           allowed_roles: Database['public']['Enums']['membership_role'][];
@@ -1119,14 +1203,13 @@ export type Database = {
         Args: { target_membership_id: string };
         Returns: undefined;
       };
-      get_public_quote: {
-        Args: { quote_token: string };
-        Returns: Json;
+      decide_public_quote: {
+        Args: { quote_decision: string; quote_token: string };
+        Returns: string;
       };
-      get_public_invoice: {
-        Args: { invoice_token: string };
-        Returns: Json;
-      };
+      get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
+      get_public_quote: { Args: { quote_token: string }; Returns: Json };
+      get_public_work_report: { Args: { report_token: string }; Returns: Json };
       is_allowed_external_payment_url: {
         Args: { candidate: string };
         Returns: boolean;
@@ -1135,8 +1218,9 @@ export type Database = {
         Args: { target_invoice_id: string };
         Returns: string;
       };
-      publish_job_quote: {
-        Args: { target_quote_id: string };
+      publish_job_quote: { Args: { target_quote_id: string }; Returns: string };
+      publish_job_work_report: {
+        Args: { target_report_id: string };
         Returns: string;
       };
       record_invoice_adjustment: {
@@ -1162,6 +1246,16 @@ export type Database = {
         Args: { target_invitation_id: string };
         Returns: undefined;
       };
+      save_job_invoice: {
+        Args: {
+          invoice_discount_cents: number;
+          invoice_due_at: string;
+          invoice_items: Json;
+          invoice_payment_url: string;
+          target_job_id: string;
+        };
+        Returns: string;
+      };
       save_job_quote: {
         Args: {
           quote_discount_cents: number;
@@ -1171,12 +1265,12 @@ export type Database = {
         };
         Returns: string;
       };
-      save_job_invoice: {
+      save_job_work_report: {
         Args: {
-          invoice_discount_cents: number;
-          invoice_due_at: string;
-          invoice_items: Json;
-          invoice_payment_url: string;
+          report_parts_used: string;
+          report_recommendations: string;
+          report_summary: string;
+          report_work_performed: string;
           target_job_id: string;
         };
         Returns: string;
@@ -1244,6 +1338,7 @@ export type Database = {
       quote_status:
         'draft' | 'sent' | 'accepted' | 'declined' | 'expired' | 'void';
       tax_behavior: 'exclusive' | 'inclusive' | 'non_taxable';
+      work_report_status: 'draft' | 'sent' | 'void';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1400,6 +1495,7 @@ export const Constants = {
         'void',
       ],
       tax_behavior: ['exclusive', 'inclusive', 'non_taxable'],
+      work_report_status: ['draft', 'sent', 'void'],
     },
   },
 } as const;
