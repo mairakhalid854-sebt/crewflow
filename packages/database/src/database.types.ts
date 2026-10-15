@@ -275,6 +275,148 @@ export type Database = {
           },
         ];
       };
+      quote_line_items: {
+        Row: {
+          created_at: string;
+          description: string;
+          id: string;
+          line_total_cents: number;
+          position: number;
+          quantity: number;
+          quote_id: string;
+          taxable: boolean;
+          tenant_id: string;
+          unit_price_cents: number;
+        };
+        Insert: {
+          created_at?: string;
+          description: string;
+          id?: string;
+          line_total_cents: number;
+          position: number;
+          quantity: number;
+          quote_id: string;
+          taxable?: boolean;
+          tenant_id: string;
+          unit_price_cents: number;
+        };
+        Update: {
+          created_at?: string;
+          description?: string;
+          id?: string;
+          line_total_cents?: number;
+          position?: number;
+          quantity?: number;
+          quote_id?: string;
+          taxable?: boolean;
+          tenant_id?: string;
+          unit_price_cents?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'quote_line_items_quote_tenant_fk';
+            columns: ['quote_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'quotes';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'quote_line_items_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      quotes: {
+        Row: {
+          accepted_at: string | null;
+          created_at: string;
+          created_by_user_id: string | null;
+          currency_code: string;
+          customer_id: string;
+          decision_token_hash: string | null;
+          declined_at: string | null;
+          discount_cents: number;
+          expires_at: string;
+          id: string;
+          job_id: string;
+          sent_at: string | null;
+          status: Database['public']['Enums']['quote_status'];
+          subtotal_cents: number;
+          tax_cents: number;
+          tax_rate_bps: number;
+          tenant_id: string;
+          total_cents: number;
+          updated_at: string;
+        };
+        Insert: {
+          accepted_at?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          currency_code?: string;
+          customer_id: string;
+          decision_token_hash?: string | null;
+          declined_at?: string | null;
+          discount_cents?: number;
+          expires_at: string;
+          id?: string;
+          job_id: string;
+          sent_at?: string | null;
+          status?: Database['public']['Enums']['quote_status'];
+          subtotal_cents: number;
+          tax_cents: number;
+          tax_rate_bps: number;
+          tenant_id: string;
+          total_cents: number;
+          updated_at?: string;
+        };
+        Update: {
+          accepted_at?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          currency_code?: string;
+          customer_id?: string;
+          decision_token_hash?: string | null;
+          declined_at?: string | null;
+          discount_cents?: number;
+          expires_at?: string;
+          id?: string;
+          job_id?: string;
+          sent_at?: string | null;
+          status?: Database['public']['Enums']['quote_status'];
+          subtotal_cents?: number;
+          tax_cents?: number;
+          tax_rate_bps?: number;
+          tenant_id?: string;
+          total_cents?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'quotes_customer_tenant_fk';
+            columns: ['customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'quotes_job_tenant_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'quotes_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       memberships: {
         Row: {
           created_at: string;
@@ -737,6 +879,10 @@ export type Database = {
         };
         Returns: string;
       };
+      decide_public_quote: {
+        Args: { quote_decision: string; quote_token: string };
+        Returns: string;
+      };
       current_user_has_tenant_role: {
         Args: {
           allowed_roles: Database['public']['Enums']['membership_role'][];
@@ -748,9 +894,26 @@ export type Database = {
         Args: { target_membership_id: string };
         Returns: undefined;
       };
+      get_public_quote: {
+        Args: { quote_token: string };
+        Returns: Json;
+      };
+      publish_job_quote: {
+        Args: { target_quote_id: string };
+        Returns: string;
+      };
       revoke_team_invitation: {
         Args: { target_invitation_id: string };
         Returns: undefined;
+      };
+      save_job_quote: {
+        Args: {
+          quote_discount_cents: number;
+          quote_expires_at: string;
+          quote_items: Json;
+          target_job_id: string;
+        };
+        Returns: string;
       };
       update_company_settings: {
         Args: {
@@ -804,6 +967,8 @@ export type Database = {
         | 'cancelled';
       membership_role: 'owner' | 'office' | 'technician';
       membership_status: 'invited' | 'active' | 'deactivated';
+      quote_status:
+        'draft' | 'sent' | 'accepted' | 'declined' | 'expired' | 'void';
       tax_behavior: 'exclusive' | 'inclusive' | 'non_taxable';
     };
     CompositeTypes: {
@@ -948,6 +1113,14 @@ export const Constants = {
       ],
       membership_role: ['owner', 'office', 'technician'],
       membership_status: ['invited', 'active', 'deactivated'],
+      quote_status: [
+        'draft',
+        'sent',
+        'accepted',
+        'declined',
+        'expired',
+        'void',
+      ],
       tax_behavior: ['exclusive', 'inclusive', 'non_taxable'],
     },
   },

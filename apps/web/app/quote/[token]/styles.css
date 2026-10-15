@@ -1,0 +1,189 @@
+.public-quote-shell {
+  min-height: 100vh;
+  padding: 40px 20px;
+  background: #f6f8fc;
+  color: #11223c;
+}
+
+.public-quote-card {
+  width: min(720px, 100%);
+  margin: 0 auto;
+  padding: 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 22px 55px rgb(17 34 60 / 10%);
+}
+
+.public-quote-header,
+.public-quote-line,
+.public-quote-totals div,
+.public-quote-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.public-quote-header {
+  padding-bottom: 22px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.public-quote-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #11223c;
+  font-weight: 800;
+}
+
+.public-quote-brand span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 9px;
+  background: #1769f4;
+  color: white;
+}
+
+.public-quote-intro {
+  padding: 30px 0 20px;
+}
+.public-quote-intro h1 {
+  margin: 7px 0;
+  font-size: clamp(28px, 5vw, 42px);
+}
+.public-quote-intro p {
+  margin: 0;
+  color: #64748b;
+}
+.public-quote-kicker {
+  color: #1769f4 !important;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.public-quote-lines {
+  border-top: 1px solid #e2e8f0;
+}
+.public-quote-line {
+  padding: 18px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.public-quote-line div {
+  display: grid;
+  gap: 4px;
+}
+.public-quote-line span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.public-quote-totals {
+  width: min(360px, 100%);
+  margin: 24px 0 24px auto;
+}
+.public-quote-totals div {
+  padding: 7px 0;
+}
+.public-quote-totals dt {
+  color: #64748b;
+}
+.public-quote-totals dd {
+  margin: 0;
+  font-weight: 700;
+}
+.public-quote-total {
+  margin-top: 8px;
+  padding-top: 14px !important;
+  border-top: 2px solid #11223c;
+  font-size: 20px;
+}
+
+.public-quote-actions form {
+  flex: 1;
+}
+.public-quote-actions button {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.public-quote-accept {
+  border: 1px solid #1769f4;
+  background: #1769f4;
+  color: #fff;
+}
+.public-quote-decline {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+}
+
+.public-quote-success,
+.public-quote-error,
+.public-quote-status {
+  margin: 20px 0;
+  padding: 14px;
+  border-radius: 12px;
+}
+.public-quote-success {
+  background: #ecfdf3;
+  color: #067647;
+}
+.public-quote-error {
+  background: #fff1f0;
+  color: #b42318;
+}
+.public-quote-status {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.public-quote-security {
+  margin: 22px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+}
+.public-quote-unavailable {
+  text-align: center;
+}
+.public-quote-unavailable .public-quote-brand {
+  justify-content: center;
+}
+.public-quote-unavailable h1 {
+  margin: 22px 0 12px;
+}
+.public-quote-unavailable a {
+  display: inline-block;
+  margin-top: 18px;
+  color: #1769f4;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .public-quote-shell {
+    padding: 16px;
+  }
+  .public-quote-card {
+    padding: 24px 20px;
+    border-radius: 18px;
+  }
+  .public-quote-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .public-quote-actions {
+    flex-direction: column;
+  }
+  .public-quote-actions form {
+    width: 100%;
+  }
+}

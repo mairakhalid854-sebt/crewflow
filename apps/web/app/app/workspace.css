@@ -1451,3 +1451,169 @@
     flex-wrap: wrap;
   }
 }
+
+.quote-panel {
+  margin-top: 24px;
+}
+
+.quote-summary-row,
+.quote-editor-heading,
+.secure-link-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.quote-summary-row {
+  flex-wrap: wrap;
+  padding: 14px 0;
+  color: #64748b;
+}
+
+.quote-summary-row strong {
+  color: #17231e;
+  font-size: 20px;
+}
+
+.quote-total-preview {
+  width: min(420px, 100%);
+  margin: 22px 0 22px auto;
+}
+
+.quote-total-preview > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 7px 0;
+}
+
+.quote-total-preview dt {
+  color: #64748b;
+}
+
+.quote-total-preview dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.quote-total-row {
+  margin-top: 7px;
+  padding-top: 13px !important;
+  border-top: 2px solid #17231e;
+  font-size: 18px;
+}
+
+.quote-publish-form {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.secure-link-result {
+  align-items: end;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+}
+
+.secure-link-result label {
+  display: grid;
+  flex: 1;
+  gap: 7px;
+  color: #17231e;
+  font-weight: 700;
+}
+
+.secure-link-result input {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #d0ddd5;
+  border-radius: 8px;
+  background: white;
+}
+
+.quote-editor-heading h2,
+.quote-editor-heading p {
+  margin: 0;
+}
+
+.quote-editor-heading p {
+  margin-top: 5px;
+  color: #64748b;
+}
+
+.quote-lines {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.quote-line {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) 90px minmax(130px, 1fr) auto auto;
+  align-items: end;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d0ddd5;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.quote-line label:not(.checkbox-field) {
+  display: grid;
+  gap: 6px;
+}
+
+.quote-line label > span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.quote-taxable {
+  min-height: 44px;
+  margin: 0;
+}
+
+.quote-remove-line {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quote-settings {
+  margin-top: 22px;
+}
+
+@media (max-width: 900px) {
+  .quote-line {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .quote-line-description {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .quote-editor-heading,
+  .secure-link-result {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .quote-line {
+    grid-template-columns: 1fr;
+  }
+
+  .quote-line-description {
+    grid-column: auto;
+  }
+}
