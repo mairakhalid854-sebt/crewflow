@@ -9,6 +9,7 @@ function membership(
   overrides: Partial<MobileMembership> = {},
 ): MobileMembership {
   return {
+    id: 'membership-1',
     role: 'technician',
     status: 'active',
     tenant_id: 'tenant-1',

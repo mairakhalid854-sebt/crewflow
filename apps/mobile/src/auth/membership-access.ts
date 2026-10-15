@@ -4,7 +4,7 @@ type MembershipRow = Database['public']['Tables']['memberships']['Row'];
 
 export type MobileMembership = Pick<
   MembershipRow,
-  'role' | 'status' | 'tenant_id' | 'user_id'
+  'id' | 'role' | 'status' | 'tenant_id' | 'user_id'
 >;
 
 export type MembershipAccess =
