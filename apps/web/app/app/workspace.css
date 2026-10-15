@@ -1562,6 +1562,49 @@
   color: #991b1b;
 }
 
+.status-report-sent {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.status-report-void {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.report-preview {
+  display: grid;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #d0ddd5;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.report-preview h3,
+.report-preview p {
+  margin: 0;
+}
+
+.report-preview h3:not(:first-child) {
+  margin-top: 10px;
+}
+
+.report-preview p {
+  color: #475569;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.report-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .secure-link-result {
   align-items: end;
   margin-top: 18px;

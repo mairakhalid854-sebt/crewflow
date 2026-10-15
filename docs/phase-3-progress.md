@@ -1,5 +1,7 @@
 # Phase 3 progress
 
+Updated: 2026-10-15
+
 ## Delivered to staging
 
 ### Quotes
@@ -24,9 +26,18 @@
 - The dashboard now shows unpaid invoice count and current-month recorded receipts. Customer records show invoices and lifetime recorded paid value.
 - Invoice, payment, adjustment, send, and void operations are tenant-authorized and audited.
 
+### Customer work reports
+
+- Completed or closed jobs can produce editable customer-facing work-report drafts.
+- Reports capture a verified summary, work performed, optional parts used, and recommendations.
+- Drafts remain private until an owner or office user explicitly reviews and approves them.
+- Approval locks the snapshot, creates a one-time-visible secure customer URL, and stores only its SHA-256 token hash.
+- Publishing a revision invalidates the previous customer link while retaining the historical report and audit trail.
+- Public report reads expose only the approved customer-safe projection through a token-scoped database function.
+- Report save and approval/send operations are tenant-authorized and audited.
+
 ## Remaining Phase 3 work
 
-- Customer-facing work reports
 - Transactional email delivery for quotes and invoices
 - Downloadable invoice receipts/PDFs
 - Follow-up reminders, reconciliation jobs, and broader end-to-end billing tests
