@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 
 import type { Tables } from '@crewflow/database';
 
@@ -48,6 +48,10 @@ export function JobForm({
 }: Readonly<JobFormProps>) {
   const action = job ? updateJobAction : createJobAction;
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [scheduledStart, setScheduledStart] = useState(
+    scheduledStartLocal ?? '',
+  );
+  const [scheduledEnd, setScheduledEnd] = useState(scheduledEndLocal ?? '');
 
   return (
     <form action={formAction} className="resource-form">
@@ -135,9 +139,11 @@ export function JobForm({
         <label>
           <span>Scheduled start</span>
           <input
-            defaultValue={scheduledStartLocal}
             name="scheduledStartLocal"
+            onChange={(event) => setScheduledStart(event.target.value)}
+            step={60}
             type="datetime-local"
+            value={scheduledStart}
           />
         </label>
 
@@ -145,9 +151,11 @@ export function JobForm({
           <span>Scheduled end</span>
           <input
             aria-describedby="job-end-error"
-            defaultValue={scheduledEndLocal}
             name="scheduledEndLocal"
+            onChange={(event) => setScheduledEnd(event.target.value)}
+            step={60}
             type="datetime-local"
+            value={scheduledEnd}
           />
           <FieldError
             errors={state.fieldErrors?.scheduledEndLocal}

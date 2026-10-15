@@ -224,7 +224,7 @@ export async function updateJobAction(
   revalidatePath('/app');
   revalidatePath('/app/jobs');
   revalidatePath(`/app/jobs/${jobId.data}`);
-  return { message: 'Job updated.', status: 'success' };
+  redirect(`/app/jobs/${jobId.data}`);
 }
 
 export async function updateJobStatusAction(
