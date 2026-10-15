@@ -192,6 +192,171 @@ export type Database = {
           },
         ];
       };
+      invoice_line_items: {
+        Row: {
+          created_at: string;
+          description: string;
+          id: string;
+          invoice_id: string;
+          line_total_cents: number;
+          position: number;
+          quantity: number;
+          taxable: boolean;
+          tenant_id: string;
+          unit_price_cents: number;
+        };
+        Insert: {
+          created_at?: string;
+          description: string;
+          id?: string;
+          invoice_id: string;
+          line_total_cents: number;
+          position: number;
+          quantity: number;
+          taxable?: boolean;
+          tenant_id: string;
+          unit_price_cents: number;
+        };
+        Update: {
+          created_at?: string;
+          description?: string;
+          id?: string;
+          invoice_id?: string;
+          line_total_cents?: number;
+          position?: number;
+          quantity?: number;
+          taxable?: boolean;
+          tenant_id?: string;
+          unit_price_cents?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'invoice_line_items_invoice_tenant_fk';
+            columns: ['invoice_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoices';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'invoice_line_items_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      invoice_number_counters: {
+        Row: { next_number: number; tenant_id: string };
+        Insert: { next_number?: number; tenant_id: string };
+        Update: { next_number?: number; tenant_id?: string };
+        Relationships: [
+          {
+            foreignKeyName: 'invoice_number_counters_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      invoices: {
+        Row: {
+          created_at: string;
+          created_by_user_id: string | null;
+          currency_code: string;
+          customer_id: string;
+          discount_cents: number;
+          due_at: string;
+          id: string;
+          invoice_number: number;
+          job_id: string;
+          paid_cents: number;
+          payment_url: string | null;
+          public_token_hash: string | null;
+          sent_at: string | null;
+          status: Database['public']['Enums']['invoice_status'];
+          subtotal_cents: number;
+          tax_cents: number;
+          tax_rate_bps: number;
+          tenant_id: string;
+          total_cents: number;
+          updated_at: string;
+          void_reason: string | null;
+          voided_at: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          currency_code?: string;
+          customer_id: string;
+          discount_cents?: number;
+          due_at: string;
+          id?: string;
+          invoice_number: number;
+          job_id: string;
+          paid_cents?: number;
+          payment_url?: string | null;
+          public_token_hash?: string | null;
+          sent_at?: string | null;
+          status?: Database['public']['Enums']['invoice_status'];
+          subtotal_cents: number;
+          tax_cents: number;
+          tax_rate_bps: number;
+          tenant_id: string;
+          total_cents: number;
+          updated_at?: string;
+          void_reason?: string | null;
+          voided_at?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          currency_code?: string;
+          customer_id?: string;
+          discount_cents?: number;
+          due_at?: string;
+          id?: string;
+          invoice_number?: number;
+          job_id?: string;
+          paid_cents?: number;
+          payment_url?: string | null;
+          public_token_hash?: string | null;
+          sent_at?: string | null;
+          status?: Database['public']['Enums']['invoice_status'];
+          subtotal_cents?: number;
+          tax_cents?: number;
+          tax_rate_bps?: number;
+          tenant_id?: string;
+          total_cents?: number;
+          updated_at?: string;
+          void_reason?: string | null;
+          voided_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'invoices_customer_tenant_fk';
+            columns: ['customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'invoices_job_tenant_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'invoices_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       jobs: {
         Row: {
           archived_at: string | null;
@@ -268,6 +433,66 @@ export type Database = {
           },
           {
             foreignKeyName: 'jobs_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      payment_records: {
+        Row: {
+          amount_cents: number;
+          created_at: string;
+          id: string;
+          invoice_id: string;
+          method: Database['public']['Enums']['payment_method'];
+          note: string | null;
+          received_at: string;
+          record_type: Database['public']['Enums']['payment_record_type'];
+          recorded_by_user_id: string | null;
+          reference: string | null;
+          source: Database['public']['Enums']['payment_source'];
+          tenant_id: string;
+        };
+        Insert: {
+          amount_cents: number;
+          created_at?: string;
+          id?: string;
+          invoice_id: string;
+          method: Database['public']['Enums']['payment_method'];
+          note?: string | null;
+          received_at: string;
+          record_type: Database['public']['Enums']['payment_record_type'];
+          recorded_by_user_id?: string | null;
+          reference?: string | null;
+          source?: Database['public']['Enums']['payment_source'];
+          tenant_id: string;
+        };
+        Update: {
+          amount_cents?: number;
+          created_at?: string;
+          id?: string;
+          invoice_id?: string;
+          method?: Database['public']['Enums']['payment_method'];
+          note?: string | null;
+          received_at?: string;
+          record_type?: Database['public']['Enums']['payment_record_type'];
+          recorded_by_user_id?: string | null;
+          reference?: string | null;
+          source?: Database['public']['Enums']['payment_source'];
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payment_records_invoice_tenant_fk';
+            columns: ['invoice_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoices';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'payment_records_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
@@ -898,8 +1123,39 @@ export type Database = {
         Args: { quote_token: string };
         Returns: Json;
       };
+      get_public_invoice: {
+        Args: { invoice_token: string };
+        Returns: Json;
+      };
+      is_allowed_external_payment_url: {
+        Args: { candidate: string };
+        Returns: boolean;
+      };
+      publish_job_invoice: {
+        Args: { target_invoice_id: string };
+        Returns: string;
+      };
       publish_job_quote: {
         Args: { target_quote_id: string };
+        Returns: string;
+      };
+      record_invoice_adjustment: {
+        Args: {
+          adjustment_amount_cents: number;
+          adjustment_reason: string;
+          target_invoice_id: string;
+        };
+        Returns: string;
+      };
+      record_manual_invoice_payment: {
+        Args: {
+          payment_amount_cents: number;
+          payment_method: Database['public']['Enums']['payment_method'];
+          payment_note: string;
+          payment_received_at: string;
+          payment_reference: string;
+          target_invoice_id: string;
+        };
         Returns: string;
       };
       revoke_team_invitation: {
@@ -911,6 +1167,16 @@ export type Database = {
           quote_discount_cents: number;
           quote_expires_at: string;
           quote_items: Json;
+          target_job_id: string;
+        };
+        Returns: string;
+      };
+      save_job_invoice: {
+        Args: {
+          invoice_discount_cents: number;
+          invoice_due_at: string;
+          invoice_items: Json;
+          invoice_payment_url: string;
           target_job_id: string;
         };
         Returns: string;
@@ -953,8 +1219,13 @@ export type Database = {
         };
         Returns: undefined;
       };
+      void_invoice: {
+        Args: { reason: string; target_invoice_id: string };
+        Returns: undefined;
+      };
     };
     Enums: {
+      invoice_status: 'draft' | 'sent' | 'partially_paid' | 'paid' | 'void';
       job_priority: 'low' | 'normal' | 'high' | 'urgent';
       job_status:
         | 'new'
@@ -967,6 +1238,9 @@ export type Database = {
         | 'cancelled';
       membership_role: 'owner' | 'office' | 'technician';
       membership_status: 'invited' | 'active' | 'deactivated';
+      payment_method: 'cash' | 'check' | 'external_transfer' | 'other';
+      payment_record_type: 'payment' | 'adjustment';
+      payment_source: 'manual' | 'provider_confirmed';
       quote_status:
         'draft' | 'sent' | 'accepted' | 'declined' | 'expired' | 'void';
       tax_behavior: 'exclusive' | 'inclusive' | 'non_taxable';
@@ -1100,6 +1374,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      invoice_status: ['draft', 'sent', 'partially_paid', 'paid', 'void'],
       job_priority: ['low', 'normal', 'high', 'urgent'],
       job_status: [
         'new',
@@ -1113,6 +1388,9 @@ export const Constants = {
       ],
       membership_role: ['owner', 'office', 'technician'],
       membership_status: ['invited', 'active', 'deactivated'],
+      payment_method: ['cash', 'check', 'external_transfer', 'other'],
+      payment_record_type: ['payment', 'adjustment'],
+      payment_source: ['manual', 'provider_confirmed'],
       quote_status: [
         'draft',
         'sent',

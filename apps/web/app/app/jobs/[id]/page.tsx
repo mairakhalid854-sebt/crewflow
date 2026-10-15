@@ -6,6 +6,7 @@ import { isoToLocalDateTime } from '../../../../lib/date-time';
 import { createClient } from '../../../../lib/supabase/server';
 import { archiveJobAction } from '../actions';
 import { ArchiveJobButton } from '../archive-job-button';
+import { InvoicePanel } from '../invoice-panel';
 import { JobForm } from '../job-form';
 import { jobStatusLabels } from '../job-status';
 import { JobStatusForm } from '../job-status-form';
@@ -47,6 +48,7 @@ export default async function JobDetailPage({
     profilesResult,
     activityResult,
     quoteResult,
+    invoiceResult,
   ] = await Promise.all([
     supabase
       .from('customers')
@@ -84,6 +86,16 @@ export default async function JobDetailPage({
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    context.role === 'technician'
+      ? Promise.resolve({ data: null, error: null })
+      : supabase
+          .from('invoices')
+          .select('*')
+          .eq('tenant_id', context.tenantId)
+          .eq('job_id', id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
   ]);
 
   if (
@@ -92,7 +104,8 @@ export default async function JobDetailPage({
     membersResult.error ||
     profilesResult.error ||
     activityResult.error ||
-    quoteResult.error
+    quoteResult.error ||
+    invoiceResult.error
   ) {
     throw new Error('Job details could not be loaded.');
   }
@@ -136,6 +149,29 @@ export default async function JobDetailPage({
         .order('position')
     : { data: [], error: null };
   if (quoteLinesError) throw new Error('Quote details could not be loaded.');
+  const latestInvoice = invoiceResult.data ?? undefined;
+  const [invoiceLinesResult, paymentsResult] = latestInvoice
+    ? await Promise.all([
+        supabase
+          .from('invoice_line_items')
+          .select('*')
+          .eq('tenant_id', context.tenantId)
+          .eq('invoice_id', latestInvoice.id)
+          .order('position'),
+        supabase
+          .from('payment_records')
+          .select('*')
+          .eq('tenant_id', context.tenantId)
+          .eq('invoice_id', latestInvoice.id)
+          .order('received_at', { ascending: false }),
+      ])
+    : [
+        { data: [], error: null },
+        { data: [], error: null },
+      ];
+  if (invoiceLinesResult.error || paymentsResult.error) {
+    throw new Error('Invoice details could not be loaded.');
+  }
 
   return (
     <div className="workspace-page job-detail-page">
@@ -218,11 +254,26 @@ export default async function JobDetailPage({
       )}
 
       {context.role !== 'technician' ? (
-        <QuotePanel
-          jobId={job.id}
-          lines={quoteLines ?? []}
-          quote={latestQuote}
-        />
+        <>
+          <QuotePanel
+            jobId={job.id}
+            lines={quoteLines ?? []}
+            quote={latestQuote}
+          />
+          <InvoicePanel
+            invoice={latestInvoice}
+            jobId={job.id}
+            jobStatus={job.status}
+            lines={invoiceLinesResult.data ?? []}
+            payments={paymentsResult.data ?? []}
+            receivedAtLocal={isoToLocalDateTime(
+              new Date().toISOString(),
+              context.timeZone,
+            )}
+            role={context.role}
+            timeZone={context.timeZone}
+          />
+        </>
       ) : null}
 
       <section className="team-panel job-activity-panel">
