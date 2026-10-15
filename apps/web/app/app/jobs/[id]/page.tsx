@@ -9,6 +9,7 @@ import { ArchiveJobButton } from '../archive-job-button';
 import { JobForm } from '../job-form';
 import { jobStatusLabels } from '../job-status';
 import { JobStatusForm } from '../job-status-form';
+import { QuotePanel } from '../quote-panel';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +46,7 @@ export default async function JobDetailPage({
     membersResult,
     profilesResult,
     activityResult,
+    quoteResult,
   ] = await Promise.all([
     supabase
       .from('customers')
@@ -74,6 +76,14 @@ export default async function JobDetailPage({
       .eq('entity_id', id)
       .order('occurred_at', { ascending: false })
       .limit(50),
+    supabase
+      .from('quotes')
+      .select('*')
+      .eq('tenant_id', context.tenantId)
+      .eq('job_id', id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (
@@ -81,7 +91,8 @@ export default async function JobDetailPage({
     servicesResult.error ||
     membersResult.error ||
     profilesResult.error ||
-    activityResult.error
+    activityResult.error ||
+    quoteResult.error
   ) {
     throw new Error('Job details could not be loaded.');
   }
@@ -115,6 +126,16 @@ export default async function JobDetailPage({
         (technician) => technician.id === job.assigned_membership_id,
       )?.label ?? 'Technician')
     : 'Unassigned';
+  const latestQuote = quoteResult.data ?? undefined;
+  const { data: quoteLines, error: quoteLinesError } = latestQuote
+    ? await supabase
+        .from('quote_line_items')
+        .select('*')
+        .eq('tenant_id', context.tenantId)
+        .eq('quote_id', latestQuote.id)
+        .order('position')
+    : { data: [], error: null };
+  if (quoteLinesError) throw new Error('Quote details could not be loaded.');
 
   return (
     <div className="workspace-page job-detail-page">
@@ -195,6 +216,14 @@ export default async function JobDetailPage({
           </aside>
         </div>
       )}
+
+      {context.role !== 'technician' ? (
+        <QuotePanel
+          jobId={job.id}
+          lines={quoteLines ?? []}
+          quote={latestQuote}
+        />
+      ) : null}
 
       <section className="team-panel job-activity-panel">
         <div className="team-panel-heading">
