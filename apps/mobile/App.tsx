@@ -24,6 +24,14 @@ import {
   parseRecoveryLink,
   validateNewPassword,
 } from './src/auth/password-recovery';
+import {
+  type AssignedJob,
+  type AssignedJobsSnapshot,
+  formatCustomerAddress,
+  formatJobSchedule,
+  loadAssignedJobs,
+  partitionAssignedJobs,
+} from './src/jobs/assigned-jobs';
 import { getSupabaseClient } from './src/lib/supabase';
 
 type AccessState =
@@ -38,6 +46,15 @@ type RecoveryState =
   | { readonly status: 'ready' }
   | { readonly message: string; readonly status: 'error' }
   | { readonly status: 'success' };
+
+type AssignedJobsState =
+  | { readonly status: 'idle' }
+  | { readonly status: 'loading' }
+  | {
+      readonly snapshot: AssignedJobsSnapshot;
+      readonly status: 'loaded';
+    }
+  | { readonly message: string; readonly status: 'error' };
 
 const roleLabels = {
   office: 'Office staff',
@@ -58,6 +75,10 @@ export default function App() {
   const [configurationError, setConfigurationError] = useState<string>();
   const [email, setEmail] = useState('');
   const [formMessage, setFormMessage] = useState<string>();
+  const [assignedJobsRefreshKey, setAssignedJobsRefreshKey] = useState(0);
+  const [assignedJobsState, setAssignedJobsState] = useState<AssignedJobsState>(
+    { status: 'idle' },
+  );
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
   const [recoveryConfirmation, setRecoveryConfirmation] = useState('');
@@ -163,7 +184,7 @@ export default function App() {
     setAccessState({ status: 'loading' });
     void authClient
       .from('memberships')
-      .select('role, status, tenant_id, user_id')
+      .select('id, role, status, tenant_id, user_id')
       .eq('user_id', session.user.id)
       .limit(2)
       .then(({ data, error }) => {
@@ -186,6 +207,38 @@ export default function App() {
       active = false;
     };
   }, [authClient, session]);
+
+  useEffect(() => {
+    let active = true;
+    const access =
+      accessState.status === 'loaded' && accessState.access.allowed
+        ? accessState.access
+        : undefined;
+
+    if (!authClient || access?.membership.role !== 'technician') {
+      setAssignedJobsState({ status: 'idle' });
+      return () => {
+        active = false;
+      };
+    }
+
+    setAssignedJobsState({ status: 'loading' });
+    void loadAssignedJobs(authClient, access.membership)
+      .then((snapshot) => {
+        if (active) setAssignedJobsState({ snapshot, status: 'loaded' });
+      })
+      .catch(() => {
+        if (!active) return;
+        setAssignedJobsState({
+          message: 'Assigned jobs could not be loaded. Check your connection.',
+          status: 'error',
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessState, assignedJobsRefreshKey, authClient]);
 
   async function signIn() {
     if (!authClient || pending) return;
@@ -317,6 +370,7 @@ export default function App() {
           ) : session ? (
             <AuthenticatedView
               accessState={accessState}
+              assignedJobsState={assignedJobsState}
               email={session.user.email ?? 'Signed-in user'}
               message={
                 recoveryState.status === 'success'
@@ -324,6 +378,9 @@ export default function App() {
                   : undefined
               }
               onSignOut={signOut}
+              onRefreshJobs={() => {
+                setAssignedJobsRefreshKey((key) => key + 1);
+              }}
               pending={pending}
             />
           ) : authMode === 'forgot' ? (
@@ -413,14 +470,18 @@ export default function App() {
 
 function AuthenticatedView({
   accessState,
+  assignedJobsState,
   email,
   message,
+  onRefreshJobs,
   onSignOut,
   pending,
 }: Readonly<{
   accessState: AccessState;
+  assignedJobsState: AssignedJobsState;
   email: string;
   message?: string;
+  onRefreshJobs: () => void;
   onSignOut: () => Promise<void>;
   pending: boolean;
 }>) {
@@ -450,18 +511,52 @@ function AuthenticatedView({
         </Text>
       </View>
     );
-  } else {
+  } else if (accessState.access.membership.role !== 'technician') {
     accessContent = (
       <View style={styles.notice}>
         <Text style={styles.noticeTitle}>
           {roleLabels[accessState.access.membership.role]} access verified
         </Text>
         <Text style={styles.noticeBody}>
-          Your tenant membership is active. Assigned jobs will appear here in
-          the scheduling phase.
+          Your membership is active. Owner and office mobile dashboards arrive
+          in a later phase; use the CrewFlow web app for full operations.
         </Text>
       </View>
     );
+  } else if (assignedJobsState.status === 'loading') {
+    accessContent = (
+      <View style={styles.inlineStatus}>
+        <ActivityIndicator color="#1769F4" />
+        <Text style={styles.noticeBody}>Loading assigned jobs...</Text>
+      </View>
+    );
+  } else if (assignedJobsState.status === 'error') {
+    accessContent = (
+      <View style={styles.notice}>
+        <Text accessibilityRole="alert" style={styles.errorTextCompact}>
+          {assignedJobsState.message}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onRefreshJobs}
+          style={({ pressed }) => [
+            styles.compactButton,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Text style={styles.compactButtonText}>Try again</Text>
+        </Pressable>
+      </View>
+    );
+  } else if (assignedJobsState.status === 'loaded') {
+    accessContent = (
+      <AssignedJobsView
+        onRefresh={onRefreshJobs}
+        snapshot={assignedJobsState.snapshot}
+      />
+    );
+  } else {
+    accessContent = null;
   }
 
   return (
@@ -484,6 +579,204 @@ function AuthenticatedView({
           {pending ? 'Signing out…' : 'Sign out'}
         </Text>
       </Pressable>
+    </View>
+  );
+}
+
+const jobStatusLabels: Record<AssignedJob['status'], string> = {
+  accepted: 'Accepted',
+  cancelled: 'Cancelled',
+  closed: 'Closed',
+  completed: 'Completed',
+  in_progress: 'In progress',
+  new: 'New',
+  quoted: 'Quoted',
+  scheduled: 'Scheduled',
+};
+
+function AssignedJobsView({
+  onRefresh,
+  snapshot,
+}: Readonly<{
+  onRefresh: () => void;
+  snapshot: AssignedJobsSnapshot;
+}>) {
+  const [selectedJobId, setSelectedJobId] = useState<string>();
+  const selectedJob = snapshot.jobs.find((job) => job.id === selectedJobId);
+
+  if (selectedJob) {
+    return (
+      <AssignedJobDetail
+        job={selectedJob}
+        onBack={() => setSelectedJobId(undefined)}
+        timeZone={snapshot.timeZone}
+      />
+    );
+  }
+
+  const { history, upcoming } = partitionAssignedJobs(snapshot.jobs);
+
+  return (
+    <View style={styles.jobsSection}>
+      <View style={styles.jobsHeader}>
+        <View style={styles.flex}>
+          <Text style={styles.jobsEyebrow}>ASSIGNED WORK</Text>
+          <Text style={styles.jobsTitle}>{snapshot.tenantName}</Text>
+        </View>
+        <Pressable
+          accessibilityLabel="Refresh assigned jobs"
+          accessibilityRole="button"
+          onPress={onRefresh}
+          style={({ pressed }) => [
+            styles.compactButton,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Text style={styles.compactButtonText}>Refresh</Text>
+        </Pressable>
+      </View>
+
+      {upcoming.length === 0 ? (
+        <View style={styles.emptyJobs}>
+          <Text style={styles.noticeTitle}>No active assignments</Text>
+          <Text style={styles.noticeBody}>
+            New work will appear after the office assigns it to you.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.jobGroup}>
+          <Text style={styles.jobGroupTitle}>Upcoming and active</Text>
+          {upcoming.map((job) => (
+            <AssignedJobCard
+              job={job}
+              key={job.id}
+              onPress={() => setSelectedJobId(job.id)}
+              timeZone={snapshot.timeZone}
+            />
+          ))}
+        </View>
+      )}
+
+      {history.length > 0 ? (
+        <View style={styles.jobGroup}>
+          <Text style={styles.jobGroupTitle}>Recent history</Text>
+          {history.map((job) => (
+            <AssignedJobCard
+              job={job}
+              key={job.id}
+              onPress={() => setSelectedJobId(job.id)}
+              timeZone={snapshot.timeZone}
+            />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function AssignedJobCard({
+  job,
+  onPress,
+  timeZone,
+}: Readonly<{
+  job: AssignedJob;
+  onPress: () => void;
+  timeZone: string;
+}>) {
+  const customerName = job.customers
+    ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
+    : 'Customer';
+
+  return (
+    <Pressable
+      accessibilityLabel={`${job.title}, ${jobStatusLabels[job.status]}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.jobCard, pressed && styles.buttonPressed]}
+    >
+      <View style={styles.jobCardHeader}>
+        <Text numberOfLines={2} style={styles.jobCardTitle}>
+          {job.title}
+        </Text>
+        <Text style={styles.statusBadge}>{jobStatusLabels[job.status]}</Text>
+      </View>
+      <Text style={styles.jobSchedule}>{formatJobSchedule(job, timeZone)}</Text>
+      <Text style={styles.jobMeta}>
+        {customerName}
+        {job.services?.name ? ` - ${job.services.name}` : ''}
+      </Text>
+    </Pressable>
+  );
+}
+
+function AssignedJobDetail({
+  job,
+  onBack,
+  timeZone,
+}: Readonly<{
+  job: AssignedJob;
+  onBack: () => void;
+  timeZone: string;
+}>) {
+  const address = formatCustomerAddress(job.customers);
+  const customerName = job.customers
+    ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
+    : 'Customer details unavailable';
+
+  return (
+    <View style={styles.jobsSection}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onBack}
+        style={({ pressed }) => [
+          styles.backButton,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.backButtonText}>Back to assigned jobs</Text>
+      </Pressable>
+      <Text style={styles.jobsEyebrow}>{jobStatusLabels[job.status]}</Text>
+      <Text style={styles.detailTitle}>{job.title}</Text>
+      <Text style={styles.detailSchedule}>
+        {formatJobSchedule(job, timeZone)}
+      </Text>
+
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Customer</Text>
+        <Text style={styles.detailValue}>{customerName}</Text>
+        {job.customers?.phone ? (
+          <Text style={styles.detailSecondary}>{job.customers.phone}</Text>
+        ) : null}
+      </View>
+
+      {address ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Service address</Text>
+          <Text style={styles.detailValue}>{address}</Text>
+        </View>
+      ) : null}
+
+      {job.services?.name ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Service</Text>
+          <Text style={styles.detailValue}>{job.services.name}</Text>
+        </View>
+      ) : null}
+
+      {job.description ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Work details</Text>
+          <Text style={styles.detailSecondary}>{job.description}</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.readOnlyNotice}>
+        <Text style={styles.noticeTitle}>Read-only assignment</Text>
+        <Text style={styles.noticeBody}>
+          Status updates, notes, photos, and signatures arrive in the field
+          execution phase.
+        </Text>
+      </View>
     </View>
   );
 }
@@ -671,6 +964,16 @@ function RecoveryView({
 }
 
 const styles = StyleSheet.create({
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 22,
+    paddingVertical: 6,
+  },
+  backButtonText: {
+    color: '#1769F4',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   body: {
     color: '#64748B',
     fontSize: 15,
@@ -712,6 +1015,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  compactButton: {
+    alignItems: 'center',
+    borderColor: '#CBD5E1',
+    borderRadius: 9,
+    borderWidth: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  compactButtonText: {
+    color: '#1769F4',
+    fontSize: 12,
+    fontWeight: '800',
+  },
   container: {
     alignItems: 'center',
     flexGrow: 1,
@@ -724,6 +1041,12 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginTop: 14,
   },
+  errorTextCompact: {
+    color: '#B42318',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
   eyebrow: {
     color: '#1769F4',
     fontSize: 12,
@@ -732,6 +1055,51 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  detailBlock: {
+    borderTopColor: '#E2E8F0',
+    borderTopWidth: 1,
+    marginTop: 18,
+    paddingTop: 16,
+  },
+  detailLabel: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  detailSchedule: {
+    color: '#1769F4',
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 10,
+  },
+  detailSecondary: {
+    color: '#64748B',
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 5,
+  },
+  detailTitle: {
+    color: '#11223C',
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    marginTop: 5,
+  },
+  detailValue: {
+    color: '#11223C',
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 22,
+    marginTop: 5,
+  },
+  emptyJobs: {
+    backgroundColor: '#F6F8FC',
+    borderRadius: 12,
+    marginTop: 18,
+    padding: 16,
   },
   inlineStatus: {
     alignItems: 'center',
@@ -749,6 +1117,67 @@ const styles = StyleSheet.create({
     marginTop: 7,
     paddingHorizontal: 13,
     paddingVertical: 12,
+  },
+  jobCard: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 10,
+    padding: 15,
+  },
+  jobCardHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  jobCardTitle: {
+    color: '#11223C',
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 21,
+  },
+  jobGroup: {
+    marginTop: 22,
+  },
+  jobGroupTitle: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  jobMeta: {
+    color: '#64748B',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 7,
+  },
+  jobsEyebrow: {
+    color: '#1769F4',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  jobsHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 14,
+  },
+  jobsSection: {
+    marginTop: 24,
+  },
+  jobsTitle: {
+    color: '#11223C',
+    fontSize: 19,
+    fontWeight: '800',
+    marginTop: 3,
+  },
+  jobSchedule: {
+    color: '#1769F4',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 10,
   },
   label: {
     color: '#334155',
@@ -790,6 +1219,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  readOnlyNotice: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 22,
+    padding: 15,
+  },
   primaryButton: {
     alignItems: 'center',
     backgroundColor: '#1769F4',
@@ -818,6 +1255,16 @@ const styles = StyleSheet.create({
     color: '#334155',
     fontSize: 14,
     fontWeight: '700',
+  },
+  statusBadge: {
+    backgroundColor: '#E8F0FF',
+    borderRadius: 999,
+    color: '#174EA6',
+    fontSize: 11,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
   },
   successText: {
     color: '#067647',

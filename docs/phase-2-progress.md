@@ -1,6 +1,6 @@
 # Phase 2 progress: jobs and scheduling
 
-Updated: 2026-10-14
+Updated: 2026-10-15
 
 Phase 2 is in development. The web scheduling slice now delivers tenant-safe
 job records, workflow control, assignments, a responsive daily/weekly dispatch
@@ -33,6 +33,11 @@ board, and database-enforced dispatch rules.
   automatic schedule blocking.
 - Actionable assignment errors for overlap, availability, time-off, skill, and
   same-day violations.
+- Mobile technician assigned-job list backed by existing job RLS, with
+  business-time-zone schedules, active/history grouping, refresh and read-only
+  customer, service, address and work-detail views.
+- Mobile owner and office accounts remain safely limited to an access-verified
+  message until their later-phase dashboards are implemented.
 - Static migration contract tests and pgTAP coverage for tenant and technician
   job access.
 
@@ -42,7 +47,8 @@ board, and database-enforced dispatch rules.
   open the validated job editor for time-slot assignment.
 - Service-area validation during assignment. Mapping and travel estimates
   remain provider-dependent and degrade gracefully while no vendor is chosen.
-- Mobile assigned-job list using the new RLS policies.
+- Installed-build technician job-list smoke test on Android and iOS hardware or
+  simulators.
 - Run the pgTAP suite on Docker/Podman-enabled CI or a development workstation.
 - Broader schedule concurrency and state-machine integration tests against a
   disposable PostgreSQL instance.
@@ -60,4 +66,6 @@ board, and database-enforced dispatch rules.
   time-off, and overlap checks are live; optional service-area/travel checks
   await a configured eligible mapping vendor.
 - FR-024: Delivered for material job changes in this slice.
-- FR-050: Web/RLS foundation only; mobile list remains.
+- FR-050: Partial - mobile technician sign-in, active membership enforcement,
+  assigned-job list and read-only job details are delivered; status actions,
+  timeline and task history belong to the field-execution phase.
