@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { requireTenantContext } from '../../lib/auth/tenant-context';
+import { formatUsd } from '../../lib/quotes/public-quote';
 import { createClient } from '../../lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -8,13 +9,27 @@ export const dynamic = 'force-dynamic';
 export default async function AuthenticatedDashboardPage() {
   const context = await requireTenantContext();
   const supabase = await createClient();
-  const { data: jobs, error } = await supabase
-    .from('jobs')
-    .select('id, status, assigned_membership_id, scheduled_start_at')
-    .eq('tenant_id', context.tenantId)
-    .is('archived_at', null)
-    .limit(1000);
-  if (error) throw new Error('Dashboard metrics could not be loaded.');
+  const [jobsResult, invoiceResult, paymentResult] = await Promise.all([
+    supabase
+      .from('jobs')
+      .select('id, status, assigned_membership_id, scheduled_start_at')
+      .eq('tenant_id', context.tenantId)
+      .is('archived_at', null)
+      .limit(1000),
+    supabase
+      .from('invoices')
+      .select('id, status')
+      .eq('tenant_id', context.tenantId)
+      .limit(1000),
+    supabase
+      .from('payment_records')
+      .select('amount_cents, received_at')
+      .eq('tenant_id', context.tenantId)
+      .limit(1000),
+  ]);
+  if (jobsResult.error || invoiceResult.error || paymentResult.error) {
+    throw new Error('Dashboard metrics could not be loaded.');
+  }
 
   const localDate = (value: Date) =>
     new Intl.DateTimeFormat('en-CA', {
@@ -24,7 +39,7 @@ export default async function AuthenticatedDashboardPage() {
       year: 'numeric',
     }).format(value);
   const today = localDate(new Date());
-  const jobRows = jobs ?? [];
+  const jobRows = jobsResult.data ?? [];
   const todayCount = jobRows.filter(
     (job) =>
       job.scheduled_start_at &&
@@ -41,6 +56,16 @@ export default async function AuthenticatedDashboardPage() {
   const openCount = jobRows.filter(
     (job) => !['closed', 'cancelled'].includes(job.status),
   ).length;
+  const unpaidCount = (invoiceResult.data ?? []).filter((invoice) =>
+    ['sent', 'partially_paid'].includes(invoice.status),
+  ).length;
+  const currentMonth = today.slice(0, 7);
+  const monthlyReceived = (paymentResult.data ?? [])
+    .filter(
+      (payment) =>
+        localDate(new Date(payment.received_at)).slice(0, 7) === currentMonth,
+    )
+    .reduce((total, payment) => total + payment.amount_cents, 0);
 
   return (
     <div className="workspace-page">
@@ -68,6 +93,20 @@ export default async function AuthenticatedDashboardPage() {
           <strong>{activeCount}</strong>
           <small>scheduled or in progress</small>
         </Link>
+        {context.role !== 'technician' ? (
+          <Link className="metric-card" href="/app/invoices">
+            <span>Unpaid</span>
+            <strong>{unpaidCount}</strong>
+            <small>sent invoices outstanding</small>
+          </Link>
+        ) : null}
+        {context.role !== 'technician' ? (
+          <Link className="metric-card" href="/app/invoices">
+            <span>Received this month</span>
+            <strong>{formatUsd(monthlyReceived)}</strong>
+            <small>recorded ledger revenue</small>
+          </Link>
+        ) : null}
         <Link className="metric-card" href="/app/jobs">
           <span>Open</span>
           <strong>{openCount}</strong>

@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { z } from 'zod';
 
 import { requireTenantContext } from '../../../../lib/auth/tenant-context';
+import { formatInvoiceNumber } from '../../../../lib/invoices/public-invoice';
+import { formatUsd } from '../../../../lib/quotes/public-quote';
 import { createClient } from '../../../../lib/supabase/server';
 import { archiveCustomerAction } from '../actions';
 import { ArchiveCustomerButton } from '../archive-customer-button';
@@ -21,7 +23,7 @@ export default async function CustomerDetailPage({
   if (!z.uuid().safeParse(id).success) notFound();
 
   const supabase = await createClient();
-  const [customerResult, jobsResult] = await Promise.all([
+  const [customerResult, jobsResult, invoicesResult] = await Promise.all([
     supabase
       .from('customers')
       .select('*')
@@ -37,12 +39,28 @@ export default async function CustomerDetailPage({
       .is('archived_at', null)
       .order('updated_at', { ascending: false })
       .limit(50),
+    supabase
+      .from('invoices')
+      .select(
+        'id, invoice_number, job_id, status, total_cents, paid_cents, due_at',
+      )
+      .eq('customer_id', id)
+      .eq('tenant_id', context.tenantId)
+      .order('created_at', { ascending: false })
+      .limit(50),
   ]);
   const { data: customer, error } = customerResult;
 
   if (error) throw new Error('Customer could not be loaded.');
   if (jobsResult.error) throw new Error('Customer jobs could not be loaded.');
+  if (invoicesResult.error) {
+    throw new Error('Customer invoices could not be loaded.');
+  }
   if (!customer) notFound();
+  const lifetimePaid = (invoicesResult.data ?? []).reduce(
+    (total, invoice) => total + invoice.paid_cents,
+    0,
+  );
 
   return (
     <div className="workspace-page resource-editor-page">
@@ -119,6 +137,64 @@ export default async function CustomerDetailPage({
             <h3>No jobs for this customer</h3>
             <p>Create a job to begin their service history.</p>
           </div>
+        )}
+      </section>
+      <section className="team-panel customer-jobs-panel">
+        <div className="team-panel-heading">
+          <div>
+            <h2>Invoices</h2>
+            <p>
+              {invoicesResult.data?.length ?? 0} records ·{' '}
+              {formatUsd(lifetimePaid)} lifetime recorded paid
+            </p>
+          </div>
+          <Link className="secondary-button" href="/app/invoices">
+            All invoices
+          </Link>
+        </div>
+        {invoicesResult.data?.length ? (
+          <div className="resource-table-wrap">
+            <table className="resource-table">
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Status</th>
+                  <th>Total</th>
+                  <th>Outstanding</th>
+                  <th>
+                    <span className="sr-only">Action</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoicesResult.data.map((invoice) => (
+                  <tr key={invoice.id}>
+                    <td>
+                      <strong>
+                        {formatInvoiceNumber(invoice.invoice_number)}
+                      </strong>
+                    </td>
+                    <td>
+                      <span
+                        className={`status-badge status-invoice-${invoice.status}`}
+                      >
+                        {invoice.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td>{formatUsd(invoice.total_cents)}</td>
+                    <td>
+                      {formatUsd(invoice.total_cents - invoice.paid_cents)}
+                    </td>
+                    <td>
+                      <Link href={`/app/jobs/${invoice.job_id}`}>View</Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="form-help">No invoices for this customer yet.</p>
         )}
       </section>
     </div>
