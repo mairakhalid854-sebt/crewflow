@@ -69,18 +69,29 @@ export function InvoicePanel({
           <h2>Invoice</h2>
           <p>Billing snapshot and manually verified payment history.</p>
         </div>
-        {invoice?.status === 'draft' || canCreate ? (
-          <Link
-            className="secondary-button"
-            href={`/app/jobs/${jobId}/invoice`}
-          >
-            {invoice?.status === 'draft'
-              ? 'Edit draft'
-              : invoice
-                ? 'Create replacement'
-                : 'Create invoice'}
-          </Link>
-        ) : null}
+        <div className="panel-heading-actions">
+          {invoice ? (
+            <a
+              className="secondary-button"
+              download
+              href={`/app/invoices/${invoice.id}/pdf`}
+            >
+              Download {invoice.status === 'paid' ? 'receipt' : 'PDF'}
+            </a>
+          ) : null}
+          {invoice?.status === 'draft' || canCreate ? (
+            <Link
+              className="secondary-button"
+              href={`/app/jobs/${jobId}/invoice`}
+            >
+              {invoice?.status === 'draft'
+                ? 'Edit draft'
+                : invoice
+                  ? 'Create replacement'
+                  : 'Create invoice'}
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       {!invoice ? (
