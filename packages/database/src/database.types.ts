@@ -430,6 +430,67 @@ export type Database = {
           },
         ];
       };
+      job_signatures: {
+        Row: {
+          captured_by_membership_id: string;
+          consent_text: string;
+          created_at: string;
+          id: string;
+          integrity_hash: string;
+          job_id: string;
+          signature_strokes: Json;
+          signed_at: string;
+          signer_name: string;
+          tenant_id: string;
+        };
+        Insert: {
+          captured_by_membership_id: string;
+          consent_text: string;
+          created_at?: string;
+          id?: string;
+          integrity_hash: string;
+          job_id: string;
+          signature_strokes: Json;
+          signed_at: string;
+          signer_name: string;
+          tenant_id: string;
+        };
+        Update: {
+          captured_by_membership_id?: string;
+          consent_text?: string;
+          created_at?: string;
+          id?: string;
+          integrity_hash?: string;
+          job_id?: string;
+          signature_strokes?: Json;
+          signed_at?: string;
+          signer_name?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_signatures_capturer_tenant_fk';
+            columns: ['captured_by_membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'job_signatures_job_tenant_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'job_signatures_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       job_work_notes: {
         Row: {
           author_membership_id: string;
@@ -1366,6 +1427,19 @@ export type Database = {
           target_invoice_id: string;
         };
         Returns: string;
+      };
+      record_assigned_job_signature: {
+        Args: {
+          accepted_consent_text: string;
+          customer_signer_name: string;
+          signature_strokes: Json;
+          target_job_id: string;
+        };
+        Returns: {
+          integrity_hash: string;
+          signature_id: string;
+          signed_at: string;
+        }[];
       };
       reserve_assigned_job_media: {
         Args: {

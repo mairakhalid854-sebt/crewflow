@@ -1,10 +1,11 @@
 import type { Database } from '@crewflow/database';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  PanResponder,
   Platform,
   Pressable,
   SafeAreaView,
@@ -14,6 +15,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import {
   type MembershipAccess,
@@ -44,6 +46,16 @@ import {
   type JobMediaKind,
   allowedJobPhotoKinds,
 } from './src/jobs/job-media-policy';
+import { recordAssignedJobSignature } from './src/jobs/job-signature';
+import {
+  CUSTOMER_SIGNATURE_CONSENT,
+  MAX_SIGNATURE_POINTS_PER_STROKE,
+  MAX_SIGNATURE_STROKES,
+  signatureDraftError,
+  signaturePath,
+  type SignaturePoint,
+  type SignatureStroke,
+} from './src/jobs/job-signature-policy';
 import { getSupabaseClient } from './src/lib/supabase';
 
 type AccessState =
@@ -350,6 +362,16 @@ export default function App() {
     return result;
   }
 
+  async function signAssignedJob(
+    jobId: string,
+    signerName: string,
+    strokes: readonly SignatureStroke[],
+  ) {
+    if (!authClient) throw new Error('Mobile client is unavailable.');
+    await recordAssignedJobSignature(authClient, jobId, signerName, strokes);
+    setAssignedJobsRefreshKey((key) => key + 1);
+  }
+
   if (session === undefined) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -413,6 +435,7 @@ export default function App() {
               }
               onAdvanceJob={progressAssignedJob}
               onCapturePhoto={captureAssignedJobPhoto}
+              onRecordSignature={signAssignedJob}
               onSignOut={signOut}
               onRefreshJobs={() => {
                 setAssignedJobsRefreshKey((key) => key + 1);
@@ -511,6 +534,7 @@ function AuthenticatedView({
   message,
   onAdvanceJob,
   onCapturePhoto,
+  onRecordSignature,
   onRefreshJobs,
   onSignOut,
   pending,
@@ -528,6 +552,11 @@ function AuthenticatedView({
     jobId: string,
     mediaKind: JobMediaKind,
   ) => Promise<JobPhotoUploadResult>;
+  onRecordSignature: (
+    jobId: string,
+    signerName: string,
+    strokes: readonly SignatureStroke[],
+  ) => Promise<void>;
   onRefreshJobs: () => void;
   onSignOut: () => Promise<void>;
   pending: boolean;
@@ -600,6 +629,7 @@ function AuthenticatedView({
       <AssignedJobsView
         onAdvanceJob={onAdvanceJob}
         onCapturePhoto={onCapturePhoto}
+        onRecordSignature={onRecordSignature}
         onRefresh={onRefreshJobs}
         snapshot={assignedJobsState.snapshot}
       />
@@ -646,6 +676,7 @@ const jobStatusLabels: Record<AssignedJob['status'], string> = {
 function AssignedJobsView({
   onAdvanceJob,
   onCapturePhoto,
+  onRecordSignature,
   onRefresh,
   snapshot,
 }: Readonly<{
@@ -658,6 +689,11 @@ function AssignedJobsView({
     jobId: string,
     mediaKind: JobMediaKind,
   ) => Promise<JobPhotoUploadResult>;
+  onRecordSignature: (
+    jobId: string,
+    signerName: string,
+    strokes: readonly SignatureStroke[],
+  ) => Promise<void>;
   onRefresh: () => void;
   snapshot: AssignedJobsSnapshot;
 }>) {
@@ -671,6 +707,7 @@ function AssignedJobsView({
         onAdvanceJob={onAdvanceJob}
         onBack={() => setSelectedJobId(undefined)}
         onCapturePhoto={onCapturePhoto}
+        onRecordSignature={onRecordSignature}
         timeZone={snapshot.timeZone}
       />
     );
@@ -776,6 +813,7 @@ function AssignedJobDetail({
   onAdvanceJob,
   onBack,
   onCapturePhoto,
+  onRecordSignature,
   timeZone,
 }: Readonly<{
   job: AssignedJob;
@@ -789,6 +827,11 @@ function AssignedJobDetail({
     jobId: string,
     mediaKind: JobMediaKind,
   ) => Promise<JobPhotoUploadResult>;
+  onRecordSignature: (
+    jobId: string,
+    signerName: string,
+    strokes: readonly SignatureStroke[],
+  ) => Promise<void>;
   timeZone: string;
 }>) {
   const [photoError, setPhotoError] = useState<string>();
@@ -806,6 +849,7 @@ function AssignedJobDetail({
   const uploadedPhotos = job.job_media.filter(
     (media) => media.uploaded_at !== null,
   );
+  const customerSignature = job.job_signatures[0];
   const workNotes = [...job.job_work_notes].sort(
     (left, right) =>
       new Date(right.created_at).getTime() -
@@ -975,6 +1019,39 @@ function AssignedJobDetail({
         ) : null}
       </View>
 
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Customer signature</Text>
+        {customerSignature ? (
+          <View style={styles.signatureRecorded}>
+            <Text style={styles.noticeTitle}>Signature securely recorded</Text>
+            <Text style={styles.noticeBody}>
+              {customerSignature.signer_name} signed on{' '}
+              {new Intl.DateTimeFormat('en-US', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone,
+              }).format(new Date(customerSignature.signed_at))}
+              .
+            </Text>
+          </View>
+        ) : job.status === 'in_progress' ? (
+          <CustomerSignatureCapture
+            defaultSignerName={
+              job.customers
+                ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
+                : ''
+            }
+            onSubmit={(signerName, strokes) =>
+              onRecordSignature(job.id, signerName, strokes)
+            }
+          />
+        ) : (
+          <Text style={styles.noticeBody}>
+            Signature capture is available while work is in progress.
+          </Text>
+        )}
+      </View>
+
       {progressAction ? (
         <View style={styles.progressPanel}>
           <Text style={styles.noticeTitle}>Update field progress</Text>
@@ -1027,6 +1104,234 @@ function AssignedJobDetail({
           </Text>
         </View>
       )}
+    </View>
+  );
+}
+
+function CustomerSignatureCapture({
+  defaultSignerName,
+  onSubmit,
+}: Readonly<{
+  defaultSignerName: string;
+  onSubmit: (
+    signerName: string,
+    strokes: readonly SignatureStroke[],
+  ) => Promise<void>;
+}>) {
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [error, setError] = useState<string>();
+  const [pending, setPending] = useState(false);
+  const [signerName, setSignerName] = useState(defaultSignerName);
+  const [strokes, setStrokes] = useState<readonly SignatureStroke[]>([]);
+  const padSize = useRef({ height: 1, width: 1 });
+  const strokesRef = useRef<readonly SignatureStroke[]>([]);
+
+  function updateStrokes(next: readonly SignatureStroke[]) {
+    strokesRef.current = next;
+    setStrokes(next);
+  }
+
+  function pointFromTouch(
+    locationX: number,
+    locationY: number,
+  ): SignaturePoint {
+    return {
+      x: Math.max(0, Math.min(1, locationX / padSize.current.width)),
+      y: Math.max(0, Math.min(1, locationY / padSize.current.height)),
+    };
+  }
+
+  const signatureResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (event) => {
+          if (strokesRef.current.length >= MAX_SIGNATURE_STROKES) return;
+          const point = pointFromTouch(
+            event.nativeEvent.locationX,
+            event.nativeEvent.locationY,
+          );
+          updateStrokes([...strokesRef.current, [point]]);
+          setError(undefined);
+        },
+        onPanResponderMove: (event) => {
+          const currentStrokes = strokesRef.current;
+          const lastStroke = currentStrokes.at(-1);
+          if (
+            !lastStroke ||
+            lastStroke.length >= MAX_SIGNATURE_POINTS_PER_STROKE
+          ) {
+            return;
+          }
+
+          const point = pointFromTouch(
+            event.nativeEvent.locationX,
+            event.nativeEvent.locationY,
+          );
+          const previousPoint = lastStroke.at(-1);
+          if (
+            previousPoint &&
+            Math.abs(previousPoint.x - point.x) < 0.002 &&
+            Math.abs(previousPoint.y - point.y) < 0.002
+          ) {
+            return;
+          }
+
+          updateStrokes([
+            ...currentStrokes.slice(0, -1),
+            [...lastStroke, point],
+          ]);
+        },
+        onPanResponderRelease: () => {
+          const currentStrokes = strokesRef.current;
+          if (currentStrokes.at(-1)?.length === 1) {
+            updateStrokes(currentStrokes.slice(0, -1));
+          }
+        },
+        onPanResponderTerminate: () => {
+          const currentStrokes = strokesRef.current;
+          if (currentStrokes.at(-1)?.length === 1) {
+            updateStrokes(currentStrokes.slice(0, -1));
+          }
+        },
+        onStartShouldSetPanResponder: () => true,
+      }),
+    [],
+  );
+
+  async function saveSignature() {
+    if (pending) return;
+    const validationMessage = signatureDraftError(
+      signerName,
+      strokes,
+      consentAccepted,
+    );
+    if (validationMessage) {
+      setError(validationMessage);
+      return;
+    }
+
+    setError(undefined);
+    setPending(true);
+    try {
+      await onSubmit(signerName.trim(), strokes);
+    } catch (saveError) {
+      setPending(false);
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : 'Signature could not be recorded. Try again.',
+      );
+    }
+  }
+
+  return (
+    <View style={styles.signatureCapture}>
+      <Text style={styles.noticeBody}>
+        Hand the device to the customer. Their consent, server timestamp, job,
+        and signature are saved as immutable evidence.
+      </Text>
+      <Text style={styles.label}>Signer name</Text>
+      <TextInput
+        autoCapitalize="words"
+        editable={!pending}
+        maxLength={120}
+        onChangeText={setSignerName}
+        placeholder="Customer or authorized signer"
+        style={styles.input}
+        value={signerName}
+      />
+      <Text style={styles.label}>Draw signature</Text>
+      <View
+        accessibilityLabel="Customer signature drawing area"
+        onLayout={(event) => {
+          padSize.current = {
+            height: Math.max(1, event.nativeEvent.layout.height),
+            width: Math.max(1, event.nativeEvent.layout.width),
+          };
+        }}
+        style={styles.signaturePad}
+        {...signatureResponder.panHandlers}
+      >
+        <Svg
+          height="100%"
+          pointerEvents="none"
+          viewBox="0 0 1000 300"
+          width="100%"
+        >
+          {strokes.map((stroke, index) => (
+            <Path
+              d={signaturePath(stroke)}
+              fill="none"
+              key={index}
+              stroke="#11223C"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={5}
+            />
+          ))}
+        </Svg>
+        {strokes.length === 0 ? (
+          <Text pointerEvents="none" style={styles.signaturePlaceholder}>
+            Sign here
+          </Text>
+        ) : null}
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        disabled={pending || strokes.length === 0}
+        onPress={() => updateStrokes([])}
+        style={({ pressed }) => [
+          styles.signatureClearButton,
+          (pending || strokes.length === 0) && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.linkButtonText}>Clear signature</Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: consentAccepted, disabled: pending }}
+        disabled={pending}
+        onPress={() => setConsentAccepted((accepted) => !accepted)}
+        style={({ pressed }) => [
+          styles.consentRow,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <View
+          style={[
+            styles.consentCheckbox,
+            consentAccepted && styles.consentCheckboxChecked,
+          ]}
+        >
+          {consentAccepted ? <Text style={styles.consentCheck}>✓</Text> : null}
+        </View>
+        <Text style={styles.consentText}>{CUSTOMER_SIGNATURE_CONSENT}</Text>
+      </Pressable>
+      <Text style={styles.signatureDisclaimer}>
+        Electronic-signature legal sufficiency can depend on the business use
+        case and local law.
+      </Text>
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.errorTextCompact}>
+          {error}
+        </Text>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        disabled={pending}
+        onPress={() => void saveSignature()}
+        style={({ pressed }) => [
+          styles.primaryButton,
+          pending && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.primaryButtonText}>
+          {pending ? 'Recording signature...' : 'Record customer signature'}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -1525,6 +1830,79 @@ const styles = StyleSheet.create({
     color: '#334155',
     fontSize: 14,
     fontWeight: '700',
+  },
+  consentCheck: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+    lineHeight: 16,
+  },
+  consentCheckbox: {
+    alignItems: 'center',
+    borderColor: '#94A3B8',
+    borderRadius: 5,
+    borderWidth: 1,
+    height: 22,
+    justifyContent: 'center',
+    marginTop: 2,
+    width: 22,
+  },
+  consentCheckboxChecked: {
+    backgroundColor: '#1769F4',
+    borderColor: '#1769F4',
+  },
+  consentRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  consentText: {
+    color: '#334155',
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  signatureCapture: {
+    marginTop: 6,
+  },
+  signatureClearButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    paddingHorizontal: 4,
+    paddingVertical: 10,
+  },
+  signatureDisclaimer: {
+    color: '#94A3B8',
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 10,
+  },
+  signaturePad: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 180,
+    justifyContent: 'center',
+    marginTop: 8,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  signaturePlaceholder: {
+    color: '#94A3B8',
+    fontSize: 18,
+    fontStyle: 'italic',
+    position: 'absolute',
+  },
+  signatureRecorded: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 8,
+    padding: 13,
   },
   statusBadge: {
     backgroundColor: '#E8F0FF',

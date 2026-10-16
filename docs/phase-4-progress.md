@@ -30,13 +30,21 @@ browser update access to job records.
   route without exposing raw bucket URLs.
 - Photo metadata and objects deny anonymous access, cross-tenant reads, direct
   metadata mutation, unreserved paths, and uploads by another technician.
+- An assigned technician can hand an in-progress job to the customer for a
+  native signature drawing, signer-name confirmation, and explicit consent.
+- Signature strokes use bounded normalized coordinates and are recorded once
+  as immutable tenant/job evidence with a server timestamp, SHA-256 integrity
+  hash, and audit event; owners and office staff can review the signed evidence
+  on the web job page.
+- Altered consent, malformed or oversized strokes, duplicate signatures,
+  anonymous calls, cross-tenant access, direct mutation, and capture by another
+  technician are denied.
 
 ## Remaining Phase 4 work
 
 - Installed-device photo capture/upload smoke tests and explicit retry/recovery
   UX for interrupted uploads
-- Customer signature capture with consent text, timestamp, job binding, and
-  integrity history
+- Installed-device signature drawing and submission smoke tests
 - Richer task/timeline history and offline draft/sync conflict handling
 - Assignment and schedule push notifications with token rotation and opt-outs
 - Owner/office mobile metrics, jobs, and approval views
@@ -51,7 +59,10 @@ browser update access to job records.
 - FR-051: Partial - guarded private capture, compression, type/size validation,
   upload, and authorized viewing are implemented; installed-device and
   interrupted-upload retry testing remain.
-- FR-052: Not started.
+- FR-052: Delivered in application and database code - native drawing, explicit
+  consent, server timestamp, immutable job binding, integrity hash, audit event,
+  and authorized web review are implemented; installed-device verification
+  remains.
 - FR-053: Not started beyond safe access verification for owner/office users.
 - FR-054: Not started.
 - FR-055: Partial - Expo application configuration exists; release assets and
