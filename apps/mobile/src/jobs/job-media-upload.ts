@@ -32,8 +32,16 @@ export type JobPhotoUploadResult =
 
 type UploadAttemptOptions = {
   readonly nowMs?: number;
+  readonly onStateChange?: (upload: PendingJobPhotoUpload) => Promise<void>;
   readonly readBytes?: (uri: string) => Promise<ArrayBuffer>;
 };
+
+async function persistState(
+  onStateChange: UploadAttemptOptions['onStateChange'],
+  upload: PendingJobPhotoUpload,
+): Promise<void> {
+  await onStateChange?.(upload).catch(() => undefined);
+}
 
 async function defaultReadBytes(uri: string): Promise<ArrayBuffer> {
   const response = await fetch(uri);
@@ -139,6 +147,7 @@ export async function attemptJobPhotoUpload(
         storagePath: reservation.storage_path,
       },
     };
+    await persistState(options.onStateChange, upload);
   }
 
   const reservation = upload.reservation;
@@ -173,6 +182,7 @@ export async function attemptJobPhotoUpload(
   }
 
   upload = { ...upload, stored: true };
+  await persistState(options.onStateChange, upload);
   if (await tryFinalize(client, reservation)) return 'uploaded';
 
   return pending(
