@@ -26,6 +26,7 @@ describe('invoice helpers', () => {
     expect(
       publicInvoiceSchema.safeParse({
         company_name: 'CrewFlow HVAC',
+        company_time_zone: 'America/Los_Angeles',
         currency_code: 'USD',
         customer_name: 'Alex Morgan',
         discount_cents: 0,

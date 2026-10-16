@@ -10,6 +10,7 @@ const publicInvoiceItemSchema = z.object({
 
 export const publicInvoiceSchema = z.object({
   company_name: z.string(),
+  company_time_zone: z.string().min(1),
   currency_code: z.literal('USD'),
   customer_name: z.string(),
   discount_cents: z.number().int().nonnegative(),

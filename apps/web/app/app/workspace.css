@@ -1518,6 +1518,13 @@
   color: #475569;
 }
 
+.panel-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .invoice-ledger-form,
 .invoice-void-form,
 .invoice-ledger {

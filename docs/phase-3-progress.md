@@ -1,6 +1,6 @@
 # Phase 3 progress
 
-Updated: 2026-10-15
+Updated: 2026-10-16
 
 ## Delivered to staging
 
@@ -36,10 +36,17 @@ Updated: 2026-10-15
 - Public report reads expose only the approved customer-safe projection through a token-scoped database function.
 - Report save and approval/send operations are tenant-authorized and audited.
 
+### Downloadable invoices and receipts
+
+- Owner and office users can download any tenant-authorized invoice as a generated PDF.
+- Customers can download the same immutable snapshot from the secure token-scoped invoice page.
+- Fully paid invoices render as clearly labelled paid receipts; draft, sent, partial, and void states remain explicit.
+- PDFs include company/customer context, business-time-zone due date, itemized charges, totals, recorded payments, outstanding balance, and page numbering.
+- Downloads are generated on demand with private no-store caching and do not expose raw customer tokens in the document.
+
 ## Remaining Phase 3 work
 
 - Transactional email delivery for quotes and invoices
-- Downloadable invoice receipts/PDFs
 - Follow-up reminders, reconciliation jobs, and broader end-to-end billing tests
 
 Quote and invoice links are copied manually by the owner or office user until transactional email is connected. External service-payment links remain business-owned; CrewFlow does not hold customer funds.

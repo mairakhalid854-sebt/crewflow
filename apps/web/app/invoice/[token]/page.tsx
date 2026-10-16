@@ -43,9 +43,10 @@ export default async function PublicInvoicePage({
           <p>For {invoice.customer_name}</p>
           <p>
             Due{' '}
-            {new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(
-              new Date(invoice.due_at),
-            )}
+            {new Intl.DateTimeFormat('en-US', {
+              dateStyle: 'long',
+              timeZone: invoice.company_time_zone,
+            }).format(new Date(invoice.due_at))}
           </p>
         </div>
 
@@ -91,6 +92,13 @@ export default async function PublicInvoicePage({
             <dd>{formatUsd(invoice.outstanding_cents)}</dd>
           </div>
         </dl>
+
+        <div className="public-invoice-download">
+          <a download href={`/invoice/${token}/pdf`}>
+            Download{' '}
+            {invoice.status === 'paid' ? 'paid receipt' : 'invoice PDF'}
+          </a>
+        </div>
 
         {invoice.status === 'void' ? (
           <p className="public-quote-error" role="status">
