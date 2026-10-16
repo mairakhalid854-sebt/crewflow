@@ -69,15 +69,29 @@ describe('resumable job photo upload', () => {
         storage_path: 'tenant/job/media.jpg',
       },
     });
+    const onStateChange = vi.fn((nextUpload: PendingJobPhotoUpload) => {
+      void nextUpload;
+      return Promise.resolve();
+    });
 
     await expect(
-      attemptJobPhotoUpload(client, draft(), { nowMs: 1000, readBytes }),
+      attemptJobPhotoUpload(client, draft(), {
+        nowMs: 1000,
+        onStateChange,
+        readBytes,
+      }),
     ).resolves.toBe('uploaded');
     expect(rpc.mock.calls.map(([name]) => name)).toEqual([
       'reserve_assigned_job_media',
       'finalize_assigned_job_media',
     ]);
     expect(upload).toHaveBeenCalledOnce();
+    expect(onStateChange).toHaveBeenCalledTimes(2);
+    expect(onStateChange.mock.calls[0]?.[0]).toMatchObject({
+      reservation: { mediaId: 'media-1' },
+      stored: false,
+    });
+    expect(onStateChange.mock.calls[1]?.[0]).toMatchObject({ stored: true });
   });
 
   it('recovers an ambiguous upload error by finalizing the stored object', async () => {

@@ -43,6 +43,8 @@ import {
   type JobPhotoUploadResult,
   type PendingJobPhotoUpload,
   captureAndUploadJobPhoto,
+  discardPendingJobPhoto,
+  restorePendingJobPhotos,
   retryJobPhotoUpload,
 } from './src/jobs/job-media';
 import {
@@ -129,6 +131,10 @@ export default function App() {
   );
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
+  const [pendingPhotoState, setPendingPhotoState] = useState<{
+    readonly results: readonly JobPhotoUploadPendingResult[];
+    readonly userId?: string;
+  }>({ results: [] });
   const [recoveryConfirmation, setRecoveryConfirmation] = useState('');
   const [recoveryPassword, setRecoveryPassword] = useState('');
   const [recoveryRequestSent, setRecoveryRequestSent] = useState(false);
@@ -136,6 +142,9 @@ export default function App() {
     status: 'idle',
   });
   const [session, setSession] = useState<Session | null>();
+  const sessionUserId = session?.user.id;
+  const pendingPhotoResults =
+    pendingPhotoState.userId === sessionUserId ? pendingPhotoState.results : [];
 
   useEffect(() => {
     let active = true;
@@ -166,6 +175,47 @@ export default function App() {
       };
     }
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    if (!sessionUserId) {
+      setPendingPhotoState({ results: [] });
+      return () => {
+        active = false;
+      };
+    }
+
+    setPendingPhotoState({ results: [], userId: sessionUserId });
+
+    void restorePendingJobPhotos(sessionUserId)
+      .then((results) => {
+        if (active) {
+          setPendingPhotoState((current) => ({
+            results: [
+              ...(current.userId === sessionUserId
+                ? current.results.filter(
+                    (item) =>
+                      !results.some(
+                        (restored) =>
+                          restored.upload.localUri === item.upload.localUri,
+                      ),
+                  )
+                : []),
+              ...results,
+            ],
+            userId: sessionUserId,
+          }));
+        }
+      })
+      .catch(() => {
+        if (active)
+          setPendingPhotoState({ results: [], userId: sessionUserId });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [sessionUserId]);
 
   useEffect(() => {
     let active = true;
@@ -411,10 +461,27 @@ export default function App() {
     jobId: string,
     mediaKind: JobMediaKind,
   ): Promise<JobPhotoUploadResult> {
-    if (!authClient) throw new Error('Mobile client is unavailable.');
-    const result = await captureAndUploadJobPhoto(authClient, jobId, mediaKind);
+    if (!authClient || !sessionUserId) {
+      throw new Error('Mobile client is unavailable.');
+    }
+    const result = await captureAndUploadJobPhoto(
+      authClient,
+      sessionUserId,
+      jobId,
+      mediaKind,
+    );
     if (result === 'uploaded') {
       setAssignedJobsRefreshKey((key) => key + 1);
+    } else if (result !== 'cancelled') {
+      setPendingPhotoState((current) => ({
+        results: [
+          ...(current.userId === sessionUserId ? current.results : []).filter(
+            (item) => item.upload.localUri !== result.upload.localUri,
+          ),
+          result,
+        ],
+        userId: sessionUserId,
+      }));
     }
     return result;
   }
@@ -422,12 +489,42 @@ export default function App() {
   async function retryAssignedJobPhoto(
     upload: PendingJobPhotoUpload,
   ): Promise<Exclude<JobPhotoUploadResult, 'cancelled'>> {
-    if (!authClient) throw new Error('Mobile client is unavailable.');
-    const result = await retryJobPhotoUpload(authClient, upload);
+    if (!authClient || !sessionUserId) {
+      throw new Error('Mobile client is unavailable.');
+    }
+    const result = await retryJobPhotoUpload(authClient, sessionUserId, upload);
     if (result === 'uploaded') {
+      setPendingPhotoState((current) => ({
+        results: (current.userId === sessionUserId
+          ? current.results
+          : []
+        ).filter((item) => item.upload.localUri !== upload.localUri),
+        userId: sessionUserId,
+      }));
       setAssignedJobsRefreshKey((key) => key + 1);
+    } else {
+      setPendingPhotoState((current) => ({
+        results: [
+          ...(current.userId === sessionUserId ? current.results : []).filter(
+            (item) => item.upload.localUri !== result.upload.localUri,
+          ),
+          result,
+        ],
+        userId: sessionUserId,
+      }));
     }
     return result;
+  }
+
+  async function discardAssignedJobPhoto(upload: PendingJobPhotoUpload) {
+    if (!sessionUserId) throw new Error('Mobile session is unavailable.');
+    await discardPendingJobPhoto(sessionUserId, upload);
+    setPendingPhotoState((current) => ({
+      results: (current.userId === sessionUserId ? current.results : []).filter(
+        (item) => item.upload.localUri !== upload.localUri,
+      ),
+      userId: sessionUserId,
+    }));
   }
 
   async function signAssignedJob(
@@ -503,6 +600,7 @@ export default function App() {
               }
               onAdvanceJob={progressAssignedJob}
               onCapturePhoto={captureAssignedJobPhoto}
+              onDiscardPhoto={discardAssignedJobPhoto}
               onRecordSignature={signAssignedJob}
               onRetryPhoto={retryAssignedJobPhoto}
               onRefreshOperations={() => {
@@ -514,6 +612,7 @@ export default function App() {
                 setAssignedJobsRefreshKey((key) => key + 1);
               }}
               pending={pending}
+              pendingPhotoResults={pendingPhotoResults}
             />
           ) : authMode === 'forgot' ? (
             <ForgotPasswordView
@@ -607,6 +706,7 @@ function AuthenticatedView({
   message,
   onAdvanceJob,
   onCapturePhoto,
+  onDiscardPhoto,
   onRecordSignature,
   onRetryPhoto,
   onRefreshJobs,
@@ -614,6 +714,7 @@ function AuthenticatedView({
   onSignOut,
   operationsState,
   pending,
+  pendingPhotoResults,
 }: Readonly<{
   accessState: AccessState;
   assignedJobsState: AssignedJobsState;
@@ -628,6 +729,7 @@ function AuthenticatedView({
     jobId: string,
     mediaKind: JobMediaKind,
   ) => Promise<JobPhotoUploadResult>;
+  onDiscardPhoto: (upload: PendingJobPhotoUpload) => Promise<void>;
   onRecordSignature: (
     jobId: string,
     signerName: string,
@@ -641,6 +743,7 @@ function AuthenticatedView({
   onSignOut: () => Promise<void>;
   operationsState: MobileOperationsState;
   pending: boolean;
+  pendingPhotoResults: readonly JobPhotoUploadPendingResult[];
 }>) {
   let accessContent: React.ReactNode;
 
@@ -735,9 +838,11 @@ function AuthenticatedView({
       <AssignedJobsView
         onAdvanceJob={onAdvanceJob}
         onCapturePhoto={onCapturePhoto}
+        onDiscardPhoto={onDiscardPhoto}
         onRecordSignature={onRecordSignature}
         onRefresh={onRefreshJobs}
         onRetryPhoto={onRetryPhoto}
+        pendingPhotoResults={pendingPhotoResults}
         snapshot={assignedJobsState.snapshot}
       />
     );
@@ -1129,9 +1234,11 @@ const jobStatusLabels: Record<AssignedJob['status'], string> = {
 function AssignedJobsView({
   onAdvanceJob,
   onCapturePhoto,
+  onDiscardPhoto,
   onRecordSignature,
   onRefresh,
   onRetryPhoto,
+  pendingPhotoResults,
   snapshot,
 }: Readonly<{
   onAdvanceJob: (
@@ -1143,6 +1250,7 @@ function AssignedJobsView({
     jobId: string,
     mediaKind: JobMediaKind,
   ) => Promise<JobPhotoUploadResult>;
+  onDiscardPhoto: (upload: PendingJobPhotoUpload) => Promise<void>;
   onRecordSignature: (
     jobId: string,
     signerName: string,
@@ -1152,12 +1260,14 @@ function AssignedJobsView({
   onRetryPhoto: (
     upload: PendingJobPhotoUpload,
   ) => Promise<Exclude<JobPhotoUploadResult, 'cancelled'>>;
+  pendingPhotoResults: readonly JobPhotoUploadPendingResult[];
   snapshot: AssignedJobsSnapshot;
 }>) {
   const [selectedJobId, setSelectedJobId] = useState<string>();
-  const [pendingPhotoResult, setPendingPhotoResult] =
-    useState<JobPhotoUploadPendingResult>();
   const selectedJob = snapshot.jobs.find((job) => job.id === selectedJobId);
+  const unavailablePendingPhotos = pendingPhotoResults.filter(
+    (result) => !snapshot.jobs.some((job) => job.id === result.upload.jobId),
+  );
 
   if (selectedJob) {
     return (
@@ -1166,14 +1276,12 @@ function AssignedJobsView({
         onAdvanceJob={onAdvanceJob}
         onBack={() => setSelectedJobId(undefined)}
         onCapturePhoto={onCapturePhoto}
-        onPendingPhotoChange={setPendingPhotoResult}
+        onDiscardPhoto={onDiscardPhoto}
         onRecordSignature={onRecordSignature}
         onRetryPhoto={onRetryPhoto}
-        pendingPhotoResult={
-          pendingPhotoResult?.upload.jobId === selectedJob.id
-            ? pendingPhotoResult
-            : undefined
-        }
+        pendingPhotoResult={pendingPhotoResults.find(
+          (result) => result.upload.jobId === selectedJob.id,
+        )}
         timeZone={snapshot.timeZone}
       />
     );
@@ -1201,6 +1309,37 @@ function AssignedJobsView({
         </Pressable>
       </View>
 
+      {unavailablePendingPhotos.length > 0 ? (
+        <View style={styles.photoRetryPanel}>
+          <Text style={styles.noticeTitle}>Saved photos need attention</Text>
+          <Text style={styles.noticeBody}>
+            {unavailablePendingPhotos.length} pending photo
+            {unavailablePendingPhotos.length === 1 ? '' : 's'} belong to work
+            that is no longer assigned to you. Discard them to remove the
+            private device copies.
+          </Text>
+          <View style={styles.photoRetryActions}>
+            {unavailablePendingPhotos.map((result) => (
+              <Pressable
+                accessibilityRole="button"
+                key={result.upload.localUri}
+                onPress={() => {
+                  void onDiscardPhoto(result.upload).catch(() => undefined);
+                }}
+                style={({ pressed }) => [
+                  styles.discardButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.discardButtonText}>
+                  Discard {result.upload.mediaKind} photo
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
       {upcoming.length === 0 ? (
         <View style={styles.emptyJobs}>
           <Text style={styles.noticeTitle}>No active assignments</Text>
@@ -1213,6 +1352,9 @@ function AssignedJobsView({
           <Text style={styles.jobGroupTitle}>Upcoming and active</Text>
           {upcoming.map((job) => (
             <AssignedJobCard
+              hasPendingPhoto={pendingPhotoResults.some(
+                (result) => result.upload.jobId === job.id,
+              )}
               job={job}
               key={job.id}
               onPress={() => setSelectedJobId(job.id)}
@@ -1227,6 +1369,9 @@ function AssignedJobsView({
           <Text style={styles.jobGroupTitle}>Recent history</Text>
           {history.map((job) => (
             <AssignedJobCard
+              hasPendingPhoto={pendingPhotoResults.some(
+                (result) => result.upload.jobId === job.id,
+              )}
               job={job}
               key={job.id}
               onPress={() => setSelectedJobId(job.id)}
@@ -1240,10 +1385,12 @@ function AssignedJobsView({
 }
 
 function AssignedJobCard({
+  hasPendingPhoto,
   job,
   onPress,
   timeZone,
 }: Readonly<{
+  hasPendingPhoto: boolean;
   job: AssignedJob;
   onPress: () => void;
   timeZone: string;
@@ -1270,6 +1417,9 @@ function AssignedJobCard({
         {customerName}
         {job.services?.name ? ` - ${job.services.name}` : ''}
       </Text>
+      {hasPendingPhoto ? (
+        <Text style={styles.pendingUploadBadge}>Photo upload pending</Text>
+      ) : null}
     </Pressable>
   );
 }
@@ -1279,7 +1429,7 @@ function AssignedJobDetail({
   onAdvanceJob,
   onBack,
   onCapturePhoto,
-  onPendingPhotoChange,
+  onDiscardPhoto,
   onRecordSignature,
   onRetryPhoto,
   pendingPhotoResult,
@@ -1296,9 +1446,7 @@ function AssignedJobDetail({
     jobId: string,
     mediaKind: JobMediaKind,
   ) => Promise<JobPhotoUploadResult>;
-  onPendingPhotoChange: (
-    result: JobPhotoUploadPendingResult | undefined,
-  ) => void;
+  onDiscardPhoto: (upload: PendingJobPhotoUpload) => Promise<void>;
   onRecordSignature: (
     jobId: string,
     signerName: string,
@@ -1367,12 +1515,10 @@ function AssignedJobDetail({
         return;
       }
       if (result !== 'uploaded') {
-        onPendingPhotoChange(result);
         setPhotoPending(undefined);
         setPhotoError(result.message);
         return;
       }
-      onPendingPhotoChange(undefined);
       setPhotoPending(undefined);
       setPhotoMessage(
         `${mediaKind === 'before' ? 'Before' : 'After'} photo uploaded securely.`,
@@ -1396,14 +1542,12 @@ function AssignedJobDetail({
     try {
       const result = await onRetryPhoto(pendingPhotoUpload);
       if (result !== 'uploaded') {
-        onPendingPhotoChange(result);
         setPhotoPending(undefined);
         setPhotoError(result.message);
         return;
       }
       const label =
         pendingPhotoUpload.mediaKind === 'before' ? 'Before' : 'After';
-      onPendingPhotoChange(undefined);
       setPhotoPending(undefined);
       setPhotoMessage(`${label} photo uploaded securely.`);
     } catch {
@@ -1414,19 +1558,29 @@ function AssignedJobDetail({
     }
   }
 
-  function discardPendingPhoto() {
-    onPendingPhotoChange(undefined);
-    setPhotoError(undefined);
-    setPhotoMessage('Pending photo discarded. You can capture a new one.');
+  async function discardPendingPhoto() {
+    if (!pendingPhotoUpload || photoPending) return;
+    setPhotoPending(pendingPhotoUpload.mediaKind);
+    try {
+      await onDiscardPhoto(pendingPhotoUpload);
+      setPhotoPending(undefined);
+      setPhotoError(undefined);
+      setPhotoMessage('Pending photo discarded. You can capture a new one.');
+    } catch {
+      setPhotoPending(undefined);
+      setPhotoError('The pending photo could not be discarded. Try again.');
+    }
   }
 
   return (
     <View style={styles.jobsSection}>
       <Pressable
         accessibilityRole="button"
+        disabled={photoPending !== undefined}
         onPress={onBack}
         style={({ pressed }) => [
           styles.backButton,
+          photoPending !== undefined && styles.buttonDisabled,
           pressed && styles.buttonPressed,
         ]}
       >
@@ -1564,14 +1718,16 @@ function AssignedJobDetail({
               <Pressable
                 accessibilityRole="button"
                 disabled={photoPending !== undefined}
-                onPress={discardPendingPhoto}
+                onPress={() => void discardPendingPhoto()}
                 style={({ pressed }) => [
                   styles.discardButton,
                   photoPending !== undefined && styles.buttonDisabled,
                   pressed && styles.buttonPressed,
                 ]}
               >
-                <Text style={styles.discardButtonText}>Discard photo</Text>
+                <Text style={styles.discardButtonText}>
+                  {photoPending ? 'Working...' : 'Discard photo'}
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -2466,6 +2622,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 14,
     padding: 14,
+  },
+  pendingUploadBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFF7ED',
+    borderRadius: 999,
+    color: '#9A3412',
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 10,
+    overflow: 'hidden',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
   },
   readOnlyNotice: {
     backgroundColor: '#EFF6FF',
