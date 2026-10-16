@@ -4,8 +4,17 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
 import { type JobMediaKind, jobPhotoSizeError } from './job-media-policy';
+import {
+  attemptJobPhotoUpload,
+  type JobPhotoUploadResult,
+  type PendingJobPhotoUpload,
+} from './job-media-upload';
 
-export type JobPhotoUploadResult = 'cancelled' | 'uploaded';
+export type {
+  JobPhotoUploadPendingResult,
+  JobPhotoUploadResult,
+  PendingJobPhotoUpload,
+} from './job-media-upload';
 
 export class JobPhotoUploadError extends Error {}
 
@@ -50,44 +59,18 @@ export async function captureAndUploadJobPhoto(
   const sizeError = jobPhotoSizeError(bytes.byteLength);
   if (sizeError) throw new JobPhotoUploadError(sizeError);
 
-  const { data: reservations, error: reservationError } = await client.rpc(
-    'reserve_assigned_job_media',
-    {
-      media_content_type: 'image/jpeg',
-      media_size_bytes: bytes.byteLength,
-      target_job_id: jobId,
-      target_media_kind: mediaKind,
-    },
-  );
-  const reservation = reservations?.[0];
-  if (reservationError || !reservation) {
-    throw new JobPhotoUploadError(
-      'Photo upload could not be authorized. Refresh the assignment and try again.',
-    );
-  }
+  return attemptJobPhotoUpload(client, {
+    byteSize: bytes.byteLength,
+    jobId,
+    localUri: compressed.uri,
+    mediaKind,
+    stored: false,
+  });
+}
 
-  const { error: uploadError } = await client.storage
-    .from('job-media')
-    .upload(reservation.storage_path, bytes, {
-      cacheControl: '3600',
-      contentType: 'image/jpeg',
-      upsert: false,
-    });
-  if (uploadError) {
-    throw new JobPhotoUploadError(
-      'Photo upload failed. Check your connection and try again.',
-    );
-  }
-
-  const { error: finalizeError } = await client.rpc(
-    'finalize_assigned_job_media',
-    { target_media_id: reservation.media_id },
-  );
-  if (finalizeError) {
-    throw new JobPhotoUploadError(
-      'Photo uploaded but could not be confirmed. Refresh before trying again.',
-    );
-  }
-
-  return 'uploaded';
+export async function retryJobPhotoUpload(
+  client: SupabaseClient<Database>,
+  pendingUpload: PendingJobPhotoUpload,
+): Promise<Exclude<JobPhotoUploadResult, 'cancelled'>> {
+  return attemptJobPhotoUpload(client, pendingUpload);
 }
