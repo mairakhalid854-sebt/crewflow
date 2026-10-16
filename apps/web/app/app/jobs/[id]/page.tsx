@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -19,6 +20,7 @@ function formatActivity(action: string): string {
   const labels: Readonly<Record<string, string>> = {
     'job.archived': 'Job archived',
     'job.created': 'Job created',
+    'job.photo_uploaded': 'Technician photo uploaded',
     'job.scheduled': 'Assignment or schedule updated',
     'job.status_changed': 'Job status changed',
     'job.updated': 'Job details updated',
@@ -49,6 +51,7 @@ export default async function JobDetailPage({
     membersResult,
     profilesResult,
     activityResult,
+    jobMediaResult,
     workNotesResult,
     quoteResult,
     invoiceResult,
@@ -82,6 +85,14 @@ export default async function JobDetailPage({
       .eq('entity_id', id)
       .order('occurred_at', { ascending: false })
       .limit(50),
+    supabase
+      .from('job_media')
+      .select('id, media_kind, captured_at')
+      .eq('tenant_id', context.tenantId)
+      .eq('job_id', id)
+      .not('uploaded_at', 'is', null)
+      .order('captured_at', { ascending: false })
+      .limit(20),
     supabase
       .from('job_work_notes')
       .select('id, body, created_at')
@@ -125,6 +136,7 @@ export default async function JobDetailPage({
     membersResult.error ||
     profilesResult.error ||
     activityResult.error ||
+    jobMediaResult.error ||
     workNotesResult.error ||
     quoteResult.error ||
     invoiceResult.error ||
@@ -303,6 +315,44 @@ export default async function JobDetailPage({
           />
         </>
       ) : null}
+
+      <section className="team-panel job-activity-panel">
+        <div className="team-panel-heading">
+          <div>
+            <h2>Private job photos</h2>
+            <p>
+              Authorized before and after photos captured by the technician.
+            </p>
+          </div>
+        </div>
+        {(jobMediaResult.data ?? []).length ? (
+          <div className="job-photo-grid">
+            {(jobMediaResult.data ?? []).map((photo) => (
+              <figure key={photo.id}>
+                <Image
+                  alt={`${photo.media_kind} job photo`}
+                  height={240}
+                  src={`/app/jobs/${job.id}/media/${photo.id}`}
+                  unoptimized
+                  width={320}
+                />
+                <figcaption>
+                  <strong>{photo.media_kind} photo</strong>
+                  <time dateTime={photo.captured_at}>
+                    {new Intl.DateTimeFormat('en-US', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                      timeZone: context.timeZone,
+                    }).format(new Date(photo.captured_at))}
+                  </time>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        ) : (
+          <p className="form-help">No technician photos uploaded yet.</p>
+        )}
+      </section>
 
       <section className="team-panel job-activity-panel">
         <div className="team-panel-heading">

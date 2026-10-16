@@ -27,6 +27,7 @@ function job(overrides: Partial<AssignedJob> = {}): AssignedJob {
     scheduled_end_at: '2026-10-15T17:00:00.000Z',
     scheduled_start_at: '2026-10-15T16:00:00.000Z',
     services: { name: 'Inspection' },
+    job_media: [],
     job_work_notes: [],
     status: 'scheduled',
     title: 'Fall inspection',

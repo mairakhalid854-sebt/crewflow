@@ -19,11 +19,22 @@ browser update access to job records.
   updates by another technician remain blocked.
 - Owners and office staff can review technician field notes on the web job
   detail page, and note creation is represented in the immutable audit trail.
+- Technicians can capture before photos on scheduled or in-progress work and
+  after photos once work is in progress; photos are resized, JPEG-compressed,
+  and limited to 5 MB before upload.
+- Photo uploads use short-lived database reservations, exact tenant/job-scoped
+  object paths, assignment checks, private storage policies, and an explicit
+  finalize step that verifies stored type and size.
+- Owners, office staff, and the currently assigned technician can view only
+  finalized photos; the web app streams them through an authenticated no-store
+  route without exposing raw bucket URLs.
+- Photo metadata and objects deny anonymous access, cross-tenant reads, direct
+  metadata mutation, unreserved paths, and uploads by another technician.
 
 ## Remaining Phase 4 work
 
-- Private before/after photo capture, compression, upload retry, and authorized
-  media viewing
+- Installed-device photo capture/upload smoke tests and explicit retry/recovery
+  UX for interrupted uploads
 - Customer signature capture with consent text, timestamp, job binding, and
   integrity history
 - Richer task/timeline history and offline draft/sync conflict handling
@@ -37,7 +48,9 @@ browser update access to job records.
 - FR-050: Partial - sign-in, assigned jobs, customer/location context, guarded
   status actions, and field-note history are implemented; richer task history
   remains.
-- FR-051: Not started.
+- FR-051: Partial - guarded private capture, compression, type/size validation,
+  upload, and authorized viewing are implemented; installed-device and
+  interrupted-upload retry testing remain.
 - FR-052: Not started.
 - FR-053: Not started beyond safe access verification for owner/office users.
 - FR-054: Not started.

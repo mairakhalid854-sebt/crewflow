@@ -27,6 +27,11 @@ const assignedJobSelect = `
     id,
     body,
     created_at
+  ),
+  job_media (
+    id,
+    media_kind,
+    uploaded_at
   )
 ` as const;
 

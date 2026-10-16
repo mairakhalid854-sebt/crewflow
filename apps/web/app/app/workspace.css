@@ -680,6 +680,42 @@
   font-size: 0.82rem;
 }
 
+.job-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.job-photo-grid figure {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.job-photo-grid img {
+  display: block;
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+}
+
+.job-photo-grid figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  text-transform: capitalize;
+}
+
+.job-photo-grid time {
+  color: #64748b;
+  font-size: 0.78rem;
+  text-align: right;
+}
+
 .team-panel {
   margin-top: 24px;
   padding: clamp(20px, 4vw, 30px);
