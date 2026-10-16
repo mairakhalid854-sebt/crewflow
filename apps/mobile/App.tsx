@@ -39,8 +39,11 @@ import {
   validateProgressNote,
 } from './src/jobs/assigned-jobs';
 import {
+  type JobPhotoUploadPendingResult,
   type JobPhotoUploadResult,
+  type PendingJobPhotoUpload,
   captureAndUploadJobPhoto,
+  retryJobPhotoUpload,
 } from './src/jobs/job-media';
 import {
   type JobMediaKind,
@@ -416,6 +419,17 @@ export default function App() {
     return result;
   }
 
+  async function retryAssignedJobPhoto(
+    upload: PendingJobPhotoUpload,
+  ): Promise<Exclude<JobPhotoUploadResult, 'cancelled'>> {
+    if (!authClient) throw new Error('Mobile client is unavailable.');
+    const result = await retryJobPhotoUpload(authClient, upload);
+    if (result === 'uploaded') {
+      setAssignedJobsRefreshKey((key) => key + 1);
+    }
+    return result;
+  }
+
   async function signAssignedJob(
     jobId: string,
     signerName: string,
@@ -490,6 +504,7 @@ export default function App() {
               onAdvanceJob={progressAssignedJob}
               onCapturePhoto={captureAssignedJobPhoto}
               onRecordSignature={signAssignedJob}
+              onRetryPhoto={retryAssignedJobPhoto}
               onRefreshOperations={() => {
                 setOperationsRefreshKey((key) => key + 1);
               }}
@@ -593,6 +608,7 @@ function AuthenticatedView({
   onAdvanceJob,
   onCapturePhoto,
   onRecordSignature,
+  onRetryPhoto,
   onRefreshJobs,
   onRefreshOperations,
   onSignOut,
@@ -617,6 +633,9 @@ function AuthenticatedView({
     signerName: string,
     strokes: readonly SignatureStroke[],
   ) => Promise<void>;
+  onRetryPhoto: (
+    upload: PendingJobPhotoUpload,
+  ) => Promise<Exclude<JobPhotoUploadResult, 'cancelled'>>;
   onRefreshJobs: () => void;
   onRefreshOperations: () => void;
   onSignOut: () => Promise<void>;
@@ -718,6 +737,7 @@ function AuthenticatedView({
         onCapturePhoto={onCapturePhoto}
         onRecordSignature={onRecordSignature}
         onRefresh={onRefreshJobs}
+        onRetryPhoto={onRetryPhoto}
         snapshot={assignedJobsState.snapshot}
       />
     );
@@ -1111,6 +1131,7 @@ function AssignedJobsView({
   onCapturePhoto,
   onRecordSignature,
   onRefresh,
+  onRetryPhoto,
   snapshot,
 }: Readonly<{
   onAdvanceJob: (
@@ -1128,9 +1149,14 @@ function AssignedJobsView({
     strokes: readonly SignatureStroke[],
   ) => Promise<void>;
   onRefresh: () => void;
+  onRetryPhoto: (
+    upload: PendingJobPhotoUpload,
+  ) => Promise<Exclude<JobPhotoUploadResult, 'cancelled'>>;
   snapshot: AssignedJobsSnapshot;
 }>) {
   const [selectedJobId, setSelectedJobId] = useState<string>();
+  const [pendingPhotoResult, setPendingPhotoResult] =
+    useState<JobPhotoUploadPendingResult>();
   const selectedJob = snapshot.jobs.find((job) => job.id === selectedJobId);
 
   if (selectedJob) {
@@ -1140,7 +1166,14 @@ function AssignedJobsView({
         onAdvanceJob={onAdvanceJob}
         onBack={() => setSelectedJobId(undefined)}
         onCapturePhoto={onCapturePhoto}
+        onPendingPhotoChange={setPendingPhotoResult}
         onRecordSignature={onRecordSignature}
+        onRetryPhoto={onRetryPhoto}
+        pendingPhotoResult={
+          pendingPhotoResult?.upload.jobId === selectedJob.id
+            ? pendingPhotoResult
+            : undefined
+        }
         timeZone={snapshot.timeZone}
       />
     );
@@ -1246,7 +1279,10 @@ function AssignedJobDetail({
   onAdvanceJob,
   onBack,
   onCapturePhoto,
+  onPendingPhotoChange,
   onRecordSignature,
+  onRetryPhoto,
+  pendingPhotoResult,
   timeZone,
 }: Readonly<{
   job: AssignedJob;
@@ -1260,11 +1296,18 @@ function AssignedJobDetail({
     jobId: string,
     mediaKind: JobMediaKind,
   ) => Promise<JobPhotoUploadResult>;
+  onPendingPhotoChange: (
+    result: JobPhotoUploadPendingResult | undefined,
+  ) => void;
   onRecordSignature: (
     jobId: string,
     signerName: string,
     strokes: readonly SignatureStroke[],
   ) => Promise<void>;
+  onRetryPhoto: (
+    upload: PendingJobPhotoUpload,
+  ) => Promise<Exclude<JobPhotoUploadResult, 'cancelled'>>;
+  pendingPhotoResult?: JobPhotoUploadPendingResult;
   timeZone: string;
 }>) {
   const [photoError, setPhotoError] = useState<string>();
@@ -1278,6 +1321,8 @@ function AssignedJobDetail({
     ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
     : 'Customer details unavailable';
   const progressAction = technicianProgressAction(job.status);
+  const pendingPhotoUpload = pendingPhotoResult?.upload;
+  const photoRetryAllowed = pendingPhotoResult?.canRetry ?? true;
   const allowedPhotoKinds = allowedJobPhotoKinds(job.status);
   const uploadedPhotos = job.job_media.filter(
     (media) => media.uploaded_at !== null,
@@ -1310,7 +1355,7 @@ function AssignedJobDetail({
   }
 
   async function capturePhoto(mediaKind: JobMediaKind) {
-    if (photoPending) return;
+    if (photoPending || pendingPhotoUpload) return;
     setPhotoError(undefined);
     setPhotoMessage(undefined);
     setPhotoPending(mediaKind);
@@ -1321,6 +1366,14 @@ function AssignedJobDetail({
         setPhotoPending(undefined);
         return;
       }
+      if (result !== 'uploaded') {
+        onPendingPhotoChange(result);
+        setPhotoPending(undefined);
+        setPhotoError(result.message);
+        return;
+      }
+      onPendingPhotoChange(undefined);
+      setPhotoPending(undefined);
       setPhotoMessage(
         `${mediaKind === 'before' ? 'Before' : 'After'} photo uploaded securely.`,
       );
@@ -1332,6 +1385,39 @@ function AssignedJobDetail({
           : 'Photo could not be uploaded. Try again.',
       );
     }
+  }
+
+  async function retryPhoto() {
+    if (!pendingPhotoUpload || !photoRetryAllowed || photoPending) return;
+    setPhotoError(undefined);
+    setPhotoMessage(undefined);
+    setPhotoPending(pendingPhotoUpload.mediaKind);
+
+    try {
+      const result = await onRetryPhoto(pendingPhotoUpload);
+      if (result !== 'uploaded') {
+        onPendingPhotoChange(result);
+        setPhotoPending(undefined);
+        setPhotoError(result.message);
+        return;
+      }
+      const label =
+        pendingPhotoUpload.mediaKind === 'before' ? 'Before' : 'After';
+      onPendingPhotoChange(undefined);
+      setPhotoPending(undefined);
+      setPhotoMessage(`${label} photo uploaded securely.`);
+    } catch {
+      setPhotoPending(undefined);
+      setPhotoError(
+        'The pending photo could not be retried. Check your connection and try again.',
+      );
+    }
+  }
+
+  function discardPendingPhoto() {
+    onPendingPhotoChange(undefined);
+    setPhotoError(undefined);
+    setPhotoMessage('Pending photo discarded. You can capture a new one.');
   }
 
   return (
@@ -1418,12 +1504,16 @@ function AssignedJobDetail({
             {allowedPhotoKinds.map((mediaKind) => (
               <Pressable
                 accessibilityRole="button"
-                disabled={photoPending !== undefined}
+                disabled={
+                  photoPending !== undefined || pendingPhotoUpload !== undefined
+                }
                 key={mediaKind}
                 onPress={() => void capturePhoto(mediaKind)}
                 style={({ pressed }) => [
                   styles.compactButton,
-                  photoPending !== undefined && styles.buttonDisabled,
+                  (photoPending !== undefined ||
+                    pendingPhotoUpload !== undefined) &&
+                    styles.buttonDisabled,
                   pressed && styles.buttonPressed,
                 ]}
               >
@@ -1440,7 +1530,53 @@ function AssignedJobDetail({
             Photo capture is available while work is scheduled or in progress.
           </Text>
         )}
-        {photoError ? (
+        {pendingPhotoUpload ? (
+          <View style={styles.photoRetryPanel}>
+            <Text style={styles.noticeTitle}>
+              Pending {pendingPhotoUpload.mediaKind} photo
+            </Text>
+            {(photoError ?? pendingPhotoResult.message) ? (
+              <Text accessibilityRole="alert" style={styles.noticeBody}>
+                {photoError ?? pendingPhotoResult.message}
+              </Text>
+            ) : null}
+            <View style={styles.photoRetryActions}>
+              {photoRetryAllowed ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={photoPending !== undefined}
+                  onPress={() => void retryPhoto()}
+                  style={({ pressed }) => [
+                    styles.compactButton,
+                    photoPending !== undefined && styles.buttonDisabled,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  <Text style={styles.compactButtonText}>
+                    {photoPending
+                      ? 'Retrying...'
+                      : pendingPhotoUpload.stored
+                        ? 'Retry confirmation'
+                        : 'Retry upload'}
+                  </Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                accessibilityRole="button"
+                disabled={photoPending !== undefined}
+                onPress={discardPendingPhoto}
+                style={({ pressed }) => [
+                  styles.discardButton,
+                  photoPending !== undefined && styles.buttonDisabled,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.discardButtonText}>Discard photo</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+        {photoError && !pendingPhotoUpload ? (
           <Text accessibilityRole="alert" style={styles.errorText}>
             {photoError}
           </Text>
@@ -2017,6 +2153,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
+  discardButton: {
+    alignItems: 'center',
+    borderColor: '#FCA5A5',
+    borderRadius: 9,
+    borderWidth: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  discardButtonText: {
+    color: '#B42318',
+    fontSize: 12,
+    fontWeight: '800',
+  },
   characterCount: {
     color: '#94A3B8',
     fontSize: 11,
@@ -2302,6 +2452,20 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
     marginTop: 14,
+  },
+  photoRetryActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 12,
+  },
+  photoRetryPanel: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 14,
+    padding: 14,
   },
   readOnlyNotice: {
     backgroundColor: '#EFF6FF',

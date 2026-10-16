@@ -25,6 +25,10 @@ browser update access to job records.
 - Photo uploads use short-lived database reservations, exact tenant/job-scoped
   object paths, assignment checks, private storage policies, and an explicit
   finalize step that verifies stored type and size.
+- Interrupted photo authorization, storage upload, and finalization can be
+  retried in the same app session without recapturing the image. Ambiguous
+  upload failures verify finalization first, stale unused reservations renew,
+  and the technician can explicitly discard an unavailable pending image.
 - Owners, office staff, and the currently assigned technician can view only
   finalized photos; the web app streams them through an authenticated no-store
   route without exposing raw bucket URLs.
@@ -48,10 +52,10 @@ browser update access to job records.
 
 ## Remaining Phase 4 work
 
-- Installed-device photo capture/upload smoke tests and explicit retry/recovery
-  UX for interrupted uploads
+- Installed-device photo capture/upload and retry smoke tests
 - Installed-device signature drawing and submission smoke tests
-- Richer task/timeline history and offline draft/sync conflict handling
+- Richer task/timeline history, durable cross-restart photo queues, orphan
+  cleanup, and offline draft/sync conflict handling
 - Assignment and schedule push notifications with token rotation and opt-outs
 - Installed-device owner/office overview verification and separately guarded
   mobile approval actions
@@ -64,8 +68,9 @@ browser update access to job records.
   status actions, and field-note history are implemented; richer task history
   remains.
 - FR-051: Partial - guarded private capture, compression, type/size validation,
-  upload, and authorized viewing are implemented; installed-device and
-  interrupted-upload retry testing remain.
+  upload, authorized viewing, and in-session retry/discard recovery are
+  implemented; installed-device and durable cross-restart recovery testing
+  remain.
 - FR-052: Delivered in application and database code - native drawing, explicit
   consent, server timestamp, immutable job binding, integrity hash, audit event,
   and authorized web review are implemented; installed-device verification
@@ -76,5 +81,6 @@ browser update access to job records.
 - FR-054: Not started.
 - FR-055: Partial - Expo application configuration exists; release assets and
   store/test-build work remain.
-- FR-056: Not started; the current field-progress command requires a live
-  connection and does not claim offline-first behavior.
+- FR-056: Not started; field-progress commands and pending photos are not
+  durably queued across an app restart, so the app does not claim offline-first
+  behavior.
