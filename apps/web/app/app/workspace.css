@@ -716,6 +716,64 @@
   text-align: right;
 }
 
+.job-signature-card {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(280px, 1fr);
+  gap: 22px;
+  padding: 18px;
+  border: 1px solid #dbe5df;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.job-signature-card svg {
+  width: 100%;
+  min-height: 180px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.job-signature-card path {
+  fill: none;
+  stroke: #11223c;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 5;
+}
+
+.job-signature-card dl {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.job-signature-card dt {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.job-signature-card dd {
+  margin: 4px 0 0;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.job-signature-card code {
+  overflow-wrap: anywhere;
+  color: #475569;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 720px) {
+  .job-signature-card {
+    grid-template-columns: 1fr;
+  }
+}
+
 .team-panel {
   margin-top: 24px;
   padding: clamp(20px, 4vw, 30px);

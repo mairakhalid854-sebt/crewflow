@@ -1,3 +1,4 @@
+import type { Json } from '@crewflow/database';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -20,6 +21,7 @@ function formatActivity(action: string): string {
   const labels: Readonly<Record<string, string>> = {
     'job.archived': 'Job archived',
     'job.created': 'Job created',
+    'job.customer_signature_recorded': 'Customer signature recorded',
     'job.photo_uploaded': 'Technician photo uploaded',
     'job.scheduled': 'Assignment or schedule updated',
     'job.status_changed': 'Job status changed',
@@ -27,6 +29,33 @@ function formatActivity(action: string): string {
     'job.work_note_added': 'Technician work note added',
   };
   return labels[action] ?? action;
+}
+
+function signaturePaths(strokes: Json): string[] {
+  if (!Array.isArray(strokes)) return [];
+
+  return strokes.flatMap((stroke) => {
+    if (!Array.isArray(stroke)) return [];
+    const points = stroke.flatMap((point) => {
+      if (!point || Array.isArray(point) || typeof point !== 'object')
+        return [];
+      const x = point.x;
+      const y = point.y;
+      if (typeof x !== 'number' || typeof y !== 'number') return [];
+      if (x < 0 || x > 1 || y < 0 || y > 1) return [];
+      return [{ x, y }];
+    });
+    if (points.length < 2) return [];
+
+    return [
+      points
+        .map(
+          (point, index) =>
+            `${index === 0 ? 'M' : 'L'} ${point.x * 1000} ${point.y * 300}`,
+        )
+        .join(' '),
+    ];
+  });
 }
 
 export default async function JobDetailPage({
@@ -52,6 +81,7 @@ export default async function JobDetailPage({
     profilesResult,
     activityResult,
     jobMediaResult,
+    jobSignatureResult,
     workNotesResult,
     quoteResult,
     invoiceResult,
@@ -93,6 +123,14 @@ export default async function JobDetailPage({
       .not('uploaded_at', 'is', null)
       .order('captured_at', { ascending: false })
       .limit(20),
+    supabase
+      .from('job_signatures')
+      .select(
+        'id, consent_text, integrity_hash, signature_strokes, signed_at, signer_name',
+      )
+      .eq('tenant_id', context.tenantId)
+      .eq('job_id', id)
+      .maybeSingle(),
     supabase
       .from('job_work_notes')
       .select('id, body, created_at')
@@ -137,6 +175,7 @@ export default async function JobDetailPage({
     profilesResult.error ||
     activityResult.error ||
     jobMediaResult.error ||
+    jobSignatureResult.error ||
     workNotesResult.error ||
     quoteResult.error ||
     invoiceResult.error ||
@@ -351,6 +390,63 @@ export default async function JobDetailPage({
           </div>
         ) : (
           <p className="form-help">No technician photos uploaded yet.</p>
+        )}
+      </section>
+
+      <section className="team-panel job-activity-panel">
+        <div className="team-panel-heading">
+          <div>
+            <h2>Customer signature</h2>
+            <p>
+              Immutable customer consent and signature evidence captured in the
+              field.
+            </p>
+          </div>
+        </div>
+        {jobSignatureResult.data ? (
+          <div className="job-signature-card">
+            <svg
+              aria-label={`Signature by ${jobSignatureResult.data.signer_name}`}
+              role="img"
+              viewBox="0 0 1000 300"
+            >
+              {signaturePaths(jobSignatureResult.data.signature_strokes).map(
+                (path, index) => (
+                  <path d={path} key={index} />
+                ),
+              )}
+            </svg>
+            <dl>
+              <div>
+                <dt>Signed by</dt>
+                <dd>{jobSignatureResult.data.signer_name}</dd>
+              </div>
+              <div>
+                <dt>Server timestamp</dt>
+                <dd>
+                  <time dateTime={jobSignatureResult.data.signed_at}>
+                    {new Intl.DateTimeFormat('en-US', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                      timeZone: context.timeZone,
+                    }).format(new Date(jobSignatureResult.data.signed_at))}
+                  </time>
+                </dd>
+              </div>
+              <div>
+                <dt>Consent</dt>
+                <dd>{jobSignatureResult.data.consent_text}</dd>
+              </div>
+              <div>
+                <dt>Integrity SHA-256</dt>
+                <dd>
+                  <code>{jobSignatureResult.data.integrity_hash}</code>
+                </dd>
+              </div>
+            </dl>
+          </div>
+        ) : (
+          <p className="form-help">No customer signature recorded yet.</p>
         )}
       </section>
 

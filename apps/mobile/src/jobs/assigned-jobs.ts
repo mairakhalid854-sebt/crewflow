@@ -32,6 +32,11 @@ const assignedJobSelect = `
     id,
     media_kind,
     uploaded_at
+  ),
+  job_signatures (
+    id,
+    signer_name,
+    signed_at
   )
 ` as const;
 
