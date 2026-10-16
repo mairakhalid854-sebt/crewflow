@@ -15,6 +15,15 @@
       "package": "com.crewflow.mobile",
       "edgeToEdgeEnabled": true
     },
-    "plugins": ["expo-secure-store"]
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow CrewFlow to capture before and after photos for your assigned jobs.",
+          "photosPermission": "Allow CrewFlow to select job photos when you choose to upload them."
+        }
+      ]
+    ]
   }
 }

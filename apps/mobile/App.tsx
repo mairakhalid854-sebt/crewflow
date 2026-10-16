@@ -36,6 +36,14 @@ import {
   technicianProgressAction,
   validateProgressNote,
 } from './src/jobs/assigned-jobs';
+import {
+  type JobPhotoUploadResult,
+  captureAndUploadJobPhoto,
+} from './src/jobs/job-media';
+import {
+  type JobMediaKind,
+  allowedJobPhotoKinds,
+} from './src/jobs/job-media-policy';
 import { getSupabaseClient } from './src/lib/supabase';
 
 type AccessState =
@@ -330,6 +338,18 @@ export default function App() {
     setAssignedJobsRefreshKey((key) => key + 1);
   }
 
+  async function captureAssignedJobPhoto(
+    jobId: string,
+    mediaKind: JobMediaKind,
+  ): Promise<JobPhotoUploadResult> {
+    if (!authClient) throw new Error('Mobile client is unavailable.');
+    const result = await captureAndUploadJobPhoto(authClient, jobId, mediaKind);
+    if (result === 'uploaded') {
+      setAssignedJobsRefreshKey((key) => key + 1);
+    }
+    return result;
+  }
+
   if (session === undefined) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -392,6 +412,7 @@ export default function App() {
                   : undefined
               }
               onAdvanceJob={progressAssignedJob}
+              onCapturePhoto={captureAssignedJobPhoto}
               onSignOut={signOut}
               onRefreshJobs={() => {
                 setAssignedJobsRefreshKey((key) => key + 1);
@@ -489,6 +510,7 @@ function AuthenticatedView({
   email,
   message,
   onAdvanceJob,
+  onCapturePhoto,
   onRefreshJobs,
   onSignOut,
   pending,
@@ -502,6 +524,10 @@ function AuthenticatedView({
     status: TechnicianProgressStatus,
     note: string,
   ) => Promise<void>;
+  onCapturePhoto: (
+    jobId: string,
+    mediaKind: JobMediaKind,
+  ) => Promise<JobPhotoUploadResult>;
   onRefreshJobs: () => void;
   onSignOut: () => Promise<void>;
   pending: boolean;
@@ -573,6 +599,7 @@ function AuthenticatedView({
     accessContent = (
       <AssignedJobsView
         onAdvanceJob={onAdvanceJob}
+        onCapturePhoto={onCapturePhoto}
         onRefresh={onRefreshJobs}
         snapshot={assignedJobsState.snapshot}
       />
@@ -618,6 +645,7 @@ const jobStatusLabels: Record<AssignedJob['status'], string> = {
 
 function AssignedJobsView({
   onAdvanceJob,
+  onCapturePhoto,
   onRefresh,
   snapshot,
 }: Readonly<{
@@ -626,6 +654,10 @@ function AssignedJobsView({
     status: TechnicianProgressStatus,
     note: string,
   ) => Promise<void>;
+  onCapturePhoto: (
+    jobId: string,
+    mediaKind: JobMediaKind,
+  ) => Promise<JobPhotoUploadResult>;
   onRefresh: () => void;
   snapshot: AssignedJobsSnapshot;
 }>) {
@@ -638,6 +670,7 @@ function AssignedJobsView({
         job={selectedJob}
         onAdvanceJob={onAdvanceJob}
         onBack={() => setSelectedJobId(undefined)}
+        onCapturePhoto={onCapturePhoto}
         timeZone={snapshot.timeZone}
       />
     );
@@ -742,6 +775,7 @@ function AssignedJobDetail({
   job,
   onAdvanceJob,
   onBack,
+  onCapturePhoto,
   timeZone,
 }: Readonly<{
   job: AssignedJob;
@@ -751,8 +785,15 @@ function AssignedJobDetail({
     note: string,
   ) => Promise<void>;
   onBack: () => void;
+  onCapturePhoto: (
+    jobId: string,
+    mediaKind: JobMediaKind,
+  ) => Promise<JobPhotoUploadResult>;
   timeZone: string;
 }>) {
+  const [photoError, setPhotoError] = useState<string>();
+  const [photoMessage, setPhotoMessage] = useState<string>();
+  const [photoPending, setPhotoPending] = useState<JobMediaKind>();
   const [progressError, setProgressError] = useState<string>();
   const [progressPending, setProgressPending] = useState(false);
   const [workNote, setWorkNote] = useState('');
@@ -761,6 +802,10 @@ function AssignedJobDetail({
     ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
     : 'Customer details unavailable';
   const progressAction = technicianProgressAction(job.status);
+  const allowedPhotoKinds = allowedJobPhotoKinds(job.status);
+  const uploadedPhotos = job.job_media.filter(
+    (media) => media.uploaded_at !== null,
+  );
   const workNotes = [...job.job_work_notes].sort(
     (left, right) =>
       new Date(right.created_at).getTime() -
@@ -783,6 +828,31 @@ function AssignedJobDetail({
       setProgressPending(false);
       setProgressError(
         'Job could not be updated. Refresh it and confirm it is still assigned to you.',
+      );
+    }
+  }
+
+  async function capturePhoto(mediaKind: JobMediaKind) {
+    if (photoPending) return;
+    setPhotoError(undefined);
+    setPhotoMessage(undefined);
+    setPhotoPending(mediaKind);
+
+    try {
+      const result = await onCapturePhoto(job.id, mediaKind);
+      if (result === 'cancelled') {
+        setPhotoPending(undefined);
+        return;
+      }
+      setPhotoMessage(
+        `${mediaKind === 'before' ? 'Before' : 'After'} photo uploaded securely.`,
+      );
+    } catch (error) {
+      setPhotoPending(undefined);
+      setPhotoError(
+        error instanceof Error
+          ? error.message
+          : 'Photo could not be uploaded. Try again.',
       );
     }
   }
@@ -851,6 +921,59 @@ function AssignedJobDetail({
           ))}
         </View>
       ) : null}
+
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Private job photos</Text>
+        <Text style={styles.detailSecondary}>
+          {
+            uploadedPhotos.filter((photo) => photo.media_kind === 'before')
+              .length
+          }{' '}
+          before ·{' '}
+          {
+            uploadedPhotos.filter((photo) => photo.media_kind === 'after')
+              .length
+          }{' '}
+          after
+        </Text>
+        {allowedPhotoKinds.length > 0 ? (
+          <View style={styles.photoActions}>
+            {allowedPhotoKinds.map((mediaKind) => (
+              <Pressable
+                accessibilityRole="button"
+                disabled={photoPending !== undefined}
+                key={mediaKind}
+                onPress={() => void capturePhoto(mediaKind)}
+                style={({ pressed }) => [
+                  styles.compactButton,
+                  photoPending !== undefined && styles.buttonDisabled,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.compactButtonText}>
+                  {photoPending === mediaKind
+                    ? 'Uploading...'
+                    : `Take ${mediaKind} photo`}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noticeBody}>
+            Photo capture is available while work is scheduled or in progress.
+          </Text>
+        )}
+        {photoError ? (
+          <Text accessibilityRole="alert" style={styles.errorText}>
+            {photoError}
+          </Text>
+        ) : null}
+        {photoMessage ? (
+          <Text accessibilityRole="alert" style={styles.successText}>
+            {photoMessage}
+          </Text>
+        ) : null}
+      </View>
 
       {progressAction ? (
         <View style={styles.progressPanel}>
@@ -1351,6 +1474,12 @@ const styles = StyleSheet.create({
     color: '#11223C',
     fontSize: 14,
     fontWeight: '700',
+  },
+  photoActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 14,
   },
   readOnlyNotice: {
     backgroundColor: '#EFF6FF',

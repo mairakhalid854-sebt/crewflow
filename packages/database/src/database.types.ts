@@ -366,6 +366,70 @@ export type Database = {
           },
         ];
       };
+      job_media: {
+        Row: {
+          byte_size: number;
+          captured_at: string;
+          content_type: string;
+          created_at: string;
+          id: string;
+          job_id: string;
+          media_kind: Database['public']['Enums']['job_media_kind'];
+          storage_path: string;
+          tenant_id: string;
+          uploaded_at: string | null;
+          uploader_membership_id: string;
+        };
+        Insert: {
+          byte_size: number;
+          captured_at?: string;
+          content_type: string;
+          created_at?: string;
+          id?: string;
+          job_id: string;
+          media_kind: Database['public']['Enums']['job_media_kind'];
+          storage_path: string;
+          tenant_id: string;
+          uploaded_at?: string | null;
+          uploader_membership_id: string;
+        };
+        Update: {
+          byte_size?: number;
+          captured_at?: string;
+          content_type?: string;
+          created_at?: string;
+          id?: string;
+          job_id?: string;
+          media_kind?: Database['public']['Enums']['job_media_kind'];
+          storage_path?: string;
+          tenant_id?: string;
+          uploaded_at?: string | null;
+          uploader_membership_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_media_job_tenant_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'job_media_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'job_media_uploader_tenant_fk';
+            columns: ['uploader_membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
       job_work_notes: {
         Row: {
           author_membership_id: string;
@@ -1264,6 +1328,10 @@ export type Database = {
         Args: { quote_decision: string; quote_token: string };
         Returns: string;
       };
+      finalize_assigned_job_media: {
+        Args: { target_media_id: string };
+        Returns: string;
+      };
       get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
       get_public_quote: { Args: { quote_token: string }; Returns: Json };
       get_public_work_report: { Args: { report_token: string }; Returns: Json };
@@ -1298,6 +1366,18 @@ export type Database = {
           target_invoice_id: string;
         };
         Returns: string;
+      };
+      reserve_assigned_job_media: {
+        Args: {
+          media_content_type: string;
+          media_size_bytes: number;
+          target_job_id: string;
+          target_media_kind: Database['public']['Enums']['job_media_kind'];
+        };
+        Returns: {
+          media_id: string;
+          storage_path: string;
+        }[];
       };
       revoke_team_invitation: {
         Args: { target_invitation_id: string };
@@ -1377,6 +1457,7 @@ export type Database = {
     };
     Enums: {
       invoice_status: 'draft' | 'sent' | 'partially_paid' | 'paid' | 'void';
+      job_media_kind: 'before' | 'after';
       job_priority: 'low' | 'normal' | 'high' | 'urgent';
       job_status:
         | 'new'
