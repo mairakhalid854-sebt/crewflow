@@ -22,6 +22,7 @@ function formatActivity(action: string): string {
     'job.scheduled': 'Assignment or schedule updated',
     'job.status_changed': 'Job status changed',
     'job.updated': 'Job details updated',
+    'job.work_note_added': 'Technician work note added',
   };
   return labels[action] ?? action;
 }
@@ -48,6 +49,7 @@ export default async function JobDetailPage({
     membersResult,
     profilesResult,
     activityResult,
+    workNotesResult,
     quoteResult,
     invoiceResult,
     reportResult,
@@ -79,6 +81,13 @@ export default async function JobDetailPage({
       .eq('entity_type', 'job')
       .eq('entity_id', id)
       .order('occurred_at', { ascending: false })
+      .limit(50),
+    supabase
+      .from('job_work_notes')
+      .select('id, body, created_at')
+      .eq('tenant_id', context.tenantId)
+      .eq('job_id', id)
+      .order('created_at', { ascending: false })
       .limit(50),
     supabase
       .from('quotes')
@@ -116,6 +125,7 @@ export default async function JobDetailPage({
     membersResult.error ||
     profilesResult.error ||
     activityResult.error ||
+    workNotesResult.error ||
     quoteResult.error ||
     invoiceResult.error ||
     reportResult.error
@@ -293,6 +303,35 @@ export default async function JobDetailPage({
           />
         </>
       ) : null}
+
+      <section className="team-panel job-activity-panel">
+        <div className="team-panel-heading">
+          <div>
+            <h2>Technician field notes</h2>
+            <p>
+              Immutable updates recorded while the assigned work progresses.
+            </p>
+          </div>
+        </div>
+        {(workNotesResult.data ?? []).length ? (
+          <ol className="work-note-list">
+            {(workNotesResult.data ?? []).map((note) => (
+              <li key={note.id}>
+                <p>{note.body}</p>
+                <time dateTime={note.created_at}>
+                  {new Intl.DateTimeFormat('en-US', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                    timeZone: context.timeZone,
+                  }).format(new Date(note.created_at))}
+                </time>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="form-help">No technician field notes yet.</p>
+        )}
+      </section>
 
       <section className="team-panel job-activity-panel">
         <div className="team-panel-heading">

@@ -27,10 +27,14 @@ import {
 import {
   type AssignedJob,
   type AssignedJobsSnapshot,
+  type TechnicianProgressStatus,
+  advanceAssignedJob,
   formatCustomerAddress,
   formatJobSchedule,
   loadAssignedJobs,
   partitionAssignedJobs,
+  technicianProgressAction,
+  validateProgressNote,
 } from './src/jobs/assigned-jobs';
 import { getSupabaseClient } from './src/lib/supabase';
 
@@ -316,6 +320,16 @@ export default function App() {
     setRecoveryState({ status: 'idle' });
   }
 
+  async function progressAssignedJob(
+    jobId: string,
+    status: TechnicianProgressStatus,
+    note: string,
+  ) {
+    if (!authClient) throw new Error('Mobile client is unavailable.');
+    await advanceAssignedJob(authClient, jobId, status, note);
+    setAssignedJobsRefreshKey((key) => key + 1);
+  }
+
   if (session === undefined) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -377,6 +391,7 @@ export default function App() {
                   ? 'Your password has been updated securely.'
                   : undefined
               }
+              onAdvanceJob={progressAssignedJob}
               onSignOut={signOut}
               onRefreshJobs={() => {
                 setAssignedJobsRefreshKey((key) => key + 1);
@@ -473,6 +488,7 @@ function AuthenticatedView({
   assignedJobsState,
   email,
   message,
+  onAdvanceJob,
   onRefreshJobs,
   onSignOut,
   pending,
@@ -481,6 +497,11 @@ function AuthenticatedView({
   assignedJobsState: AssignedJobsState;
   email: string;
   message?: string;
+  onAdvanceJob: (
+    jobId: string,
+    status: TechnicianProgressStatus,
+    note: string,
+  ) => Promise<void>;
   onRefreshJobs: () => void;
   onSignOut: () => Promise<void>;
   pending: boolean;
@@ -551,6 +572,7 @@ function AuthenticatedView({
   } else if (assignedJobsState.status === 'loaded') {
     accessContent = (
       <AssignedJobsView
+        onAdvanceJob={onAdvanceJob}
         onRefresh={onRefreshJobs}
         snapshot={assignedJobsState.snapshot}
       />
@@ -595,9 +617,15 @@ const jobStatusLabels: Record<AssignedJob['status'], string> = {
 };
 
 function AssignedJobsView({
+  onAdvanceJob,
   onRefresh,
   snapshot,
 }: Readonly<{
+  onAdvanceJob: (
+    jobId: string,
+    status: TechnicianProgressStatus,
+    note: string,
+  ) => Promise<void>;
   onRefresh: () => void;
   snapshot: AssignedJobsSnapshot;
 }>) {
@@ -608,6 +636,7 @@ function AssignedJobsView({
     return (
       <AssignedJobDetail
         job={selectedJob}
+        onAdvanceJob={onAdvanceJob}
         onBack={() => setSelectedJobId(undefined)}
         timeZone={snapshot.timeZone}
       />
@@ -711,17 +740,52 @@ function AssignedJobCard({
 
 function AssignedJobDetail({
   job,
+  onAdvanceJob,
   onBack,
   timeZone,
 }: Readonly<{
   job: AssignedJob;
+  onAdvanceJob: (
+    jobId: string,
+    status: TechnicianProgressStatus,
+    note: string,
+  ) => Promise<void>;
   onBack: () => void;
   timeZone: string;
 }>) {
+  const [progressError, setProgressError] = useState<string>();
+  const [progressPending, setProgressPending] = useState(false);
+  const [workNote, setWorkNote] = useState('');
   const address = formatCustomerAddress(job.customers);
   const customerName = job.customers
     ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
     : 'Customer details unavailable';
+  const progressAction = technicianProgressAction(job.status);
+  const workNotes = [...job.job_work_notes].sort(
+    (left, right) =>
+      new Date(right.created_at).getTime() -
+      new Date(left.created_at).getTime(),
+  );
+
+  async function submitProgress() {
+    if (!progressAction || progressPending) return;
+    const validationMessage = validateProgressNote(workNote, progressAction);
+    if (validationMessage) {
+      setProgressError(validationMessage);
+      return;
+    }
+
+    setProgressError(undefined);
+    setProgressPending(true);
+    try {
+      await onAdvanceJob(job.id, progressAction.status, workNote);
+    } catch {
+      setProgressPending(false);
+      setProgressError(
+        'Job could not be updated. Refresh it and confirm it is still assigned to you.',
+      );
+    }
+  }
 
   return (
     <View style={styles.jobsSection}>
@@ -770,13 +834,76 @@ function AssignedJobDetail({
         </View>
       ) : null}
 
-      <View style={styles.readOnlyNotice}>
-        <Text style={styles.noticeTitle}>Read-only assignment</Text>
-        <Text style={styles.noticeBody}>
-          Status updates, notes, photos, and signatures arrive in the field
-          execution phase.
-        </Text>
-      </View>
+      {workNotes.length > 0 ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Field notes</Text>
+          {workNotes.map((note) => (
+            <View key={note.id} style={styles.workNote}>
+              <Text style={styles.detailSecondary}>{note.body}</Text>
+              <Text style={styles.workNoteTime}>
+                {new Intl.DateTimeFormat('en-US', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                  timeZone,
+                }).format(new Date(note.created_at))}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {progressAction ? (
+        <View style={styles.progressPanel}>
+          <Text style={styles.noticeTitle}>Update field progress</Text>
+          <Text style={styles.noticeBody}>
+            {progressAction.noteRequired
+              ? 'Add a completion note for the office and customer report draft.'
+              : 'You may add a note before starting this job.'}
+          </Text>
+          <TextInput
+            accessibilityLabel="Work note"
+            editable={!progressPending}
+            maxLength={2000}
+            multiline
+            onChangeText={setWorkNote}
+            placeholder={
+              progressAction.noteRequired
+                ? 'What work was completed?'
+                : 'Optional arrival or diagnostic note'
+            }
+            style={[styles.input, styles.workNoteInput]}
+            textAlignVertical="top"
+            value={workNote}
+          />
+          <Text style={styles.characterCount}>{workNote.length}/2000</Text>
+          {progressError ? (
+            <Text accessibilityRole="alert" style={styles.errorTextCompact}>
+              {progressError}
+            </Text>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            disabled={progressPending}
+            onPress={() => void submitProgress()}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              progressPending && styles.buttonDisabled,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.primaryButtonText}>
+              {progressPending ? 'Saving...' : progressAction.label}
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.readOnlyNotice}>
+          <Text style={styles.noticeTitle}>Field progress locked</Text>
+          <Text style={styles.noticeBody}>
+            This assignment has no technician status action available.
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -1029,6 +1156,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
+  characterCount: {
+    color: '#94A3B8',
+    fontSize: 11,
+    marginTop: 5,
+    textAlign: 'right',
+  },
   container: {
     alignItems: 'center',
     flexGrow: 1,
@@ -1239,6 +1372,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
   },
+  progressPanel: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 22,
+    padding: 15,
+  },
   safeArea: {
     backgroundColor: '#F6F8FC',
     flex: 1,
@@ -1277,5 +1418,18 @@ const styles = StyleSheet.create({
     fontSize: 27,
     fontWeight: '800',
     letterSpacing: -0.6,
+  },
+  workNote: {
+    borderBottomColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    paddingBottom: 12,
+  },
+  workNoteInput: {
+    minHeight: 104,
+  },
+  workNoteTime: {
+    color: '#94A3B8',
+    fontSize: 11,
+    marginTop: 5,
   },
 });
