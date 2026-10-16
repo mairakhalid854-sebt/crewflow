@@ -57,6 +57,14 @@ import {
   type SignatureStroke,
 } from './src/jobs/job-signature-policy';
 import { getSupabaseClient } from './src/lib/supabase';
+import {
+  formatUsdCents,
+  loadMobileOperations,
+  type MobileOperationsSnapshot,
+  type OperationsApproval,
+  type OperationsInvoice,
+  type OperationsJob,
+} from './src/operations/mobile-operations';
 
 type AccessState =
   | { readonly status: 'idle' }
@@ -76,6 +84,15 @@ type AssignedJobsState =
   | { readonly status: 'loading' }
   | {
       readonly snapshot: AssignedJobsSnapshot;
+      readonly status: 'loaded';
+    }
+  | { readonly message: string; readonly status: 'error' };
+
+type MobileOperationsState =
+  | { readonly status: 'idle' }
+  | { readonly status: 'loading' }
+  | {
+      readonly snapshot: MobileOperationsSnapshot;
       readonly status: 'loaded';
     }
   | { readonly message: string; readonly status: 'error' };
@@ -101,6 +118,10 @@ export default function App() {
   const [formMessage, setFormMessage] = useState<string>();
   const [assignedJobsRefreshKey, setAssignedJobsRefreshKey] = useState(0);
   const [assignedJobsState, setAssignedJobsState] = useState<AssignedJobsState>(
+    { status: 'idle' },
+  );
+  const [operationsRefreshKey, setOperationsRefreshKey] = useState(0);
+  const [operationsState, setOperationsState] = useState<MobileOperationsState>(
     { status: 'idle' },
   );
   const [password, setPassword] = useState('');
@@ -263,6 +284,39 @@ export default function App() {
       active = false;
     };
   }, [accessState, assignedJobsRefreshKey, authClient]);
+
+  useEffect(() => {
+    let active = true;
+    const access =
+      accessState.status === 'loaded' && accessState.access.allowed
+        ? accessState.access
+        : undefined;
+
+    if (!authClient || !access || access.membership.role === 'technician') {
+      setOperationsState({ status: 'idle' });
+      return () => {
+        active = false;
+      };
+    }
+
+    setOperationsState({ status: 'loading' });
+    void loadMobileOperations(authClient, access.membership)
+      .then((snapshot) => {
+        if (active) setOperationsState({ snapshot, status: 'loaded' });
+      })
+      .catch(() => {
+        if (!active) return;
+        setOperationsState({
+          message:
+            'Operations overview could not be loaded. Check your connection.',
+          status: 'error',
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessState, authClient, operationsRefreshKey]);
 
   async function signIn() {
     if (!authClient || pending) return;
@@ -436,7 +490,11 @@ export default function App() {
               onAdvanceJob={progressAssignedJob}
               onCapturePhoto={captureAssignedJobPhoto}
               onRecordSignature={signAssignedJob}
+              onRefreshOperations={() => {
+                setOperationsRefreshKey((key) => key + 1);
+              }}
               onSignOut={signOut}
+              operationsState={operationsState}
               onRefreshJobs={() => {
                 setAssignedJobsRefreshKey((key) => key + 1);
               }}
@@ -536,7 +594,9 @@ function AuthenticatedView({
   onCapturePhoto,
   onRecordSignature,
   onRefreshJobs,
+  onRefreshOperations,
   onSignOut,
+  operationsState,
   pending,
 }: Readonly<{
   accessState: AccessState;
@@ -558,7 +618,9 @@ function AuthenticatedView({
     strokes: readonly SignatureStroke[],
   ) => Promise<void>;
   onRefreshJobs: () => void;
+  onRefreshOperations: () => void;
   onSignOut: () => Promise<void>;
+  operationsState: MobileOperationsState;
   pending: boolean;
 }>) {
   let accessContent: React.ReactNode;
@@ -588,17 +650,42 @@ function AuthenticatedView({
       </View>
     );
   } else if (accessState.access.membership.role !== 'technician') {
-    accessContent = (
-      <View style={styles.notice}>
-        <Text style={styles.noticeTitle}>
-          {roleLabels[accessState.access.membership.role]} access verified
-        </Text>
-        <Text style={styles.noticeBody}>
-          Your membership is active. Owner and office mobile dashboards arrive
-          in a later phase; use the CrewFlow web app for full operations.
-        </Text>
-      </View>
-    );
+    if (
+      operationsState.status === 'loading' ||
+      operationsState.status === 'idle'
+    ) {
+      accessContent = (
+        <View style={styles.inlineStatus}>
+          <ActivityIndicator color="#1769F4" />
+          <Text style={styles.noticeBody}>Loading operations overview...</Text>
+        </View>
+      );
+    } else if (operationsState.status === 'error') {
+      accessContent = (
+        <View style={styles.notice}>
+          <Text accessibilityRole="alert" style={styles.errorTextCompact}>
+            {operationsState.message}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onRefreshOperations}
+            style={({ pressed }) => [
+              styles.compactButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.compactButtonText}>Try again</Text>
+          </Pressable>
+        </View>
+      );
+    } else {
+      accessContent = (
+        <OperationsOverviewView
+          onRefresh={onRefreshOperations}
+          snapshot={operationsState.snapshot}
+        />
+      );
+    }
   } else if (assignedJobsState.status === 'loading') {
     accessContent = (
       <View style={styles.inlineStatus}>
@@ -658,6 +745,352 @@ function AuthenticatedView({
           {pending ? 'Signing out…' : 'Sign out'}
         </Text>
       </Pressable>
+    </View>
+  );
+}
+
+function OperationsOverviewView({
+  onRefresh,
+  snapshot,
+}: Readonly<{
+  onRefresh: () => void;
+  snapshot: MobileOperationsSnapshot;
+}>) {
+  const [selectedJobId, setSelectedJobId] = useState<string>();
+  const selectedJob = snapshot.jobs.find((job) => job.id === selectedJobId);
+
+  if (selectedJob) {
+    return (
+      <OperationsJobDetail
+        job={selectedJob}
+        onBack={() => setSelectedJobId(undefined)}
+        timeZone={snapshot.timeZone}
+      />
+    );
+  }
+
+  const metrics = [
+    {
+      detail: 'scheduled jobs',
+      label: 'Today',
+      value: snapshot.metrics.todayCount.toString(),
+    },
+    {
+      detail: 'need a technician',
+      label: 'Unassigned',
+      value: snapshot.metrics.unassignedCount.toString(),
+    },
+    {
+      detail: 'scheduled or active',
+      label: 'Active',
+      value: snapshot.metrics.activeCount.toString(),
+    },
+    {
+      detail: 'sent invoices',
+      label: 'Unpaid',
+      value: snapshot.metrics.unpaidCount.toString(),
+    },
+    {
+      detail: 'draft items',
+      label: 'Approvals',
+      value: snapshot.metrics.pendingApprovalCount.toString(),
+    },
+    {
+      detail: 'in the workflow',
+      label: 'Open',
+      value: snapshot.metrics.openCount.toString(),
+    },
+    ...(snapshot.metrics.monthlyReceivedCents === undefined
+      ? []
+      : [
+          {
+            detail: 'received this month',
+            label: 'Revenue',
+            value: formatUsdCents(snapshot.metrics.monthlyReceivedCents),
+          },
+        ]),
+  ];
+
+  return (
+    <View style={styles.operationsSection}>
+      <View style={styles.jobsHeader}>
+        <View style={styles.flex}>
+          <Text style={styles.jobsEyebrow}>OPERATIONS OVERVIEW</Text>
+          <Text style={styles.jobsTitle}>{snapshot.tenantName}</Text>
+          <Text style={styles.operationsRole}>
+            {roleLabels[snapshot.role]} mobile view
+          </Text>
+        </View>
+        <Pressable
+          accessibilityLabel="Refresh operations overview"
+          accessibilityRole="button"
+          onPress={onRefresh}
+          style={({ pressed }) => [
+            styles.compactButton,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Text style={styles.compactButtonText}>Refresh</Text>
+        </Pressable>
+      </View>
+
+      <View accessibilityLabel="Operations metrics" style={styles.metricGrid}>
+        {metrics.map((metric) => (
+          <View key={metric.label} style={styles.metricCard}>
+            <Text style={styles.metricLabel}>{metric.label}</Text>
+            <Text style={styles.metricValue}>{metric.value}</Text>
+            <Text style={styles.metricDetail}>{metric.detail}</Text>
+          </View>
+        ))}
+      </View>
+
+      <OperationsListSection
+        emptyMessage="No jobs are scheduled for today."
+        title="Today's jobs"
+      >
+        {snapshot.todayJobs.slice(0, 10).map((job) => (
+          <OperationsJobCard
+            job={job}
+            key={job.id}
+            onPress={() => setSelectedJobId(job.id)}
+            timeZone={snapshot.timeZone}
+          />
+        ))}
+      </OperationsListSection>
+
+      <OperationsListSection
+        emptyMessage="No open jobs are waiting for assignment."
+        title="Needs assignment"
+      >
+        {snapshot.unassignedJobs.slice(0, 10).map((job) => (
+          <OperationsJobCard
+            job={job}
+            key={job.id}
+            onPress={() => setSelectedJobId(job.id)}
+            timeZone={snapshot.timeZone}
+          />
+        ))}
+      </OperationsListSection>
+
+      <OperationsListSection
+        emptyMessage="No draft quotes, invoices, or reports need review."
+        title="Pending approvals"
+      >
+        {snapshot.pendingApprovals.slice(0, 10).map((approval) => (
+          <OperationsApprovalCard
+            approval={approval}
+            key={`${approval.kind}-${approval.id}`}
+          />
+        ))}
+      </OperationsListSection>
+
+      <OperationsListSection
+        emptyMessage="No sent invoices are currently unpaid."
+        title="Unpaid invoices"
+      >
+        {snapshot.unpaidInvoices.slice(0, 10).map((invoice) => (
+          <OperationsInvoiceCard
+            invoice={invoice}
+            key={invoice.id}
+            ownerView={snapshot.role === 'owner'}
+            timeZone={snapshot.timeZone}
+          />
+        ))}
+      </OperationsListSection>
+
+      <View style={styles.readOnlyNotice}>
+        <Text style={styles.noticeTitle}>Read-only mobile oversight</Text>
+        <Text style={styles.noticeBody}>
+          Use the CrewFlow web app to edit jobs or approve and send customer
+          documents. Guarded mobile actions will be added separately.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function OperationsListSection({
+  children,
+  emptyMessage,
+  title,
+}: Readonly<{
+  children: React.ReactNode;
+  emptyMessage: string;
+  title: string;
+}>) {
+  const hasItems = Array.isArray(children)
+    ? children.length > 0
+    : Boolean(children);
+
+  return (
+    <View style={styles.operationsGroup}>
+      <Text style={styles.jobGroupTitle}>{title}</Text>
+      {hasItems ? (
+        children
+      ) : (
+        <Text style={styles.operationsEmpty}>{emptyMessage}</Text>
+      )}
+    </View>
+  );
+}
+
+function OperationsJobCard({
+  job,
+  onPress,
+  timeZone,
+}: Readonly<{ job: OperationsJob; onPress: () => void; timeZone: string }>) {
+  const customerName = job.customers
+    ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
+    : 'Customer';
+
+  return (
+    <Pressable
+      accessibilityLabel={`Open ${job.title}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.operationsListCard,
+        pressed && styles.buttonPressed,
+      ]}
+    >
+      <View style={styles.jobCardHeader}>
+        <Text numberOfLines={2} style={styles.operationsCardTitle}>
+          {job.title}
+        </Text>
+        <Text style={styles.statusBadge}>{jobStatusLabels[job.status]}</Text>
+      </View>
+      <Text style={styles.jobSchedule}>{formatJobSchedule(job, timeZone)}</Text>
+      <Text style={styles.jobMeta}>
+        {customerName}
+        {job.services?.name ? ` - ${job.services.name}` : ''}
+      </Text>
+    </Pressable>
+  );
+}
+
+function OperationsJobDetail({
+  job,
+  onBack,
+  timeZone,
+}: Readonly<{
+  job: OperationsJob;
+  onBack: () => void;
+  timeZone: string;
+}>) {
+  const customerName = job.customers
+    ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
+    : 'Customer details unavailable';
+  const address = formatCustomerAddress(job.customers);
+
+  return (
+    <View style={styles.operationsSection}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onBack}
+        style={({ pressed }) => [
+          styles.backButton,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.backButtonText}>Back to operations overview</Text>
+      </Pressable>
+      <Text style={styles.jobsEyebrow}>{jobStatusLabels[job.status]}</Text>
+      <Text style={styles.detailTitle}>{job.title}</Text>
+      <Text style={styles.detailSchedule}>
+        {formatJobSchedule(job, timeZone)}
+      </Text>
+
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Customer</Text>
+        <Text style={styles.detailValue}>{customerName}</Text>
+        {job.customers?.phone ? (
+          <Text style={styles.detailSecondary}>{job.customers.phone}</Text>
+        ) : null}
+      </View>
+      {address ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Service address</Text>
+          <Text style={styles.detailValue}>{address}</Text>
+        </View>
+      ) : null}
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Priority</Text>
+        <Text style={styles.detailValue}>{job.priority}</Text>
+      </View>
+      {job.services?.name ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Service</Text>
+          <Text style={styles.detailValue}>{job.services.name}</Text>
+        </View>
+      ) : null}
+      {job.description ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Work details</Text>
+          <Text style={styles.detailSecondary}>{job.description}</Text>
+        </View>
+      ) : null}
+      <View style={styles.readOnlyNotice}>
+        <Text style={styles.noticeTitle}>Read-only job oversight</Text>
+        <Text style={styles.noticeBody}>
+          Scheduling, reassignment, and status controls remain in the guarded
+          web workflow.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const approvalLabels: Record<OperationsApproval['kind'], string> = {
+  invoice: 'Draft invoice',
+  quote: 'Draft quote',
+  report: 'Draft work report',
+};
+
+function OperationsApprovalCard({
+  approval,
+}: Readonly<{ approval: OperationsApproval }>) {
+  return (
+    <View style={styles.operationsListCard}>
+      <Text style={styles.operationsCardKicker}>
+        {approvalLabels[approval.kind]}
+      </Text>
+      <Text style={styles.operationsCardTitle}>{approval.jobTitle}</Text>
+      <Text style={styles.jobMeta}>Awaiting office review on the web app</Text>
+    </View>
+  );
+}
+
+function OperationsInvoiceCard({
+  invoice,
+  ownerView,
+  timeZone,
+}: Readonly<{
+  invoice: OperationsInvoice;
+  ownerView: boolean;
+  timeZone: string;
+}>) {
+  return (
+    <View style={styles.operationsListCard}>
+      <View style={styles.jobCardHeader}>
+        <Text style={styles.operationsCardTitle}>
+          Invoice #{invoice.invoice_number}
+        </Text>
+        <Text style={styles.statusBadge}>
+          {invoice.status.replace('_', ' ')}
+        </Text>
+      </View>
+      <Text style={styles.jobMeta}>
+        Due{' '}
+        {new Intl.DateTimeFormat('en-US', {
+          dateStyle: 'medium',
+          timeZone,
+        }).format(new Date(invoice.due_at))}
+      </Text>
+      {ownerView ? (
+        <Text style={styles.invoiceOutstanding}>
+          {formatUsdCents(invoice.total_cents - invoice.paid_cents)} outstanding
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -1679,6 +2112,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     paddingVertical: 12,
   },
+  invoiceOutstanding: {
+    color: '#067647',
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 8,
+  },
   jobCard: {
     backgroundColor: '#F8FAFC',
     borderColor: '#E2E8F0',
@@ -1761,6 +2200,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 14,
   },
+  metricCard: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexBasis: '46%',
+    flexGrow: 1,
+    minWidth: 130,
+    padding: 14,
+  },
+  metricDetail: {
+    color: '#64748B',
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 3,
+  },
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 18,
+  },
+  metricLabel: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  metricValue: {
+    color: '#11223C',
+    fontSize: 23,
+    fontWeight: '900',
+    marginTop: 5,
+  },
   notice: {
     backgroundColor: '#F6F8FC',
     borderColor: '#E2E8F0',
@@ -1779,6 +2253,49 @@ const styles = StyleSheet.create({
     color: '#11223C',
     fontSize: 14,
     fontWeight: '700',
+  },
+  operationsCardKicker: {
+    color: '#1769F4',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    marginBottom: 5,
+    textTransform: 'uppercase',
+  },
+  operationsCardTitle: {
+    color: '#11223C',
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  operationsEmpty: {
+    color: '#64748B',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 9,
+  },
+  operationsGroup: {
+    borderTopColor: '#E2E8F0',
+    borderTopWidth: 1,
+    marginTop: 22,
+    paddingTop: 18,
+  },
+  operationsListCard: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 10,
+    padding: 14,
+  },
+  operationsRole: {
+    color: '#64748B',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  operationsSection: {
+    marginTop: 24,
   },
   photoActions: {
     flexDirection: 'row',

@@ -39,6 +39,12 @@ browser update access to job records.
 - Altered consent, malformed or oversized strokes, duplicate signatures,
   anonymous calls, cross-tenant access, direct mutation, and capture by another
   technician are denied.
+- Owner and office memberships now receive a tenant-scoped, read-only mobile
+  operations overview with today's schedule, unassigned work, active/open job
+  metrics, unpaid invoice status, and draft quote/invoice/report approvals.
+- Owner mobile views include recorded monthly revenue and invoice outstanding
+  amounts; office views omit those financial totals and never request payment
+  ledger rows.
 
 ## Remaining Phase 4 work
 
@@ -47,7 +53,8 @@ browser update access to job records.
 - Installed-device signature drawing and submission smoke tests
 - Richer task/timeline history and offline draft/sync conflict handling
 - Assignment and schedule push notifications with token rotation and opt-outs
-- Owner/office mobile metrics, jobs, and approval views
+- Installed-device owner/office overview verification and separately guarded
+  mobile approval actions
 - App icon, splash screen, privacy/store metadata, test builds, and installed
   Android/iOS device or simulator verification
 
@@ -63,7 +70,9 @@ browser update access to job records.
   consent, server timestamp, immutable job binding, integrity hash, audit event,
   and authorized web review are implemented; installed-device verification
   remains.
-- FR-053: Not started beyond safe access verification for owner/office users.
+- FR-053: Partial - owner/office mobile metrics, operational job lists, unpaid
+  invoice status, and approval queues are implemented as read-only views;
+  installed-device verification and guarded approval actions remain.
 - FR-054: Not started.
 - FR-055: Partial - Expo application configuration exists; release assets and
   store/test-build work remain.
