@@ -5,6 +5,8 @@ import {
   formatCustomerAddress,
   formatJobSchedule,
   partitionAssignedJobs,
+  technicianProgressAction,
+  validateProgressNote,
 } from './assigned-jobs';
 
 function job(overrides: Partial<AssignedJob> = {}): AssignedJob {
@@ -25,6 +27,7 @@ function job(overrides: Partial<AssignedJob> = {}): AssignedJob {
     scheduled_end_at: '2026-10-15T17:00:00.000Z',
     scheduled_start_at: '2026-10-15T16:00:00.000Z',
     services: { name: 'Inspection' },
+    job_work_notes: [],
     status: 'scheduled',
     title: 'Fall inspection',
     updated_at: '2026-10-15T12:00:00.000Z',
@@ -69,5 +72,40 @@ describe('assigned jobs', () => {
       '100 Main St, Austin TX 78701',
     );
     expect(formatCustomerAddress(null)).toBeUndefined();
+  });
+
+  it('offers only the guarded technician start and completion actions', () => {
+    expect(technicianProgressAction('scheduled')).toEqual({
+      label: 'Start job',
+      noteRequired: false,
+      status: 'in_progress',
+    });
+    expect(technicianProgressAction('in_progress')).toEqual({
+      label: 'Complete job',
+      noteRequired: true,
+      status: 'completed',
+    });
+    expect(technicianProgressAction('completed')).toBeUndefined();
+    expect(technicianProgressAction('accepted')).toBeUndefined();
+  });
+
+  it('requires a useful completion note and caps all field notes', () => {
+    const start = technicianProgressAction('scheduled');
+    const complete = technicianProgressAction('in_progress');
+    if (!start || !complete) throw new Error('Expected technician actions.');
+
+    expect(validateProgressNote('', start)).toBeUndefined();
+    expect(validateProgressNote('ok', start)).toBe(
+      'Work note must be at least 3 characters or left blank.',
+    );
+    expect(validateProgressNote('', complete)).toBe(
+      'Add a short completion note before completing this job.',
+    );
+    expect(
+      validateProgressNote('Resolved the issue.', complete),
+    ).toBeUndefined();
+    expect(validateProgressNote('a'.repeat(2001), start)).toBe(
+      'Work note cannot exceed 2,000 characters.',
+    );
   });
 });

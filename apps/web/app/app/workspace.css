@@ -652,6 +652,34 @@
   font-size: 0.84rem;
 }
 
+.work-note-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.work-note-list li {
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.work-note-list p {
+  margin: 0;
+  color: #334155;
+  white-space: pre-wrap;
+}
+
+.work-note-list time {
+  display: block;
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
 .team-panel {
   margin-top: 24px;
   padding: clamp(20px, 4vw, 30px);

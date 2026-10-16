@@ -22,7 +22,12 @@ const assignedJobSelect = `
     state_code,
     postal_code
   ),
-  services!jobs_service_tenant_fk (name)
+  services!jobs_service_tenant_fk (name),
+  job_work_notes (
+    id,
+    body,
+    created_at
+  )
 ` as const;
 
 function assignedJobsQuery(
@@ -49,6 +54,17 @@ export type AssignedJobsSnapshot = {
   readonly timeZone: string;
 };
 
+export type TechnicianProgressStatus = Extract<
+  AssignedJob['status'],
+  'in_progress' | 'completed'
+>;
+
+export type TechnicianProgressAction = {
+  readonly label: string;
+  readonly noteRequired: boolean;
+  readonly status: TechnicianProgressStatus;
+};
+
 export async function loadAssignedJobs(
   client: SupabaseClient<Database>,
   membership: Pick<MobileMembership, 'id' | 'tenant_id'>,
@@ -70,6 +86,58 @@ export async function loadAssignedJobs(
     tenantName: tenantResult.data.display_name,
     timeZone: tenantResult.data.time_zone,
   };
+}
+
+export async function advanceAssignedJob(
+  client: SupabaseClient<Database>,
+  jobId: string,
+  status: TechnicianProgressStatus,
+  note: string,
+): Promise<void> {
+  const { error } = await client.rpc('advance_assigned_job', {
+    target_job_id: jobId,
+    target_status: status,
+    work_note: note.trim(),
+  });
+
+  if (error) throw error;
+}
+
+export function technicianProgressAction(
+  status: AssignedJob['status'],
+): TechnicianProgressAction | undefined {
+  if (status === 'scheduled') {
+    return {
+      label: 'Start job',
+      noteRequired: false,
+      status: 'in_progress',
+    };
+  }
+
+  if (status === 'in_progress') {
+    return {
+      label: 'Complete job',
+      noteRequired: true,
+      status: 'completed',
+    };
+  }
+
+  return undefined;
+}
+
+export function validateProgressNote(
+  note: string,
+  action: TechnicianProgressAction,
+): string | undefined {
+  const length = note.trim().length;
+  if (length > 2000) return 'Work note cannot exceed 2,000 characters.';
+  if (action.noteRequired && length < 3) {
+    return 'Add a short completion note before completing this job.';
+  }
+  if (length > 0 && length < 3) {
+    return 'Work note must be at least 3 characters or left blank.';
+  }
+  return undefined;
 }
 
 const historicalStatuses = new Set<AssignedJob['status']>([

@@ -366,6 +366,55 @@ export type Database = {
           },
         ];
       };
+      job_work_notes: {
+        Row: {
+          author_membership_id: string;
+          body: string;
+          created_at: string;
+          id: string;
+          job_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          author_membership_id: string;
+          body: string;
+          created_at?: string;
+          id?: string;
+          job_id: string;
+          tenant_id: string;
+        };
+        Update: {
+          author_membership_id?: string;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          job_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'job_work_notes_author_tenant_fk';
+            columns: ['author_membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'job_work_notes_job_tenant_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'job_work_notes_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       jobs: {
         Row: {
           archived_at: string | null;
@@ -1163,6 +1212,14 @@ export type Database = {
       accept_team_invitation: {
         Args: { invitation_token: string };
         Returns: string;
+      };
+      advance_assigned_job: {
+        Args: {
+          target_job_id: string;
+          target_status: Database['public']['Enums']['job_status'];
+          work_note?: string;
+        };
+        Returns: Database['public']['Enums']['job_status'];
       };
       create_team_invitation: {
         Args: {
