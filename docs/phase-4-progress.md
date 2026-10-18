@@ -1,6 +1,6 @@
 # Phase 4 progress: mobile field execution
 
-Updated: 2026-10-16
+Updated: 2026-10-18
 
 Phase 4 is in development. The first field-execution slice builds on the
 existing technician sign-in and assigned-job views without granting broad
@@ -33,6 +33,10 @@ browser update access to job records.
   with encrypted chunked queue metadata, per-job recovery badges, persisted
   reservation/finalization progress, a 20-item bound, and automatic seven-day
   expiry plus account-scoped orphan cleanup.
+- Expired, unfinalized server reservations are claimed in bounded retryable
+  batches after seven days. A secret-key-only Edge Function removes physical
+  objects through the Storage API before deleting metadata, preventing orphaned
+  storage files and races with late technician finalization.
 - Owners, office staff, and the currently assigned technician can view only
   finalized photos; the web app streams them through an authenticated no-store
   route without exposing raw bucket URLs.
@@ -56,9 +60,9 @@ browser update access to job records.
 
 ## Remaining Phase 4 work
 
-- Installed-device photo capture/upload and retry smoke tests
+- Installed-device photo capture/upload and retry smoke tests (including
+  cross-restart offline retry; user verification still pending)
 - Installed-device signature drawing and submission smoke tests
-- Server-side cleanup for expired, unfinalized media reservations and objects
 - Richer task/timeline history and offline field-progress draft/sync conflict
   handling
 - Assignment and schedule push notifications with token rotation and opt-outs
