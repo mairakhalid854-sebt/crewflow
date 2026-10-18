@@ -55,7 +55,7 @@ export async function signupAction(
   const next = safeNextPath(formData.get('next'));
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     options: {
       data: { full_name: parsed.data.fullName },
@@ -66,10 +66,19 @@ export async function signupAction(
 
   if (error) {
     return {
-      message: 'We could not create the account. Please try again shortly.',
+      message:
+        error.code === 'over_email_send_rate_limit'
+          ? 'Email delivery is temporarily limited. Please try again later or contact the workspace owner.'
+          : 'We could not create the account. Please try again shortly.',
       status: 'error',
     };
   }
+
+  // Staging can run with email confirmation disabled while custom SMTP is not
+  // configured. In that mode Supabase returns an authenticated session
+  // immediately, so continue the intended invitation/onboarding flow instead
+  // of telling the user to wait for an email that will not be sent.
+  if (data.session) redirect(next);
 
   return {
     message: next.startsWith('/invite/')
