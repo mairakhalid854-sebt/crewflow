@@ -370,6 +370,7 @@ export type Database = {
         Row: {
           byte_size: number;
           captured_at: string;
+          cleanup_claimed_at: string | null;
           content_type: string;
           created_at: string;
           id: string;
@@ -383,6 +384,7 @@ export type Database = {
         Insert: {
           byte_size: number;
           captured_at?: string;
+          cleanup_claimed_at?: string | null;
           content_type: string;
           created_at?: string;
           id?: string;
@@ -396,6 +398,7 @@ export type Database = {
         Update: {
           byte_size?: number;
           captured_at?: string;
+          cleanup_claimed_at?: string | null;
           content_type?: string;
           created_at?: string;
           id?: string;
@@ -1380,6 +1383,17 @@ export type Database = {
           target_tenant_id: string;
         };
         Returns: boolean;
+      };
+      claim_expired_job_media_cleanup: {
+        Args: { batch_size?: number };
+        Returns: {
+          media_id: string;
+          storage_path: string;
+        }[];
+      };
+      complete_expired_job_media_cleanup: {
+        Args: { target_media_ids: string[] };
+        Returns: number;
       };
       deactivate_team_member: {
         Args: { target_membership_id: string };
