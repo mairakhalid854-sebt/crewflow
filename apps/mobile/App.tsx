@@ -26,6 +26,7 @@ import {
   parseRecoveryLink,
   validateNewPassword,
 } from './src/auth/password-recovery';
+import { signInErrorMessage } from './src/auth/sign-in-error';
 import {
   type AssignedJob,
   type AssignedJobsSnapshot,
@@ -383,9 +384,7 @@ export default function App() {
     setPending(false);
 
     if (error) {
-      setFormMessage(
-        'Email or password is incorrect, or the email is not verified.',
-      );
+      setFormMessage(signInErrorMessage(error));
       return;
     }
 
@@ -646,15 +645,12 @@ export default function App() {
                 value={email}
               />
               <Text style={styles.label}>Password</Text>
-              <TextInput
-                autoCapitalize="none"
+              <PasswordInput
                 autoComplete="current-password"
                 editable={!pending}
                 onChangeText={setPassword}
                 onSubmitEditing={() => void signIn()}
                 placeholder="Your password"
-                secureTextEntry
-                style={styles.input}
                 value={password}
               />
               {formMessage ? (
@@ -2135,6 +2131,85 @@ function ForgotPasswordView({
   );
 }
 
+function PasswordInput({
+  autoComplete,
+  editable,
+  onChangeText,
+  onSubmitEditing,
+  placeholder,
+  value,
+}: Readonly<{
+  autoComplete: 'current-password' | 'new-password';
+  editable: boolean;
+  onChangeText: (value: string) => void;
+  onSubmitEditing?: () => void;
+  placeholder: string;
+  value: string;
+}>) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <View style={styles.passwordField}>
+      <TextInput
+        autoCapitalize="none"
+        autoComplete={autoComplete}
+        editable={editable}
+        onChangeText={onChangeText}
+        onSubmitEditing={onSubmitEditing}
+        placeholder={placeholder}
+        secureTextEntry={!visible}
+        style={[styles.input, styles.passwordInput]}
+        value={value}
+      />
+      <Pressable
+        accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !editable }}
+        disabled={!editable}
+        hitSlop={8}
+        onPress={() => setVisible((current) => !current)}
+        style={({ pressed }) => [
+          styles.passwordToggle,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Svg
+          accessibilityElementsHidden
+          height={22}
+          viewBox="0 0 24 24"
+          width={22}
+        >
+          <Path
+            d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
+            fill="none"
+            stroke="#475569"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+          />
+          <Path
+            d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"
+            fill="none"
+            stroke="#475569"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+          />
+          {!visible ? (
+            <Path
+              d="M4 4l16 16"
+              fill="none"
+              stroke="#475569"
+              strokeLinecap="round"
+              strokeWidth={1.8}
+            />
+          ) : null}
+        </Svg>
+      </Pressable>
+    </View>
+  );
+}
+
 function RecoveryView({
   confirmation,
   formMessage,
@@ -2198,26 +2273,20 @@ function RecoveryView({
         Use 10+ characters with uppercase, lowercase, and a number.
       </Text>
       <Text style={styles.label}>New password</Text>
-      <TextInput
-        autoCapitalize="none"
+      <PasswordInput
         autoComplete="new-password"
         editable={!pending}
         onChangeText={onChangePassword}
         placeholder="New password"
-        secureTextEntry
-        style={styles.input}
         value={password}
       />
       <Text style={styles.label}>Confirm new password</Text>
-      <TextInput
-        autoCapitalize="none"
+      <PasswordInput
         autoComplete="new-password"
         editable={!pending}
         onChangeText={onChangeConfirmation}
         onSubmitEditing={() => void onSubmit()}
         placeholder="Confirm new password"
-        secureTextEntry
-        style={styles.input}
         value={confirmation}
       />
       {formMessage ? (
@@ -2417,6 +2486,21 @@ const styles = StyleSheet.create({
     marginTop: 7,
     paddingHorizontal: 13,
     paddingVertical: 12,
+  },
+  passwordField: {
+    position: 'relative',
+  },
+  passwordInput: {
+    paddingRight: 54,
+  },
+  passwordToggle: {
+    alignItems: 'center',
+    bottom: 2,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 2,
+    top: 9,
+    width: 48,
   },
   invoiceOutstanding: {
     color: '#067647',
