@@ -3,28 +3,56 @@
     "name": "CrewFlow",
     "slug": "crewflow",
     "scheme": "crewflow",
-    "version": "0.0.1",
+    "description": "Field service operations for owners, office teams, and technicians.",
+    "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "com.crewflow.mobile",
+      "buildNumber": "1",
+      "icon": "./assets/icon.png",
       "supportsTablet": true
     },
     "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#f4f7fc",
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-monochrome.png"
+      },
       "package": "com.crewflow.mobile",
-      "edgeToEdgeEnabled": true
+      "icon": "./assets/icon.png",
+      "versionCode": 1
     },
     "plugins": [
       "expo-secure-store",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "color": "#1769f4",
+          "defaultChannel": "crewflow-operations",
+          "icon": "./assets/notification-icon.png"
+        }
+      ],
       [
         "expo-image-picker",
         {
           "cameraPermission": "Allow CrewFlow to capture before and after photos for your assigned jobs.",
           "photosPermission": "Allow CrewFlow to select job photos when you choose to upload them."
         }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#f4f7fc",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain"
+        }
       ]
-    ]
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
   }
 }
