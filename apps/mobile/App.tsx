@@ -56,6 +56,11 @@ import {
   type JobMediaKind,
   allowedJobPhotoKinds,
 } from './src/jobs/job-media-policy';
+import {
+  type JobProgressDraft,
+  jobProgressDraftStore,
+  progressDraftHasConflict,
+} from './src/jobs/job-progress-drafts';
 import { recordAssignedJobSignature } from './src/jobs/job-signature';
 import {
   CUSTOMER_SIGNATURE_CONSENT,
@@ -709,6 +714,7 @@ export default function App() {
               }}
               pending={pending}
               pendingPhotoResults={pendingPhotoResults}
+              userId={session.user.id}
             />
           ) : authMode === 'forgot' ? (
             <ForgotPasswordView
@@ -812,6 +818,7 @@ function AuthenticatedView({
   operationsState,
   pending,
   pendingPhotoResults,
+  userId,
 }: Readonly<{
   accessState: AccessState;
   assignedJobsState: AssignedJobsState;
@@ -845,6 +852,7 @@ function AuthenticatedView({
   operationsState: MobileOperationsState;
   pending: boolean;
   pendingPhotoResults: readonly JobPhotoUploadPendingResult[];
+  userId: string;
 }>) {
   const [notificationSettingsOpen, setNotificationSettingsOpen] =
     useState(false);
@@ -978,6 +986,7 @@ function AuthenticatedView({
         onRetryPhoto={onRetryPhoto}
         pendingPhotoResults={pendingPhotoResults}
         snapshot={assignedJobsState.snapshot}
+        userId={userId}
       />
     );
   } else {
@@ -1698,6 +1707,7 @@ function AssignedJobsView({
   onRetryPhoto,
   pendingPhotoResults,
   snapshot,
+  userId,
 }: Readonly<{
   deepLink?: CrewFlowDeepLink;
   onAdvanceJob: (
@@ -1722,6 +1732,7 @@ function AssignedJobsView({
   ) => Promise<Exclude<JobPhotoUploadResult, 'cancelled'>>;
   pendingPhotoResults: readonly JobPhotoUploadPendingResult[];
   snapshot: AssignedJobsSnapshot;
+  userId: string;
 }>) {
   const [selectedJobId, setSelectedJobId] = useState<string>();
   const selectedJob = snapshot.jobs.find((job) => job.id === selectedJobId);
@@ -1752,6 +1763,7 @@ function AssignedJobsView({
           (result) => result.upload.jobId === selectedJob.id,
         )}
         timeZone={snapshot.timeZone}
+        userId={userId}
       />
     );
   }
@@ -1904,6 +1916,7 @@ function AssignedJobDetail({
   onRetryPhoto,
   pendingPhotoResult,
   timeZone,
+  userId,
 }: Readonly<{
   activity: readonly AssignedJobActivity[];
   job: AssignedJob;
@@ -1928,11 +1941,17 @@ function AssignedJobDetail({
   ) => Promise<Exclude<JobPhotoUploadResult, 'cancelled'>>;
   pendingPhotoResult?: JobPhotoUploadPendingResult;
   timeZone: string;
+  userId: string;
 }>) {
   const [photoError, setPhotoError] = useState<string>();
   const [photoMessage, setPhotoMessage] = useState<string>();
   const [photoPending, setPhotoPending] = useState<JobMediaKind>();
   const [progressError, setProgressError] = useState<string>();
+  const [progressDraft, setProgressDraft] = useState<JobProgressDraft>();
+  const [progressDraftLoaded, setProgressDraftLoaded] = useState(false);
+  const [progressDraftStatus, setProgressDraftStatus] = useState<
+    'error' | 'saved' | 'saving'
+  >();
   const [progressPending, setProgressPending] = useState(false);
   const [workNote, setWorkNote] = useState('');
   const address = formatCustomerAddress(job.customers);
@@ -1940,6 +1959,18 @@ function AssignedJobDetail({
     ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
     : 'Customer details unavailable';
   const progressAction = technicianProgressAction(job.status);
+  const progressActionStatus = progressAction?.status;
+  const progressDraftBaseForSave =
+    progressDraft && progressDraft.targetStatus === progressActionStatus
+      ? progressDraft.baseJobUpdatedAt
+      : job.updated_at;
+  const progressDraftConflict = progressDraft
+    ? progressDraftHasConflict(
+        progressDraft,
+        job.updated_at,
+        progressActionStatus,
+      )
+    : false;
   const pendingPhotoUpload = pendingPhotoResult?.upload;
   const photoRetryAllowed = pendingPhotoResult?.canRetry ?? true;
   const allowedPhotoKinds = allowedJobPhotoKinds(job.status);
@@ -1954,8 +1985,88 @@ function AssignedJobDetail({
   );
   const timeline = buildJobTimeline(activity, timeZone);
 
+  useEffect(() => {
+    let active = true;
+    setProgressDraftLoaded(false);
+    setProgressDraftStatus(undefined);
+    void jobProgressDraftStore
+      .get(userId, job.id)
+      .then((draft) => {
+        if (!active) return;
+        setProgressDraft(draft);
+        if (draft) {
+          setWorkNote(draft.note);
+          setProgressDraftStatus('saved');
+        }
+        setProgressDraftLoaded(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setProgressDraftStatus('error');
+        setProgressDraftLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [job.id, userId]);
+
+  useEffect(() => {
+    if (
+      !progressDraftLoaded ||
+      !progressActionStatus ||
+      progressDraftConflict
+    ) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (workNote.length === 0) {
+        if (!progressDraft) return;
+        setProgressDraftStatus('saving');
+        void jobProgressDraftStore
+          .remove(userId, job.id)
+          .then(() => {
+            setProgressDraft(undefined);
+            setProgressDraftStatus(undefined);
+          })
+          .catch(() => setProgressDraftStatus('error'));
+        return;
+      }
+
+      setProgressDraftStatus('saving');
+      void jobProgressDraftStore
+        .save({
+          baseJobUpdatedAt: progressDraftBaseForSave,
+          jobId: job.id,
+          note: workNote,
+          targetStatus: progressActionStatus,
+          userId,
+        })
+        .then((saved) => {
+          setProgressDraft(saved);
+          setProgressDraftStatus('saved');
+        })
+        .catch(() => setProgressDraftStatus('error'));
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [
+    job.id,
+    progressActionStatus,
+    progressDraftBaseForSave,
+    progressDraft !== undefined,
+    progressDraftConflict,
+    progressDraftLoaded,
+    userId,
+    workNote,
+  ]);
+
   async function submitProgress() {
     if (!progressAction || progressPending) return;
+    if (progressDraftConflict) {
+      setProgressError(
+        'The job changed after this draft was saved. Review or discard the draft before retrying.',
+      );
+      return;
+    }
     const validationMessage = validateProgressNote(workNote, progressAction);
     if (validationMessage) {
       setProgressError(validationMessage);
@@ -1968,9 +2079,65 @@ function AssignedJobDetail({
       await onAdvanceJob(job.id, progressAction.status, workNote);
     } catch {
       setProgressPending(false);
+      if (workNote.length > 0) {
+        try {
+          const saved = await jobProgressDraftStore.save({
+            baseJobUpdatedAt: progressDraft?.baseJobUpdatedAt ?? job.updated_at,
+            jobId: job.id,
+            note: workNote,
+            targetStatus: progressAction.status,
+            userId,
+          });
+          setProgressDraft(saved);
+          setProgressDraftStatus('saved');
+        } catch {
+          setProgressDraftStatus('error');
+        }
+      }
       setProgressError(
-        'Job could not be updated. Refresh it and confirm it is still assigned to you.',
+        'Job could not be updated. Your note remains a device draft; reconnect, refresh, and retry.',
       );
+      return;
+    }
+    try {
+      await jobProgressDraftStore.remove(userId, job.id);
+      setProgressDraft(undefined);
+      setProgressDraftStatus(undefined);
+      setWorkNote('');
+    } catch {
+      setProgressDraftStatus('error');
+    } finally {
+      setProgressPending(false);
+    }
+  }
+
+  async function discardProgressDraft() {
+    try {
+      await jobProgressDraftStore.remove(userId, job.id);
+      setProgressDraft(undefined);
+      setProgressDraftStatus(undefined);
+      setProgressError(undefined);
+      setWorkNote('');
+    } catch {
+      setProgressDraftStatus('error');
+    }
+  }
+
+  async function rebaseProgressDraft() {
+    if (!progressDraft || !progressAction) return;
+    try {
+      const saved = await jobProgressDraftStore.save({
+        baseJobUpdatedAt: job.updated_at,
+        jobId: job.id,
+        note: workNote,
+        targetStatus: progressAction.status,
+        userId,
+      });
+      setProgressDraft(saved);
+      setProgressDraftStatus('saved');
+      setProgressError(undefined);
+    } catch {
+      setProgressDraftStatus('error');
     }
   }
 
@@ -2279,6 +2446,53 @@ function AssignedJobDetail({
         )}
       </View>
 
+      {progressDraft ? (
+        <View
+          style={[
+            styles.progressDraftPanel,
+            progressDraftConflict && styles.progressDraftConflict,
+          ]}
+        >
+          <Text style={styles.noticeTitle}>
+            {progressDraftConflict
+              ? 'Saved draft needs review'
+              : 'Progress draft saved on this device'}
+          </Text>
+          <Text style={styles.noticeBody}>
+            {progressDraftConflict
+              ? 'The job status, schedule, or intended action changed after this note was saved. CrewFlow will not submit it automatically.'
+              : 'This note has not changed the job yet. Tap the status action below when you are online and ready.'}
+          </Text>
+          <View style={styles.photoRetryActions}>
+            {progressDraftConflict &&
+            progressAction?.status === progressDraft.targetStatus ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void rebaseProgressDraft()}
+                style={({ pressed }) => [
+                  styles.compactButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.compactButtonText}>
+                  Keep draft for current job
+                </Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void discardProgressDraft()}
+              style={({ pressed }) => [
+                styles.discardButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.discardButtonText}>Discard draft</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       {progressAction ? (
         <View style={styles.progressPanel}>
           <Text style={styles.noticeTitle}>Update field progress</Text>
@@ -2303,6 +2517,24 @@ function AssignedJobDetail({
             value={workNote}
           />
           <Text style={styles.characterCount}>{workNote.length}/2000</Text>
+          {progressDraftStatus ? (
+            <Text
+              accessibilityRole={
+                progressDraftStatus === 'error' ? 'alert' : undefined
+              }
+              style={
+                progressDraftStatus === 'error'
+                  ? styles.errorTextCompact
+                  : styles.draftStatus
+              }
+            >
+              {progressDraftStatus === 'saving'
+                ? 'Saving device draft...'
+                : progressDraftStatus === 'saved'
+                  ? 'Draft saved on this device.'
+                  : 'Draft could not be saved on this device.'}
+            </Text>
+          ) : null}
           {progressError ? (
             <Text accessibilityRole="alert" style={styles.errorTextCompact}>
               {progressError}
@@ -2310,11 +2542,12 @@ function AssignedJobDetail({
           ) : null}
           <Pressable
             accessibilityRole="button"
-            disabled={progressPending}
+            disabled={progressPending || progressDraftConflict}
             onPress={() => void submitProgress()}
             style={({ pressed }) => [
               styles.primaryButton,
-              progressPending && styles.buttonDisabled,
+              (progressPending || progressDraftConflict) &&
+                styles.buttonDisabled,
               pressed && styles.buttonPressed,
             ]}
           >
@@ -2926,6 +3159,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
+  draftStatus: {
+    color: '#475569',
+    fontSize: 12,
+    marginTop: 8,
+  },
   characterCount: {
     color: '#94A3B8',
     fontSize: 11,
@@ -3286,6 +3524,18 @@ const styles = StyleSheet.create({
   progressPanel: {
     backgroundColor: '#EFF6FF',
     borderColor: '#BFDBFE',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 22,
+    padding: 15,
+  },
+  progressDraftConflict: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+  },
+  progressDraftPanel: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#CBD5E1',
     borderRadius: 12,
     borderWidth: 1,
     marginTop: 22,
