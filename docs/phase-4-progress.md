@@ -36,7 +36,8 @@ browser update access to job records.
 - Expired, unfinalized server reservations are claimed in bounded retryable
   batches after seven days. A secret-key-only Edge Function removes physical
   objects through the Storage API before deleting metadata, preventing orphaned
-  storage files and races with late technician finalization.
+  storage files and races with late technician finalization. Supabase Cron now
+  invokes the cleanup function hourly through `pg_net`.
 - Owners, office staff, and the currently assigned technician can view only
   finalized photos; the web app streams them through an authenticated no-store
   route without exposing raw bucket URLs.
@@ -51,12 +52,16 @@ browser update access to job records.
 - Altered consent, malformed or oversized strokes, duplicate signatures,
   anonymous calls, cross-tenant access, direct mutation, and capture by another
   technician are denied.
-- Owner and office memberships now receive a tenant-scoped, read-only mobile
+- Owner and office memberships now receive a tenant-scoped mobile
   operations overview with today's schedule, unassigned work, active/open job
   metrics, unpaid invoice status, and draft quote/invoice/report approvals.
 - Owner mobile views include recorded monthly revenue and invoice outstanding
   amounts; office views omit those financial totals and never request payment
   ledger rows.
+- Owners and office staff can open a draft approval, review document-specific
+  details, explicitly confirm publication, and share the returned customer
+  link. The existing tenant/role-guarded database commands remain the only
+  write path, and technicians cannot invoke the mobile action.
 
 ## Remaining Phase 4 work
 
@@ -66,8 +71,8 @@ browser update access to job records.
 - Richer task/timeline history and offline field-progress draft/sync conflict
   handling
 - Assignment and schedule push notifications with token rotation and opt-outs
-- Installed-device owner/office overview verification and separately guarded
-  mobile approval actions
+- Installed-device owner/office overview and guarded approval-action
+  verification
 - App icon, splash screen, privacy/store metadata, test builds, and installed
   Android/iOS device or simulator verification
 
@@ -84,9 +89,10 @@ browser update access to job records.
   consent, server timestamp, immutable job binding, integrity hash, audit event,
   and authorized web review are implemented; installed-device verification
   remains.
-- FR-053: Partial - owner/office mobile metrics, operational job lists, unpaid
-  invoice status, and approval queues are implemented as read-only views;
-  installed-device verification and guarded approval actions remain.
+- FR-053: Delivered in application and database code - owner/office metrics,
+  operational job lists, unpaid invoice status, detailed approval review,
+  explicit confirmation, guarded publication, and customer-link sharing are
+  implemented; installed-device verification remains.
 - FR-054: Not started.
 - FR-055: Partial - Expo application configuration exists; release assets and
   store/test-build work remain.

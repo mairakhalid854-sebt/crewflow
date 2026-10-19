@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { OperationsInvoice, OperationsJob } from './mobile-operations';
 import {
+  buildOperationsApprovals,
   buildOperationsMetrics,
   formatUsdCents,
   localDateKey,
@@ -99,5 +100,48 @@ describe('mobile operations overview', () => {
 
   it('formats owner ledger totals in USD', () => {
     expect(formatUsdCents(123456)).toBe('$1,234.56');
+  });
+
+  it('builds detailed approvals and excludes non-draft invoices', () => {
+    const approvals = buildOperationsApprovals({
+      invoices: [
+        invoice({ status: 'draft', updated_at: '2026-10-16T20:00:00.000Z' }),
+        invoice({ id: 'paid-invoice', status: 'paid' }),
+      ],
+      jobs: [job()],
+      quotes: [
+        {
+          expires_at: '2026-11-16T00:00:00.000Z',
+          id: 'quote-1',
+          job_id: 'job-1',
+          total_cents: 30000,
+          updated_at: '2026-10-16T22:00:00.000Z',
+        },
+      ],
+      reports: [
+        {
+          id: 'report-1',
+          job_id: 'missing-job',
+          parts_used: 'Filter',
+          recommendations: null,
+          summary: 'Service complete',
+          updated_at: '2026-10-16T21:00:00.000Z',
+          work_performed: 'Replaced filter',
+        },
+      ],
+    });
+
+    expect(approvals).toHaveLength(3);
+    expect(approvals.map((approval) => approval.kind)).toEqual([
+      'quote',
+      'report',
+      'invoice',
+    ]);
+    expect(approvals[0]).toMatchObject({
+      expiresAt: '2026-11-16T00:00:00.000Z',
+      jobTitle: 'Fall inspection',
+      totalCents: 30000,
+    });
+    expect(approvals[1]?.jobTitle).toBe('Archived or unavailable job');
   });
 });

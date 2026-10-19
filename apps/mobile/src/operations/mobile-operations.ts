@@ -56,7 +56,7 @@ function operationsInvoicesQuery(
 function draftQuotesQuery(client: SupabaseClient<Database>, tenantId: string) {
   return client
     .from('quotes')
-    .select('id, job_id, updated_at')
+    .select('id, job_id, total_cents, expires_at, updated_at')
     .eq('tenant_id', tenantId)
     .eq('status', 'draft')
     .order('updated_at', { ascending: false })
@@ -66,7 +66,9 @@ function draftQuotesQuery(client: SupabaseClient<Database>, tenantId: string) {
 function draftReportsQuery(client: SupabaseClient<Database>, tenantId: string) {
   return client
     .from('work_reports')
-    .select('id, job_id, updated_at')
+    .select(
+      'id, job_id, summary, work_performed, parts_used, recommendations, updated_at',
+    )
     .eq('tenant_id', tenantId)
     .eq('status', 'draft')
     .order('updated_at', { ascending: false })
@@ -91,17 +93,38 @@ export type OperationsJob = QueryData<
 export type OperationsInvoice = QueryData<
   ReturnType<typeof operationsInvoicesQuery>
 >[number];
+type OperationsQuote = QueryData<ReturnType<typeof draftQuotesQuery>>[number];
+type OperationsReport = QueryData<ReturnType<typeof draftReportsQuery>>[number];
 type OperationsPayment = QueryData<
   ReturnType<typeof ownerPaymentsQuery>
 >[number];
 
-export type OperationsApproval = {
+type OperationsApprovalBase = {
   readonly id: string;
   readonly jobId: string;
   readonly jobTitle: string;
-  readonly kind: 'invoice' | 'quote' | 'report';
   readonly updatedAt: string;
 };
+
+export type OperationsApproval =
+  | (OperationsApprovalBase & {
+      readonly expiresAt: string;
+      readonly kind: 'quote';
+      readonly totalCents: number;
+    })
+  | (OperationsApprovalBase & {
+      readonly dueAt: string;
+      readonly invoiceNumber: number;
+      readonly kind: 'invoice';
+      readonly totalCents: number;
+    })
+  | (OperationsApprovalBase & {
+      readonly kind: 'report';
+      readonly partsUsed: string | null;
+      readonly recommendations: string | null;
+      readonly summary: string;
+      readonly workPerformed: string;
+    });
 
 export type OperationsMetrics = {
   readonly activeCount: number;
@@ -130,6 +153,55 @@ type ApprovalSource = {
   readonly job_id: string;
   readonly updated_at: string;
 };
+
+export function buildOperationsApprovals({
+  invoices,
+  jobs,
+  quotes,
+  reports,
+}: Readonly<{
+  invoices: readonly OperationsInvoice[];
+  jobs: readonly Pick<OperationsJob, 'id' | 'title'>[];
+  quotes: readonly OperationsQuote[];
+  reports: readonly OperationsReport[];
+}>): readonly OperationsApproval[] {
+  const jobTitles = new Map(jobs.map((job) => [job.id, job.title]));
+  const base = (source: ApprovalSource): OperationsApprovalBase => ({
+    id: source.id,
+    jobId: source.job_id,
+    jobTitle: jobTitles.get(source.job_id) ?? 'Archived or unavailable job',
+    updatedAt: source.updated_at,
+  });
+
+  return [
+    ...quotes.map((quote) => ({
+      ...base(quote),
+      expiresAt: quote.expires_at,
+      kind: 'quote' as const,
+      totalCents: quote.total_cents,
+    })),
+    ...invoices
+      .filter((invoice) => invoice.status === 'draft')
+      .map((invoice) => ({
+        ...base(invoice),
+        dueAt: invoice.due_at,
+        invoiceNumber: invoice.invoice_number,
+        kind: 'invoice' as const,
+        totalCents: invoice.total_cents,
+      })),
+    ...reports.map((report) => ({
+      ...base(report),
+      kind: 'report' as const,
+      partsUsed: report.parts_used,
+      recommendations: report.recommendations,
+      summary: report.summary,
+      workPerformed: report.work_performed,
+    })),
+  ].sort(
+    (left, right) =>
+      new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+  );
+}
 
 export function localDateKey(value: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -240,27 +312,12 @@ export async function loadMobileOperations(
 
   const jobs = jobsResult.data ?? [];
   const invoices = invoicesResult.data ?? [];
-  const jobTitles = new Map(jobs.map((job) => [job.id, job.title]));
-  const approval = (
-    source: ApprovalSource,
-    kind: OperationsApproval['kind'],
-  ): OperationsApproval => ({
-    id: source.id,
-    jobId: source.job_id,
-    jobTitle: jobTitles.get(source.job_id) ?? 'Archived or unavailable job',
-    kind,
-    updatedAt: source.updated_at,
+  const pendingApprovals = buildOperationsApprovals({
+    invoices,
+    jobs,
+    quotes: quotesResult.data ?? [],
+    reports: reportsResult.data ?? [],
   });
-  const pendingApprovals = [
-    ...(quotesResult.data ?? []).map((item) => approval(item, 'quote')),
-    ...invoices
-      .filter((invoice) => invoice.status === 'draft')
-      .map((item) => approval(item, 'invoice')),
-    ...(reportsResult.data ?? []).map((item) => approval(item, 'report')),
-  ].sort(
-    (left, right) =>
-      new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
-  );
   const timeZone = tenantResult.data.time_zone;
   const today = localDateKey(now, timeZone);
   const activeJob = (job: OperationsJob) =>
