@@ -13,8 +13,11 @@ type AppConfig = {
         monochromeImage: string;
       };
       icon: string;
+      permissions?: string[];
     };
+    extra: { eas: { projectId: string } };
     icon: string;
+    owner: string;
     plugins: unknown[];
   };
 };
@@ -55,6 +58,17 @@ describe('mobile release configuration', () => {
     expect(config.android.adaptiveIcon.monochromeImage).toBe(
       './assets/adaptive-monochrome.png',
     );
+    expect(config.android.permissions ?? []).not.toContain(
+      'android.permission.RECORD_AUDIO',
+    );
+    expect(config.owner).toBe('mairakhalids-crewflow');
+    expect(config.extra.eas.projectId).toMatch(
+      /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/,
+    );
+    expect(config.plugins).toContainEqual([
+      'expo-image-picker',
+      expect.objectContaining({ microphonePermission: false }),
+    ]);
     expect(pngDimensions('assets/icon.png')).toEqual({
       height: 1024,
       width: 1024,

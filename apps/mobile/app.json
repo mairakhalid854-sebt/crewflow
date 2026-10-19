@@ -38,6 +38,7 @@
         "expo-image-picker",
         {
           "cameraPermission": "Allow CrewFlow to capture before and after photos for your assigned jobs.",
+          "microphonePermission": false,
           "photosPermission": "Allow CrewFlow to select job photos when you choose to upload them."
         }
       ],
@@ -53,6 +54,12 @@
     ],
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "2cc56e7c-4110-48fd-a140-36359d5aa348"
+      }
+    },
+    "owner": "mairakhalids-crewflow"
   }
 }
