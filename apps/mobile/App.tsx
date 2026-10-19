@@ -4,12 +4,14 @@ import * as Linking from 'expo-linking';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   PanResponder,
   Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -63,6 +65,7 @@ import {
   type SignatureStroke,
 } from './src/jobs/job-signature-policy';
 import { getSupabaseClient } from './src/lib/supabase';
+import { approveOperationsItem } from './src/operations/approval-actions';
 import {
   formatUsdCents,
   loadMobileOperations,
@@ -878,7 +881,88 @@ function OperationsOverviewView({
   snapshot: MobileOperationsSnapshot;
 }>) {
   const [selectedJobId, setSelectedJobId] = useState<string>();
+  const [selectedApprovalKey, setSelectedApprovalKey] = useState<string>();
+  const [approvalPending, setApprovalPending] = useState(false);
+  const [approvalError, setApprovalError] = useState<string>();
+  const [approvalResult, setApprovalResult] = useState<{
+    readonly approvalKey: string;
+    readonly customerUrl: string;
+    readonly label: string;
+  }>();
   const selectedJob = snapshot.jobs.find((job) => job.id === selectedJobId);
+  const selectedApproval = snapshot.pendingApprovals.find(
+    (approval) => `${approval.kind}-${approval.id}` === selectedApprovalKey,
+  );
+
+  async function approveSelectedItem(approval: OperationsApproval) {
+    if (approvalPending) return;
+    setApprovalError(undefined);
+    setApprovalPending(true);
+    try {
+      const result = await approveOperationsItem(
+        getSupabaseClient(),
+        snapshot.role,
+        approval,
+        process.env.EXPO_PUBLIC_WEB_APP_URL,
+      );
+      setApprovalResult({
+        approvalKey: `${approval.kind}-${approval.id}`,
+        customerUrl: result.customerUrl,
+        label: approvalLabels[approval.kind],
+      });
+      setSelectedApprovalKey(undefined);
+    } catch (error) {
+      setApprovalError(
+        error instanceof Error
+          ? error.message
+          : 'This item could not be approved. Try again.',
+      );
+    } finally {
+      setApprovalPending(false);
+    }
+  }
+
+  function confirmApproval(approval: OperationsApproval) {
+    Alert.alert(
+      `Approve ${approvalLabels[approval.kind].toLowerCase()}?`,
+      'This publishes the document and creates a customer link. Review the details before continuing.',
+      [
+        { style: 'cancel', text: 'Cancel' },
+        {
+          onPress: () => void approveSelectedItem(approval),
+          text: 'Approve',
+        },
+      ],
+    );
+  }
+
+  async function shareApprovalResult() {
+    if (!approvalResult) return;
+    try {
+      await Share.share({
+        message: `${approvalResult.label}: ${approvalResult.customerUrl}`,
+        url: approvalResult.customerUrl,
+      });
+    } catch {
+      setApprovalError('The share sheet could not be opened. Try again.');
+    }
+  }
+
+  if (selectedApproval) {
+    return (
+      <OperationsApprovalDetail
+        approval={selectedApproval}
+        error={approvalError}
+        onApprove={() => confirmApproval(selectedApproval)}
+        onBack={() => {
+          setApprovalError(undefined);
+          setSelectedApprovalKey(undefined);
+        }}
+        pending={approvalPending}
+        timeZone={snapshot.timeZone}
+      />
+    );
+  }
 
   if (selectedJob) {
     return (
@@ -914,7 +998,10 @@ function OperationsOverviewView({
     {
       detail: 'draft items',
       label: 'Approvals',
-      value: snapshot.metrics.pendingApprovalCount.toString(),
+      value: Math.max(
+        0,
+        snapshot.metrics.pendingApprovalCount - (approvalResult ? 1 : 0),
+      ).toString(),
     },
     {
       detail: 'in the workflow',
@@ -945,9 +1032,11 @@ function OperationsOverviewView({
         <Pressable
           accessibilityLabel="Refresh operations overview"
           accessibilityRole="button"
+          disabled={approvalResult !== undefined}
           onPress={onRefresh}
           style={({ pressed }) => [
             styles.compactButton,
+            approvalResult !== undefined && styles.buttonDisabled,
             pressed && styles.buttonPressed,
           ]}
         >
@@ -964,6 +1053,51 @@ function OperationsOverviewView({
           </View>
         ))}
       </View>
+
+      {approvalResult ? (
+        <View style={styles.approvalSuccess}>
+          <Text style={styles.noticeTitle}>
+            {approvalResult.label} approved
+          </Text>
+          <Text style={styles.noticeBody}>
+            The customer link is ready. Share it now; CrewFlow does not display
+            the secure token again after this message is dismissed.
+          </Text>
+          <Text selectable style={styles.customerLink}>
+            {approvalResult.customerUrl}
+          </Text>
+          <View style={styles.approvalResultActions}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void shareApprovalResult()}
+              style={({ pressed }) => [
+                styles.compactButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.compactButtonText}>Share customer link</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setApprovalResult(undefined);
+                onRefresh();
+              }}
+              style={({ pressed }) => [
+                styles.compactButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.secondaryButtonText}>Dismiss</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+      {approvalError && !selectedApproval ? (
+        <Text accessibilityRole="alert" style={styles.errorText}>
+          {approvalError}
+        </Text>
+      ) : null}
 
       <OperationsListSection
         emptyMessage="No jobs are scheduled for today."
@@ -997,12 +1131,22 @@ function OperationsOverviewView({
         emptyMessage="No draft quotes, invoices, or reports need review."
         title="Pending approvals"
       >
-        {snapshot.pendingApprovals.slice(0, 10).map((approval) => (
-          <OperationsApprovalCard
-            approval={approval}
-            key={`${approval.kind}-${approval.id}`}
-          />
-        ))}
+        {snapshot.pendingApprovals
+          .filter(
+            (approval) =>
+              `${approval.kind}-${approval.id}` !== approvalResult?.approvalKey,
+          )
+          .slice(0, 10)
+          .map((approval) => (
+            <OperationsApprovalCard
+              approval={approval}
+              key={`${approval.kind}-${approval.id}`}
+              onPress={() => {
+                setApprovalError(undefined);
+                setSelectedApprovalKey(`${approval.kind}-${approval.id}`);
+              }}
+            />
+          ))}
       </OperationsListSection>
 
       <OperationsListSection
@@ -1020,10 +1164,10 @@ function OperationsOverviewView({
       </OperationsListSection>
 
       <View style={styles.readOnlyNotice}>
-        <Text style={styles.noticeTitle}>Read-only mobile oversight</Text>
+        <Text style={styles.noticeTitle}>Guarded mobile oversight</Text>
         <Text style={styles.noticeBody}>
-          Use the CrewFlow web app to edit jobs or approve and send customer
-          documents. Guarded mobile actions will be added separately.
+          Review and approve draft customer documents above. Job editing,
+          scheduling, and reassignment remain in the CrewFlow web app.
         </Text>
       </View>
     </View>
@@ -1169,14 +1313,147 @@ const approvalLabels: Record<OperationsApproval['kind'], string> = {
 
 function OperationsApprovalCard({
   approval,
-}: Readonly<{ approval: OperationsApproval }>) {
+  onPress,
+}: Readonly<{ approval: OperationsApproval; onPress: () => void }>) {
   return (
-    <View style={styles.operationsListCard}>
+    <Pressable
+      accessibilityLabel={`Review ${approvalLabels[approval.kind]} for ${approval.jobTitle}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.operationsListCard,
+        pressed && styles.buttonPressed,
+      ]}
+    >
       <Text style={styles.operationsCardKicker}>
         {approvalLabels[approval.kind]}
       </Text>
       <Text style={styles.operationsCardTitle}>{approval.jobTitle}</Text>
-      <Text style={styles.jobMeta}>Awaiting office review on the web app</Text>
+      <Text style={styles.jobMeta}>Tap to review and approve</Text>
+    </Pressable>
+  );
+}
+
+function OperationsApprovalDetail({
+  approval,
+  error,
+  onApprove,
+  onBack,
+  pending,
+  timeZone,
+}: Readonly<{
+  approval: OperationsApproval;
+  error?: string;
+  onApprove: () => void;
+  onBack: () => void;
+  pending: boolean;
+  timeZone: string;
+}>) {
+  const date = (value: string) =>
+    new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeZone,
+    }).format(new Date(value));
+
+  return (
+    <View style={styles.operationsSection}>
+      <Pressable
+        accessibilityRole="button"
+        disabled={pending}
+        onPress={onBack}
+        style={({ pressed }) => [
+          styles.backButton,
+          pending && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.backButtonText}>Back to operations overview</Text>
+      </Pressable>
+      <Text style={styles.jobsEyebrow}>{approvalLabels[approval.kind]}</Text>
+      <Text style={styles.detailTitle}>{approval.jobTitle}</Text>
+
+      {approval.kind === 'quote' ? (
+        <>
+          <ApprovalDetailRow
+            label="Customer total"
+            value={formatUsdCents(approval.totalCents)}
+          />
+          <ApprovalDetailRow
+            label="Quote expires"
+            value={date(approval.expiresAt)}
+          />
+        </>
+      ) : null}
+      {approval.kind === 'invoice' ? (
+        <>
+          <ApprovalDetailRow
+            label="Invoice"
+            value={`#${approval.invoiceNumber}`}
+          />
+          <ApprovalDetailRow
+            label="Customer total"
+            value={formatUsdCents(approval.totalCents)}
+          />
+          <ApprovalDetailRow label="Due date" value={date(approval.dueAt)} />
+        </>
+      ) : null}
+      {approval.kind === 'report' ? (
+        <>
+          <ApprovalDetailRow label="Summary" value={approval.summary} />
+          <ApprovalDetailRow
+            label="Work performed"
+            value={approval.workPerformed}
+          />
+          {approval.partsUsed ? (
+            <ApprovalDetailRow label="Parts used" value={approval.partsUsed} />
+          ) : null}
+          {approval.recommendations ? (
+            <ApprovalDetailRow
+              label="Recommendations"
+              value={approval.recommendations}
+            />
+          ) : null}
+        </>
+      ) : null}
+
+      <View style={styles.approvalWarning}>
+        <Text style={styles.noticeTitle}>Review before approving</Text>
+        <Text style={styles.noticeBody}>
+          Approval publishes this document and generates a secure customer link.
+          This action is recorded in the audit log.
+        </Text>
+      </View>
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.errorText}>
+          {error}
+        </Text>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        disabled={pending}
+        onPress={onApprove}
+        style={({ pressed }) => [
+          styles.primaryButton,
+          pending && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.primaryButtonText}>
+          {pending ? 'Approving...' : 'Approve & create customer link'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function ApprovalDetailRow({
+  label,
+  value,
+}: Readonly<{ label: string; value: string }>) {
+  return (
+    <View style={styles.detailBlock}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
     </View>
   );
 }
@@ -2313,6 +2590,28 @@ function RecoveryView({
 }
 
 const styles = StyleSheet.create({
+  approvalResultActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 14,
+  },
+  approvalSuccess: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 18,
+    padding: 15,
+  },
+  approvalWarning: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 22,
+    padding: 15,
+  },
   backButton: {
     alignSelf: 'flex-start',
     marginBottom: 22,
@@ -2377,6 +2676,12 @@ const styles = StyleSheet.create({
     color: '#1769F4',
     fontSize: 12,
     fontWeight: '800',
+  },
+  customerLink: {
+    color: '#1769F4',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 10,
   },
   discardButton: {
     alignItems: 'center',
