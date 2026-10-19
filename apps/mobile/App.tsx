@@ -31,9 +31,11 @@ import {
 import { signInErrorMessage } from './src/auth/sign-in-error';
 import {
   type AssignedJob,
+  type AssignedJobActivity,
   type AssignedJobsSnapshot,
   type TechnicianProgressStatus,
   advanceAssignedJob,
+  buildJobTimeline,
   formatCustomerAddress,
   formatJobSchedule,
   loadAssignedJobs,
@@ -1736,6 +1738,9 @@ function AssignedJobsView({
   if (selectedJob) {
     return (
       <AssignedJobDetail
+        activity={snapshot.activity.filter(
+          (item) => item.entity_id === selectedJob.id,
+        )}
         job={selectedJob}
         onAdvanceJob={onAdvanceJob}
         onBack={() => setSelectedJobId(undefined)}
@@ -1889,6 +1894,7 @@ function AssignedJobCard({
 }
 
 function AssignedJobDetail({
+  activity,
   job,
   onAdvanceJob,
   onBack,
@@ -1899,6 +1905,7 @@ function AssignedJobDetail({
   pendingPhotoResult,
   timeZone,
 }: Readonly<{
+  activity: readonly AssignedJobActivity[];
   job: AssignedJob;
   onAdvanceJob: (
     jobId: string,
@@ -1945,6 +1952,7 @@ function AssignedJobDetail({
       new Date(right.created_at).getTime() -
       new Date(left.created_at).getTime(),
   );
+  const timeline = buildJobTimeline(activity, timeZone);
 
   async function submitProgress() {
     if (!progressAction || progressPending) return;
@@ -2084,6 +2092,36 @@ function AssignedJobDetail({
           <Text style={styles.detailSecondary}>{job.description}</Text>
         </View>
       ) : null}
+
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Job timeline</Text>
+        {timeline.length > 0 ? (
+          <View style={styles.timelineList}>
+            {timeline.map((item) => (
+              <View key={item.id} style={styles.timelineRow}>
+                <View style={styles.timelineDot} />
+                <View style={styles.flex}>
+                  <Text style={styles.timelineLabel}>{item.label}</Text>
+                  {item.detail ? (
+                    <Text style={styles.detailSecondary}>{item.detail}</Text>
+                  ) : null}
+                  <Text style={styles.workNoteTime}>
+                    {new Intl.DateTimeFormat('en-US', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                      timeZone,
+                    }).format(new Date(item.occurredAt))}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noticeBody}>
+            No job activity has been recorded yet.
+          </Text>
+        )}
+      </View>
 
       {workNotes.length > 0 ? (
         <View style={styles.detailBlock}>
@@ -3358,6 +3396,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     marginTop: 14,
+  },
+  timelineDot: {
+    backgroundColor: '#1769F4',
+    borderRadius: 999,
+    height: 9,
+    marginTop: 5,
+    width: 9,
+  },
+  timelineLabel: {
+    color: '#11223C',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  timelineList: {
+    marginTop: 10,
+  },
+  timelineRow: {
+    borderBottomColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    gap: 11,
+    paddingVertical: 12,
   },
   title: {
     color: '#11223C',

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { AssignedJob } from './assigned-jobs';
 import {
+  buildJobTimeline,
   formatCustomerAddress,
   formatJobSchedule,
   partitionAssignedJobs,
@@ -33,6 +34,19 @@ function job(overrides: Partial<AssignedJob> = {}): AssignedJob {
     status: 'scheduled',
     title: 'Fall inspection',
     updated_at: '2026-10-15T12:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function activity(
+  overrides: Partial<Parameters<typeof buildJobTimeline>[0][number]> = {},
+): Parameters<typeof buildJobTimeline>[0][number] {
+  return {
+    action: 'job.created',
+    entity_id: 'job-1',
+    id: 'activity-1',
+    metadata: {},
+    occurred_at: '2026-10-15T12:00:00.000Z',
     ...overrides,
   };
 }
@@ -109,5 +123,72 @@ describe('assigned jobs', () => {
     expect(validateProgressNote('a'.repeat(2001), start)).toBe(
       'Work note cannot exceed 2,000 characters.',
     );
+  });
+
+  it('builds a newest-first timeline from known safe activity details', () => {
+    expect(
+      buildJobTimeline(
+        [
+          activity(),
+          activity({
+            action: 'job.scheduled',
+            id: 'activity-2',
+            metadata: {
+              assigned_membership_id: 'membership-secret-not-rendered',
+              scheduled_end_at: '2026-10-15T18:00:00.000Z',
+              scheduled_start_at: '2026-10-15T17:00:00.000Z',
+            },
+            occurred_at: '2026-10-15T13:00:00.000Z',
+          }),
+          activity({
+            action: 'job.status_changed',
+            id: 'activity-3',
+            metadata: { from: 'scheduled', to: 'in_progress' },
+            occurred_at: '2026-10-15T14:00:00.000Z',
+          }),
+        ],
+        'America/Chicago',
+      ),
+    ).toEqual([
+      {
+        detail: 'scheduled to in progress',
+        id: 'activity-3',
+        label: 'Job status changed',
+        occurredAt: '2026-10-15T14:00:00.000Z',
+      },
+      {
+        detail: 'Oct 15, 2026, 12:00 PM-1:00 PM',
+        id: 'activity-2',
+        label: 'Schedule or assignment updated',
+        occurredAt: '2026-10-15T13:00:00.000Z',
+      },
+      {
+        detail: undefined,
+        id: 'activity-1',
+        label: 'Job created',
+        occurredAt: '2026-10-15T12:00:00.000Z',
+      },
+    ]);
+  });
+
+  it('never renders unknown audit metadata into the technician timeline', () => {
+    expect(
+      buildJobTimeline(
+        [
+          activity({
+            action: 'future.private_action',
+            metadata: { access_token: 'must-not-render' },
+          }),
+        ],
+        'America/Chicago',
+      ),
+    ).toEqual([
+      {
+        detail: undefined,
+        id: 'activity-1',
+        label: 'Job activity recorded',
+        occurredAt: '2026-10-15T12:00:00.000Z',
+      },
+    ]);
   });
 });
