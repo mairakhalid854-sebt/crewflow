@@ -78,14 +78,17 @@ browser update access to job records.
 - Supabase Cron invokes the bounded push delivery Edge Function every minute
   through `pg_net`. The project URL and service credential remain encrypted in
   Vault, and only service-role commands can configure or inspect the job.
+- Assigned technicians can review a newest-first job timeline covering job
+  creation, scheduling/assignment, status changes, field notes, private photo
+  completion, and customer signature capture. Only known safe metadata is
+  formatted; unknown audit payload fields are never rendered in the mobile UI.
 
 ## Remaining Phase 4 work
 
 - Installed-device photo capture/upload and retry smoke tests (including
   cross-restart offline retry; user verification still pending)
 - Installed-device signature drawing and submission smoke tests
-- Richer task/timeline history and offline field-progress draft/sync conflict
-  handling
+- Offline field-progress draft/sync conflict handling
 - Installed development-build verification of assignment, schedule,
   cancellation, approval, token-rotation, opt-out, and deep-link behavior
 - Installed-device owner/office overview and guarded approval-action
@@ -95,9 +98,10 @@ browser update access to job records.
 
 ## Requirement status
 
-- FR-050: Partial - sign-in, assigned jobs, customer/location context, guarded
-  status actions, and field-note history are implemented; richer task history
-  remains.
+- FR-050: Delivered in application code - single-membership sign-in, assigned
+  jobs, customer/location context, guarded status actions, field-note history,
+  and a tenant/assignment-authorized job timeline are implemented;
+  installed-device verification remains.
 - FR-051: Partial - guarded private capture, compression, type/size validation,
   upload, authorized viewing, in-session retry/discard, and durable
   cross-restart recovery are implemented; installed-device verification

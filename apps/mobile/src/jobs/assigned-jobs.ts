@@ -58,7 +58,20 @@ export type AssignedJob = QueryData<
   ReturnType<typeof assignedJobsQuery>
 >[number];
 
+export type AssignedJobActivity = Pick<
+  Database['public']['Tables']['audit_events']['Row'],
+  'action' | 'entity_id' | 'id' | 'metadata' | 'occurred_at'
+>;
+
+export type JobTimelineItem = {
+  readonly detail?: string;
+  readonly id: string;
+  readonly label: string;
+  readonly occurredAt: string;
+};
+
 export type AssignedJobsSnapshot = {
+  readonly activity: readonly AssignedJobActivity[];
   readonly jobs: readonly AssignedJob[];
   readonly tenantName: string;
   readonly timeZone: string;
@@ -91,11 +104,116 @@ export async function loadAssignedJobs(
   if (jobsResult.error) throw jobsResult.error;
   if (tenantResult.error) throw tenantResult.error;
 
+  const jobs = jobsResult.data ?? [];
+  const jobIds = jobs.map((job) => job.id);
+  let activity: AssignedJobActivity[] = [];
+  if (jobIds.length > 0) {
+    const activityResult = await client
+      .from('audit_events')
+      .select('id, action, entity_id, metadata, occurred_at')
+      .eq('tenant_id', membership.tenant_id)
+      .eq('entity_type', 'job')
+      .in('entity_id', jobIds)
+      .order('occurred_at', { ascending: false })
+      .limit(500);
+    if (activityResult.error) throw activityResult.error;
+    activity = activityResult.data ?? [];
+  }
+
   return {
-    jobs: jobsResult.data ?? [],
+    activity,
+    jobs,
     tenantName: tenantResult.data.display_name,
     timeZone: tenantResult.data.time_zone,
   };
+}
+
+const timelineLabels: Readonly<Record<string, string>> = {
+  'job.archived': 'Job archived',
+  'job.created': 'Job created',
+  'job.customer_signature_recorded': 'Customer signature recorded',
+  'job.photo_uploaded': 'Job photo uploaded',
+  'job.scheduled': 'Schedule or assignment updated',
+  'job.status_changed': 'Job status changed',
+  'job.updated': 'Job details updated',
+  'job.work_note_added': 'Field note added',
+};
+
+function metadataRecord(
+  metadata: AssignedJobActivity['metadata'],
+): Record<string, unknown> | undefined {
+  return typeof metadata === 'object' &&
+    metadata !== null &&
+    !Array.isArray(metadata)
+    ? metadata
+    : undefined;
+}
+
+function statusLabel(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  return value.replaceAll('_', ' ');
+}
+
+function timelineDetail(
+  activity: AssignedJobActivity,
+  timeZone: string,
+): string | undefined {
+  const metadata = metadataRecord(activity.metadata);
+  if (!metadata) return undefined;
+
+  if (activity.action === 'job.status_changed') {
+    const from = statusLabel(metadata.from);
+    const to = statusLabel(metadata.to);
+    return from && to ? `${from} to ${to}` : undefined;
+  }
+
+  if (activity.action === 'job.photo_uploaded') {
+    const mediaKind = metadata.media_kind;
+    return mediaKind === 'before' || mediaKind === 'after'
+      ? `${mediaKind[0]?.toUpperCase()}${mediaKind.slice(1)} photo`
+      : undefined;
+  }
+
+  if (activity.action === 'job.scheduled') {
+    const start = metadata.scheduled_start_at;
+    const end = metadata.scheduled_end_at;
+    if (typeof start !== 'string' || typeof end !== 'string') return undefined;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      return undefined;
+    }
+    const date = new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeZone,
+    }).format(startDate);
+    const time = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone,
+    });
+    return `${date}, ${time.format(startDate)}-${time.format(endDate)}`;
+  }
+
+  return undefined;
+}
+
+export function buildJobTimeline(
+  activity: readonly AssignedJobActivity[],
+  timeZone: string,
+): readonly JobTimelineItem[] {
+  return activity
+    .map((item) => ({
+      detail: timelineDetail(item, timeZone),
+      id: item.id,
+      label: timelineLabels[item.action] ?? 'Job activity recorded',
+      occurredAt: item.occurred_at,
+    }))
+    .sort(
+      (left, right) =>
+        new Date(right.occurredAt).getTime() -
+        new Date(left.occurredAt).getTime(),
+    );
 }
 
 export async function advanceAssignedJob(
