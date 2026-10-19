@@ -82,13 +82,19 @@ browser update access to job records.
   creation, scheduling/assignment, status changes, field notes, private photo
   completion, and customer signature capture. Only known safe metadata is
   formatted; unknown audit payload fields are never rendered in the mobile UI.
+- Technician progress notes are saved as encrypted, account-scoped device
+  drafts while typing and survive app restarts for up to seven days. Failed
+  online status updates retain the draft for an explicit retry; CrewFlow never
+  auto-submits a status change. If the job or intended transition changes, the
+  draft is blocked until the technician explicitly rebases or discards it.
 
 ## Remaining Phase 4 work
 
 - Installed-device photo capture/upload and retry smoke tests (including
   cross-restart offline retry; user verification still pending)
 - Installed-device signature drawing and submission smoke tests
-- Offline field-progress draft/sync conflict handling
+- Installed-device progress-draft restore, offline retry, discard, and
+  stale-job conflict verification
 - Installed development-build verification of assignment, schedule,
   cancellation, approval, token-rotation, opt-out, and deep-link behavior
 - Installed-device owner/office overview and guarded approval-action
@@ -122,6 +128,7 @@ browser update access to job records.
   credentials and installed development-build verification also remain.
 - FR-055: Partial - Expo application configuration exists; release assets and
   store/test-build work remain.
-- FR-056: Partial - pending photos are durably recoverable across restarts, but
-  field-progress commands still require a live connection and full offline
-  draft/sync conflict handling remains.
+- FR-056: Delivered in application code - pending photos and progress-note
+  drafts are durably recoverable across restarts, retries are explicit, status
+  changes remain online-only, and stale job/transition conflicts block silent
+  submission; installed-device verification remains.
