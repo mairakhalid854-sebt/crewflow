@@ -46,6 +46,21 @@ After a development build is installed, start Metro with
 screens must be verified with a preview or production build because the
 development client has its own launch UI.
 
+## Verified cloud test builds
+
+The first owner-controlled EAS test-build pair completed successfully on
+2026-10-19. The persistent build pages remain the source of truth; internal
+artifact downloads expire automatically.
+
+| Platform                | Profile                 | Build ID                                                                                                                                                | Result                                                           |
+| ----------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Android physical device | `development`           | [`283ea812-38a8-4a98-8866-d660cc02356f`](https://expo.dev/accounts/mairakhalids-crewflow/projects/crewflow/builds/283ea812-38a8-4a98-8866-d660cc02356f) | Development APK generated; artifact endpoint verified `200 OK`   |
+| iOS simulator           | `development-simulator` | [`63a6084c-18cd-4a5c-bb76-a62cdc759b18`](https://expo.dev/accounts/mairakhalids-crewflow/projects/crewflow/builds/63a6084c-18cd-4a5c-bb76-a62cdc759b18) | Simulator archive generated; artifact endpoint verified `200 OK` |
+
+Installed-device and simulator feature verification remains part of the
+combined Phase 4 acceptance checklist. A physical-iPhone internal build still
+requires an owner-controlled Apple Developer account and signing credentials.
+
 ## Draft store listing
 
 - App name: `CrewFlow`
