@@ -87,6 +87,14 @@ browser update access to job records.
   online status updates retain the draft for an explicit retry; CrewFlow never
   auto-submits a status change. If the job or intended transition changes, the
   draft is blocked until the technician explicitly rebases or discards it.
+- Branded iOS/Android icon, Android adaptive and notification icons, and native
+  splash assets are configured. Expo development-client support and separate
+  physical-device, simulator, preview, and production EAS profiles are ready
+  for owner-controlled project linking and credentials.
+- A public staging privacy-notice route and draft App Store/Play Store metadata,
+  privacy-label inventory, build runbook, and external release checklist are
+  documented. The notice remains a pre-launch draft pending final contact,
+  domain, and legal review.
 
 ## Remaining Phase 4 work
 
@@ -99,8 +107,10 @@ browser update access to job records.
   cancellation, approval, token-rotation, opt-out, and deep-link behavior
 - Installed-device owner/office overview and guarded approval-action
   verification
-- App icon, splash screen, privacy/store metadata, test builds, and installed
-  Android/iOS device or simulator verification
+- Owner-controlled Expo project linking, Android/iOS test-build execution, and
+  installed device or simulator verification
+- Final support contact/domain, counsel-approved privacy notice, store
+  screenshots, signing credentials, and store-console submission
 
 ## Requirement status
 
@@ -126,8 +136,11 @@ browser update access to job records.
   document approvals also use the same safe delivery path. The PRD's AI-agent
   approval source depends on the Phase 6 approval queue; EAS project
   credentials and installed development-build verification also remain.
-- FR-055: Partial - Expo application configuration exists; release assets and
-  store/test-build work remain.
+- FR-055: Partial - native icon/splash/notification assets, public draft privacy
+  notice, draft store metadata, development-client dependency, and EAS build
+  profiles are implemented. Owner-controlled EAS/store accounts, credentials,
+  actual test builds, device verification, final contact/domain, screenshots,
+  and legal review remain.
 - FR-056: Delivered in application code - pending photos and progress-note
   drafts are durably recoverable across restarts, retries are explicit, status
   changes remain online-only, and stale job/transition conflicts block silent
