@@ -74,6 +74,18 @@ import {
   type OperationsInvoice,
   type OperationsJob,
 } from './src/operations/mobile-operations';
+import { NotificationSettingsView } from './src/notifications/notification-settings-view';
+import {
+  addNotificationResponseListener,
+  addPushTokenRotationListener,
+  disableMobilePushToken,
+  getInitialNotificationDeepLink,
+  synchronizeMobilePushToken,
+} from './src/notifications/push-notifications';
+import {
+  type CrewFlowDeepLink,
+  parseCrewFlowDeepLink,
+} from './src/notifications/push-notification-policy';
 
 type AccessState =
   | { readonly status: 'idle' }
@@ -114,6 +126,7 @@ const roleLabels = {
 
 export default function App() {
   const linkedUrl = Linking.useLinkingURL();
+  const handledAppUrl = useRef<string | undefined>(undefined);
   const handledRecoveryUrl = useRef<string | undefined>(undefined);
   const [accessState, setAccessState] = useState<AccessState>({
     status: 'idle',
@@ -134,6 +147,8 @@ export default function App() {
     { status: 'idle' },
   );
   const [password, setPassword] = useState('');
+  const [pendingDeepLink, setPendingDeepLink] = useState<CrewFlowDeepLink>();
+  const [deepLinkMessage, setDeepLinkMessage] = useState<string>();
   const [pending, setPending] = useState(false);
   const [pendingPhotoState, setPendingPhotoState] = useState<{
     readonly results: readonly JobPhotoUploadPendingResult[];
@@ -274,6 +289,38 @@ export default function App() {
   }, [authClient, linkedUrl]);
 
   useEffect(() => {
+    if (!session || !linkedUrl || handledAppUrl.current === linkedUrl) return;
+    const deepLink = parseCrewFlowDeepLink(linkedUrl);
+    if (!deepLink) return;
+    handledAppUrl.current = linkedUrl;
+    setDeepLinkMessage(undefined);
+    setPendingDeepLink(deepLink);
+  }, [linkedUrl, session]);
+
+  useEffect(() => {
+    if (!authClient || !session) return;
+    let active = true;
+    const receive = (deepLink: CrewFlowDeepLink) => {
+      if (!active) return;
+      setDeepLinkMessage(undefined);
+      setPendingDeepLink(deepLink);
+    };
+    const responseSubscription = addNotificationResponseListener(receive);
+    const tokenSubscription = addPushTokenRotationListener(authClient);
+    void synchronizeMobilePushToken(authClient).catch(() => undefined);
+    void getInitialNotificationDeepLink()
+      .then((deepLink) => {
+        if (deepLink) receive(deepLink);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      responseSubscription.remove();
+      tokenSubscription.remove();
+    };
+  }, [authClient, session]);
+
+  useEffect(() => {
     let active = true;
 
     if (!authClient || !session) {
@@ -375,6 +422,46 @@ export default function App() {
     };
   }, [accessState, authClient, operationsRefreshKey]);
 
+  useEffect(() => {
+    if (!pendingDeepLink || accessState.status !== 'loaded') return;
+    const reject = () => {
+      setPendingDeepLink(undefined);
+      setDeepLinkMessage(
+        'That notification item is unavailable or you no longer have access.',
+      );
+    };
+    if (!accessState.access.allowed) {
+      reject();
+      return;
+    }
+    if (accessState.access.membership.role === 'technician') {
+      if (pendingDeepLink.kind !== 'job') {
+        reject();
+      } else if (assignedJobsState.status === 'loaded') {
+        if (
+          !assignedJobsState.snapshot.jobs.some(
+            (job) => job.id === pendingDeepLink.jobId,
+          )
+        ) {
+          reject();
+        }
+      }
+      return;
+    }
+    if (operationsState.status !== 'loaded') return;
+    const available =
+      pendingDeepLink.kind === 'job'
+        ? operationsState.snapshot.jobs.some(
+            (job) => job.id === pendingDeepLink.jobId,
+          )
+        : operationsState.snapshot.pendingApprovals.some(
+            (approval) =>
+              approval.id === pendingDeepLink.approvalId &&
+              approval.kind === pendingDeepLink.approvalKind,
+          );
+    if (!available) reject();
+  }, [accessState, assignedJobsState, operationsState, pendingDeepLink]);
+
   async function signIn() {
     if (!authClient || pending) return;
 
@@ -444,6 +531,7 @@ export default function App() {
   async function signOut() {
     if (!authClient || pending) return;
     setPending(true);
+    await disableMobilePushToken(authClient).catch(() => undefined);
     await authClient.auth.signOut();
     setPending(false);
     setRecoveryState({ status: 'idle' });
@@ -590,10 +678,13 @@ export default function App() {
               pending={pending}
               state={recoveryState}
             />
-          ) : session ? (
+          ) : session && authClient ? (
             <AuthenticatedView
               accessState={accessState}
               assignedJobsState={assignedJobsState}
+              client={authClient}
+              deepLink={pendingDeepLink}
+              deepLinkMessage={deepLinkMessage}
               email={session.user.email ?? 'Signed-in user'}
               message={
                 recoveryState.status === 'success'
@@ -603,6 +694,7 @@ export default function App() {
               onAdvanceJob={progressAssignedJob}
               onCapturePhoto={captureAssignedJobPhoto}
               onDiscardPhoto={discardAssignedJobPhoto}
+              onDeepLinkHandled={() => setPendingDeepLink(undefined)}
               onRecordSignature={signAssignedJob}
               onRetryPhoto={retryAssignedJobPhoto}
               onRefreshOperations={() => {
@@ -701,10 +793,14 @@ export default function App() {
 function AuthenticatedView({
   accessState,
   assignedJobsState,
+  client,
+  deepLink,
+  deepLinkMessage,
   email,
   message,
   onAdvanceJob,
   onCapturePhoto,
+  onDeepLinkHandled,
   onDiscardPhoto,
   onRecordSignature,
   onRetryPhoto,
@@ -717,6 +813,9 @@ function AuthenticatedView({
 }: Readonly<{
   accessState: AccessState;
   assignedJobsState: AssignedJobsState;
+  client: SupabaseClient<Database>;
+  deepLink?: CrewFlowDeepLink;
+  deepLinkMessage?: string;
   email: string;
   message?: string;
   onAdvanceJob: (
@@ -728,6 +827,7 @@ function AuthenticatedView({
     jobId: string,
     mediaKind: JobMediaKind,
   ) => Promise<JobPhotoUploadResult>;
+  onDeepLinkHandled: () => void;
   onDiscardPhoto: (upload: PendingJobPhotoUpload) => Promise<void>;
   onRecordSignature: (
     jobId: string,
@@ -744,6 +844,35 @@ function AuthenticatedView({
   pending: boolean;
   pendingPhotoResults: readonly JobPhotoUploadPendingResult[];
 }>) {
+  const [notificationSettingsOpen, setNotificationSettingsOpen] =
+    useState(false);
+  let routableDeepLink: CrewFlowDeepLink | undefined;
+  if (
+    accessState.status === 'loaded' &&
+    accessState.access.allowed &&
+    deepLink
+  ) {
+    if (
+      accessState.access.membership.role === 'technician' &&
+      deepLink.kind === 'job' &&
+      assignedJobsState.status === 'loaded' &&
+      assignedJobsState.snapshot.jobs.some((job) => job.id === deepLink.jobId)
+    ) {
+      routableDeepLink = deepLink;
+    } else if (
+      accessState.access.membership.role !== 'technician' &&
+      operationsState.status === 'loaded' &&
+      (deepLink.kind === 'job'
+        ? operationsState.snapshot.jobs.some((job) => job.id === deepLink.jobId)
+        : operationsState.snapshot.pendingApprovals.some(
+            (approval) =>
+              approval.id === deepLink.approvalId &&
+              approval.kind === deepLink.approvalKind,
+          ))
+    ) {
+      routableDeepLink = deepLink;
+    }
+  }
   let accessContent: React.ReactNode;
 
   if (accessState.status === 'loading' || accessState.status === 'idle') {
@@ -802,6 +931,8 @@ function AuthenticatedView({
     } else {
       accessContent = (
         <OperationsOverviewView
+          deepLink={routableDeepLink}
+          onDeepLinkHandled={onDeepLinkHandled}
           onRefresh={onRefreshOperations}
           snapshot={operationsState.snapshot}
         />
@@ -835,9 +966,11 @@ function AuthenticatedView({
   } else if (assignedJobsState.status === 'loaded') {
     accessContent = (
       <AssignedJobsView
+        deepLink={routableDeepLink}
         onAdvanceJob={onAdvanceJob}
         onCapturePhoto={onCapturePhoto}
         onDiscardPhoto={onDiscardPhoto}
+        onDeepLinkHandled={onDeepLinkHandled}
         onRecordSignature={onRecordSignature}
         onRefresh={onRefreshJobs}
         onRetryPhoto={onRetryPhoto}
@@ -849,11 +982,44 @@ function AuthenticatedView({
     accessContent = null;
   }
 
+  if (
+    notificationSettingsOpen &&
+    accessState.status === 'loaded' &&
+    accessState.access.allowed
+  ) {
+    return (
+      <View style={styles.card}>
+        <NotificationSettingsView
+          client={client}
+          onBack={() => setNotificationSettingsOpen(false)}
+          role={accessState.access.membership.role}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.card}>
       <Text style={styles.title}>You’re signed in</Text>
       <Text style={styles.body}>{email}</Text>
       {message ? <Text style={styles.successText}>{message}</Text> : null}
+      {deepLinkMessage ? (
+        <Text accessibilityRole="alert" style={styles.errorText}>
+          {deepLinkMessage}
+        </Text>
+      ) : null}
+      {accessState.status === 'loaded' && accessState.access.allowed ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setNotificationSettingsOpen(true)}
+          style={({ pressed }) => [
+            styles.notificationSettingsButton,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Text style={styles.compactButtonText}>Notification settings</Text>
+        </Pressable>
+      ) : null}
       {accessContent}
       <Pressable
         accessibilityRole="button"
@@ -874,9 +1040,13 @@ function AuthenticatedView({
 }
 
 function OperationsOverviewView({
+  deepLink,
+  onDeepLinkHandled,
   onRefresh,
   snapshot,
 }: Readonly<{
+  deepLink?: CrewFlowDeepLink;
+  onDeepLinkHandled: () => void;
   onRefresh: () => void;
   snapshot: MobileOperationsSnapshot;
 }>) {
@@ -893,6 +1063,17 @@ function OperationsOverviewView({
   const selectedApproval = snapshot.pendingApprovals.find(
     (approval) => `${approval.kind}-${approval.id}` === selectedApprovalKey,
   );
+
+  useEffect(() => {
+    if (!deepLink) return;
+    if (deepLink.kind === 'job') {
+      setSelectedJobId(deepLink.jobId);
+    } else {
+      setApprovalError(undefined);
+      setSelectedApprovalKey(`${deepLink.approvalKind}-${deepLink.approvalId}`);
+    }
+    onDeepLinkHandled();
+  }, [deepLink, onDeepLinkHandled]);
 
   async function approveSelectedItem(approval: OperationsApproval) {
     if (approvalPending) return;
@@ -1505,15 +1686,18 @@ const jobStatusLabels: Record<AssignedJob['status'], string> = {
 };
 
 function AssignedJobsView({
+  deepLink,
   onAdvanceJob,
   onCapturePhoto,
   onDiscardPhoto,
+  onDeepLinkHandled,
   onRecordSignature,
   onRefresh,
   onRetryPhoto,
   pendingPhotoResults,
   snapshot,
 }: Readonly<{
+  deepLink?: CrewFlowDeepLink;
   onAdvanceJob: (
     jobId: string,
     status: TechnicianProgressStatus,
@@ -1524,6 +1708,7 @@ function AssignedJobsView({
     mediaKind: JobMediaKind,
   ) => Promise<JobPhotoUploadResult>;
   onDiscardPhoto: (upload: PendingJobPhotoUpload) => Promise<void>;
+  onDeepLinkHandled: () => void;
   onRecordSignature: (
     jobId: string,
     signerName: string,
@@ -1541,6 +1726,12 @@ function AssignedJobsView({
   const unavailablePendingPhotos = pendingPhotoResults.filter(
     (result) => !snapshot.jobs.some((job) => job.id === result.upload.jobId),
   );
+
+  useEffect(() => {
+    if (deepLink?.kind !== 'job') return;
+    setSelectedJobId(deepLink.jobId);
+    onDeepLinkHandled();
+  }, [deepLink, onDeepLinkHandled]);
 
   if (selectedJob) {
     return (
@@ -2948,6 +3139,16 @@ const styles = StyleSheet.create({
     color: '#11223C',
     fontSize: 14,
     fontWeight: '700',
+  },
+  notificationSettingsButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderColor: '#CBD5E1',
+    borderRadius: 9,
+    borderWidth: 1,
+    marginTop: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
   operationsCardKicker: {
     color: '#1769F4',

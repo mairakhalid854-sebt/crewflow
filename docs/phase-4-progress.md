@@ -1,6 +1,6 @@
 # Phase 4 progress: mobile field execution
 
-Updated: 2026-10-18
+Updated: 2026-10-19
 
 Phase 4 is in development. The first field-execution slice builds on the
 existing technician sign-in and assigned-job views without granting broad
@@ -62,6 +62,19 @@ browser update access to job records.
   details, explicitly confirm publication, and share the returned customer
   link. The existing tenant/role-guarded database commands remain the only
   write path, and technicians cannot invoke the mobile action.
+- Mobile members can explicitly enable or disable notifications per app
+  installation and independently opt out of job assignments, schedule changes,
+  cancellations, and approval requests. Expo tokens are private, tenant-bound,
+  rotated safely, and disabled on sign-out or when Expo reports an invalid
+  device.
+- Assignment, reschedule, cancellation, and draft approval changes create
+  generic transactional notification events. Per-device deliveries use
+  idempotency keys, bounded claims, retry leases, exponential backoff, and a
+  terminal failure state through a secret-key-only Edge Function.
+- Notification taps use strict CrewFlow deep links and recheck the signed-in
+  membership plus the loaded tenant-scoped job or approval before opening it.
+  Customer names, addresses, document values, and public tokens are never
+  included in the notification payload.
 
 ## Remaining Phase 4 work
 
@@ -70,7 +83,8 @@ browser update access to job records.
 - Installed-device signature drawing and submission smoke tests
 - Richer task/timeline history and offline field-progress draft/sync conflict
   handling
-- Assignment and schedule push notifications with token rotation and opt-outs
+- Installed development-build verification of assignment, schedule,
+  cancellation, approval, token-rotation, opt-out, and deep-link behavior
 - Installed-device owner/office overview and guarded approval-action
   verification
 - App icon, splash screen, privacy/store metadata, test builds, and installed
@@ -93,7 +107,13 @@ browser update access to job records.
   operational job lists, unpaid invoice status, detailed approval review,
   explicit confirmation, guarded publication, and customer-link sharing are
   implemented; installed-device verification remains.
-- FR-054: Not started.
+- FR-054: Partial - private device registration, token rotation, granular
+  opt-outs, transactional assignment/schedule/cancellation events, retryable
+  Expo delivery, and role-authorized deep links are implemented. Draft customer
+  document approvals also use the same safe delivery path. The PRD's AI-agent
+  approval source depends on the Phase 6 approval queue; EAS project
+  credentials, scheduled worker deployment, and installed development-build
+  verification also remain.
 - FR-055: Partial - Expo application configuration exists; release assets and
   store/test-build work remain.
 - FR-056: Partial - pending photos are durably recoverable across restarts, but

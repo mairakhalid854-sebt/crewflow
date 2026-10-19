@@ -673,6 +673,111 @@ export type Database = {
           },
         ];
       };
+      mobile_notification_preferences: {
+        Row: {
+          approvals_enabled: boolean;
+          cancellations_enabled: boolean;
+          created_at: string;
+          job_assignments_enabled: boolean;
+          membership_id: string;
+          schedule_changes_enabled: boolean;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          approvals_enabled?: boolean;
+          cancellations_enabled?: boolean;
+          created_at?: string;
+          job_assignments_enabled?: boolean;
+          membership_id: string;
+          schedule_changes_enabled?: boolean;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          approvals_enabled?: boolean;
+          cancellations_enabled?: boolean;
+          created_at?: string;
+          job_assignments_enabled?: boolean;
+          membership_id?: string;
+          schedule_changes_enabled?: boolean;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'mobile_notification_preferences_membership_tenant_fk';
+            columns: ['membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'mobile_notification_preferences_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      mobile_push_tokens: {
+        Row: {
+          created_at: string;
+          device_id: string;
+          disabled_at: string | null;
+          expo_push_token: string;
+          id: string;
+          last_seen_at: string;
+          membership_id: string;
+          platform: Database['public']['Enums']['mobile_platform'];
+          tenant_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          device_id: string;
+          disabled_at?: string | null;
+          expo_push_token: string;
+          id?: string;
+          last_seen_at?: string;
+          membership_id: string;
+          platform: Database['public']['Enums']['mobile_platform'];
+          tenant_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          device_id?: string;
+          disabled_at?: string | null;
+          expo_push_token?: string;
+          id?: string;
+          last_seen_at?: string;
+          membership_id?: string;
+          platform?: Database['public']['Enums']['mobile_platform'];
+          tenant_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'mobile_push_tokens_membership_tenant_fk';
+            columns: ['membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'mobile_push_tokens_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       payment_records: {
         Row: {
           amount_cents: number;
@@ -753,6 +858,136 @@ export type Database = {
           user_id?: string;
         };
         Relationships: [];
+      };
+      push_notification_deliveries: {
+        Row: {
+          attempts: number;
+          available_at: string;
+          claimed_at: string | null;
+          created_at: string;
+          event_id: string;
+          id: string;
+          last_error_code: string | null;
+          sent_at: string | null;
+          status: Database['public']['Enums']['push_delivery_status'];
+          token_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          attempts?: number;
+          available_at?: string;
+          claimed_at?: string | null;
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          last_error_code?: string | null;
+          sent_at?: string | null;
+          status?: Database['public']['Enums']['push_delivery_status'];
+          token_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          attempts?: number;
+          available_at?: string;
+          claimed_at?: string | null;
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          last_error_code?: string | null;
+          sent_at?: string | null;
+          status?: Database['public']['Enums']['push_delivery_status'];
+          token_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'push_notification_deliveries_event_id_fkey';
+            columns: ['event_id'];
+            isOneToOne: false;
+            referencedRelation: 'push_notification_events';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'push_notification_deliveries_token_id_fkey';
+            columns: ['token_id'];
+            isOneToOne: false;
+            referencedRelation: 'mobile_push_tokens';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      push_notification_events: {
+        Row: {
+          body: string;
+          created_at: string;
+          dedupe_key: string;
+          deep_link: string;
+          entity_id: string;
+          entity_type: string;
+          id: string;
+          job_id: string;
+          notification_kind: Database['public']['Enums']['push_notification_kind'];
+          sent_at: string | null;
+          status: Database['public']['Enums']['push_event_status'];
+          target_membership_id: string;
+          tenant_id: string;
+          title: string;
+        };
+        Insert: {
+          body: string;
+          created_at?: string;
+          dedupe_key: string;
+          deep_link: string;
+          entity_id: string;
+          entity_type: string;
+          id?: string;
+          job_id: string;
+          notification_kind: Database['public']['Enums']['push_notification_kind'];
+          sent_at?: string | null;
+          status?: Database['public']['Enums']['push_event_status'];
+          target_membership_id: string;
+          tenant_id: string;
+          title: string;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          dedupe_key?: string;
+          deep_link?: string;
+          entity_id?: string;
+          entity_type?: string;
+          id?: string;
+          job_id?: string;
+          notification_kind?: Database['public']['Enums']['push_notification_kind'];
+          sent_at?: string | null;
+          status?: Database['public']['Enums']['push_event_status'];
+          target_membership_id?: string;
+          tenant_id?: string;
+          title?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'push_notification_events_job_tenant_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'push_notification_events_membership_tenant_fk';
+            columns: ['target_membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'push_notification_events_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       quote_line_items: {
         Row: {
@@ -1395,8 +1630,31 @@ export type Database = {
         Args: { target_media_ids: string[] };
         Returns: number;
       };
+      claim_push_notification_deliveries: {
+        Args: { batch_size?: number };
+        Returns: {
+          body: string;
+          deep_link: string;
+          delivery_id: string;
+          expo_push_token: string;
+          notification_kind: Database['public']['Enums']['push_notification_kind'];
+          title: string;
+        }[];
+      };
+      complete_push_notification_deliveries: {
+        Args: { target_delivery_ids: string[] };
+        Returns: number;
+      };
       deactivate_team_member: {
         Args: { target_membership_id: string };
+        Returns: undefined;
+      };
+      disable_invalid_mobile_push_tokens: {
+        Args: { invalid_expo_push_tokens: string[] };
+        Returns: number;
+      };
+      disable_mobile_push_token: {
+        Args: { target_device_id: string };
         Returns: undefined;
       };
       decide_public_quote: {
@@ -1410,6 +1668,15 @@ export type Database = {
       get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
       get_public_quote: { Args: { quote_token: string }; Returns: Json };
       get_public_work_report: { Args: { report_token: string }; Returns: Json };
+      get_mobile_notification_preferences: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          approvals_enabled: boolean;
+          cancellations_enabled: boolean;
+          job_assignments_enabled: boolean;
+          schedule_changes_enabled: boolean;
+        }[];
+      };
       is_allowed_external_payment_url: {
         Args: { candidate: string };
         Returns: boolean;
@@ -1455,6 +1722,14 @@ export type Database = {
           signed_at: string;
         }[];
       };
+      register_mobile_push_token: {
+        Args: {
+          target_device_id: string;
+          target_expo_push_token: string;
+          target_platform: Database['public']['Enums']['mobile_platform'];
+        };
+        Returns: string;
+      };
       reserve_assigned_job_media: {
         Args: {
           media_content_type: string;
@@ -1470,6 +1745,10 @@ export type Database = {
       revoke_team_invitation: {
         Args: { target_invitation_id: string };
         Returns: undefined;
+      };
+      retry_push_notification_deliveries: {
+        Args: { error_code: string; target_delivery_ids: string[] };
+        Returns: number;
       };
       save_job_invoice: {
         Args: {
@@ -1520,6 +1799,15 @@ export type Database = {
         };
         Returns: undefined;
       };
+      update_mobile_notification_preferences: {
+        Args: {
+          enable_approvals: boolean;
+          enable_cancellations: boolean;
+          enable_job_assignments: boolean;
+          enable_schedule_changes: boolean;
+        };
+        Returns: undefined;
+      };
       update_staff_details: {
         Args: {
           staff_availability_notes: string;
@@ -1558,11 +1846,19 @@ export type Database = {
         | 'cancelled';
       membership_role: 'owner' | 'office' | 'technician';
       membership_status: 'invited' | 'active' | 'deactivated';
+      mobile_platform: 'android' | 'ios';
       payment_method: 'cash' | 'check' | 'external_transfer' | 'other';
       payment_record_type: 'payment' | 'adjustment';
       payment_source: 'manual' | 'provider_confirmed';
       quote_status:
         'draft' | 'sent' | 'accepted' | 'declined' | 'expired' | 'void';
+      push_delivery_status: 'pending' | 'processing' | 'sent' | 'dead';
+      push_event_status: 'pending' | 'sent';
+      push_notification_kind:
+        | 'job_assigned'
+        | 'job_rescheduled'
+        | 'job_cancelled'
+        | 'approval_requested';
       tax_behavior: 'exclusive' | 'inclusive' | 'non_taxable';
       work_report_status: 'draft' | 'sent' | 'void';
     };
