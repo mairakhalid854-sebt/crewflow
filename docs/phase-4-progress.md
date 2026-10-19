@@ -75,6 +75,9 @@ browser update access to job records.
   membership plus the loaded tenant-scoped job or approval before opening it.
   Customer names, addresses, document values, and public tokens are never
   included in the notification payload.
+- Supabase Cron invokes the bounded push delivery Edge Function every minute
+  through `pg_net`. The project URL and service credential remain encrypted in
+  Vault, and only service-role commands can configure or inspect the job.
 
 ## Remaining Phase 4 work
 
@@ -112,8 +115,7 @@ browser update access to job records.
   Expo delivery, and role-authorized deep links are implemented. Draft customer
   document approvals also use the same safe delivery path. The PRD's AI-agent
   approval source depends on the Phase 6 approval queue; EAS project
-  credentials, scheduled worker deployment, and installed development-build
-  verification also remain.
+  credentials and installed development-build verification also remain.
 - FR-055: Partial - Expo application configuration exists; release assets and
   store/test-build work remain.
 - FR-056: Partial - pending photos are durably recoverable across restarts, but
