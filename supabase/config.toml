@@ -396,6 +396,10 @@ entrypoint = './functions/cleanup-job-media/index.js'
 verify_jwt = false
 entrypoint = './functions/process-push-notifications/index.js'
 
+[functions.paddle-billing-webhook]
+verify_jwt = false
+entrypoint = './functions/paddle-billing-webhook/index.js'
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

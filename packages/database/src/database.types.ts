@@ -83,6 +83,110 @@ export type Database = {
           },
         ];
       };
+      billing_plans: {
+        Row: {
+          ai_monthly_budget_cents: number | null;
+          amount_cents: number | null;
+          billing_interval:
+            Database['public']['Enums']['billing_interval'] | null;
+          code: string;
+          created_at: string;
+          currency_code: string;
+          display_name: string;
+          is_active: boolean;
+          is_development_only: boolean;
+          provider: Database['public']['Enums']['billing_provider'];
+          provider_price_id: string | null;
+          seat_limit: number | null;
+          trial_days: number;
+          updated_at: string;
+        };
+        Insert: {
+          ai_monthly_budget_cents?: number | null;
+          amount_cents?: number | null;
+          billing_interval?:
+            Database['public']['Enums']['billing_interval'] | null;
+          code: string;
+          created_at?: string;
+          currency_code?: string;
+          display_name: string;
+          is_active?: boolean;
+          is_development_only?: boolean;
+          provider: Database['public']['Enums']['billing_provider'];
+          provider_price_id?: string | null;
+          seat_limit?: number | null;
+          trial_days?: number;
+          updated_at?: string;
+        };
+        Update: {
+          ai_monthly_budget_cents?: number | null;
+          amount_cents?: number | null;
+          billing_interval?:
+            Database['public']['Enums']['billing_interval'] | null;
+          code?: string;
+          created_at?: string;
+          currency_code?: string;
+          display_name?: string;
+          is_active?: boolean;
+          is_development_only?: boolean;
+          provider?: Database['public']['Enums']['billing_provider'];
+          provider_price_id?: string | null;
+          seat_limit?: number | null;
+          trial_days?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      billing_webhook_events: {
+        Row: {
+          event_type: string;
+          external_event_id: string;
+          failure_code: string | null;
+          id: string;
+          occurred_at: string;
+          payload_sha256: string;
+          processed_at: string;
+          provider: Database['public']['Enums']['billing_provider'];
+          received_at: string;
+          status: Database['public']['Enums']['billing_event_status'];
+          tenant_id: string | null;
+        };
+        Insert: {
+          event_type: string;
+          external_event_id: string;
+          failure_code?: string | null;
+          id?: string;
+          occurred_at: string;
+          payload_sha256: string;
+          processed_at?: string;
+          provider: Database['public']['Enums']['billing_provider'];
+          received_at?: string;
+          status: Database['public']['Enums']['billing_event_status'];
+          tenant_id?: string | null;
+        };
+        Update: {
+          event_type?: string;
+          external_event_id?: string;
+          failure_code?: string | null;
+          id?: string;
+          occurred_at?: string;
+          payload_sha256?: string;
+          processed_at?: string;
+          provider?: Database['public']['Enums']['billing_provider'];
+          received_at?: string;
+          status?: Database['public']['Enums']['billing_event_status'];
+          tenant_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'billing_webhook_events_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       business_hours: {
         Row: {
           closes_at: string | null;
@@ -1428,6 +1532,69 @@ export type Database = {
           },
         ];
       };
+      tenant_subscriptions: {
+        Row: {
+          access_mode: Database['public']['Enums']['billing_access_mode'];
+          cancel_at_period_end: boolean;
+          created_at: string;
+          current_period_ends_at: string | null;
+          current_period_starts_at: string | null;
+          last_provider_event_at: string | null;
+          plan_code: string;
+          provider: Database['public']['Enums']['billing_provider'];
+          provider_customer_id: string | null;
+          provider_subscription_id: string | null;
+          status: Database['public']['Enums']['subscription_status'];
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          access_mode: Database['public']['Enums']['billing_access_mode'];
+          cancel_at_period_end?: boolean;
+          created_at?: string;
+          current_period_ends_at?: string | null;
+          current_period_starts_at?: string | null;
+          last_provider_event_at?: string | null;
+          plan_code: string;
+          provider: Database['public']['Enums']['billing_provider'];
+          provider_customer_id?: string | null;
+          provider_subscription_id?: string | null;
+          status: Database['public']['Enums']['subscription_status'];
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          access_mode?: Database['public']['Enums']['billing_access_mode'];
+          cancel_at_period_end?: boolean;
+          created_at?: string;
+          current_period_ends_at?: string | null;
+          current_period_starts_at?: string | null;
+          last_provider_event_at?: string | null;
+          plan_code?: string;
+          provider?: Database['public']['Enums']['billing_provider'];
+          provider_customer_id?: string | null;
+          provider_subscription_id?: string | null;
+          status?: Database['public']['Enums']['subscription_status'];
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tenant_subscriptions_plan_code_fkey';
+            columns: ['plan_code'];
+            isOneToOne: false;
+            referencedRelation: 'billing_plans';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'tenant_subscriptions_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       tenants: {
         Row: {
           business_email: string;
@@ -1584,6 +1751,23 @@ export type Database = {
         };
         Returns: Database['public']['Enums']['job_status'];
       };
+      apply_paddle_sandbox_subscription_event: {
+        Args: {
+          target_cancel_at_period_end: boolean;
+          target_event_id: string;
+          target_event_type: string;
+          target_occurred_at: string;
+          target_payload_sha256: string;
+          target_period_ends_at: string | null;
+          target_period_starts_at: string | null;
+          target_provider_customer_id: string;
+          target_provider_price_id: string;
+          target_provider_subscription_id: string;
+          target_status: Database['public']['Enums']['subscription_status'];
+          target_tenant_id: string;
+        };
+        Returns: string;
+      };
       create_team_invitation: {
         Args: {
           expiry_hours?: number;
@@ -1672,6 +1856,10 @@ export type Database = {
       get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
       get_public_quote: { Args: { quote_token: string }; Returns: Json };
       get_public_work_report: { Args: { report_token: string }; Returns: Json };
+      get_current_tenant_access_mode: {
+        Args: Record<PropertyKey, never>;
+        Returns: Database['public']['Enums']['billing_access_mode'];
+      };
       get_mobile_notification_preferences: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -1679,6 +1867,27 @@ export type Database = {
           cancellations_enabled: boolean;
           job_assignments_enabled: boolean;
           schedule_changes_enabled: boolean;
+        }[];
+      };
+      get_owner_billing_summary: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          access_mode: Database['public']['Enums']['billing_access_mode'];
+          ai_monthly_budget_cents: number | null;
+          amount_cents: number | null;
+          billing_interval:
+            Database['public']['Enums']['billing_interval'] | null;
+          cancel_at_period_end: boolean;
+          currency_code: string;
+          current_period_ends_at: string | null;
+          current_period_starts_at: string | null;
+          is_development_only: boolean;
+          plan_code: string;
+          plan_name: string;
+          provider: Database['public']['Enums']['billing_provider'];
+          seat_limit: number | null;
+          subscription_status: Database['public']['Enums']['subscription_status'];
+          trial_days: number;
         }[];
       };
       get_push_notification_cron_status: {
@@ -1793,6 +2002,13 @@ export type Database = {
         };
         Returns: string;
       };
+      set_stub_subscription_state: {
+        Args: {
+          target_status: Database['public']['Enums']['subscription_status'];
+          target_tenant_id: string;
+        };
+        Returns: Database['public']['Enums']['billing_access_mode'];
+      };
       update_company_settings: {
         Args: {
           input_ai_monthly_budget_cents: number;
@@ -1846,6 +2062,10 @@ export type Database = {
       };
     };
     Enums: {
+      billing_access_mode: 'full' | 'grace' | 'read_only';
+      billing_event_status: 'processed' | 'ignored' | 'failed';
+      billing_interval: 'month' | 'year';
+      billing_provider: 'stub' | 'paddle_sandbox';
       invoice_status: 'draft' | 'sent' | 'partially_paid' | 'paid' | 'void';
       job_media_kind: 'before' | 'after';
       job_priority: 'low' | 'normal' | 'high' | 'urgent';
@@ -1873,6 +2093,8 @@ export type Database = {
         | 'job_rescheduled'
         | 'job_cancelled'
         | 'approval_requested';
+      subscription_status:
+        'trialing' | 'active' | 'past_due' | 'paused' | 'canceled';
       tax_behavior: 'exclusive' | 'inclusive' | 'non_taxable';
       work_report_status: 'draft' | 'sent' | 'void';
     };
@@ -2005,6 +2227,10 @@ export const Constants = {
   },
   public: {
     Enums: {
+      billing_access_mode: ['full', 'grace', 'read_only'],
+      billing_event_status: ['processed', 'ignored', 'failed'],
+      billing_interval: ['month', 'year'],
+      billing_provider: ['stub', 'paddle_sandbox'],
       invoice_status: ['draft', 'sent', 'partially_paid', 'paid', 'void'],
       job_priority: ['low', 'normal', 'high', 'urgent'],
       job_status: [
@@ -2029,6 +2255,13 @@ export const Constants = {
         'declined',
         'expired',
         'void',
+      ],
+      subscription_status: [
+        'trialing',
+        'active',
+        'past_due',
+        'paused',
+        'canceled',
       ],
       tax_behavior: ['exclusive', 'inclusive', 'non_taxable'],
       work_report_status: ['draft', 'sent', 'void'],
