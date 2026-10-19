@@ -16,7 +16,7 @@ Protected assets include tenant customer data, schedules, quotes/invoices, uploa
 | Session theft or reset replay      | HttpOnly/Secure/SameSite cookies, rotation/revocation, expiring single-use reset tokens  | Auth integration tests                        |
 | Public token guessing/leakage      | High-entropy hashed purpose tokens, expiry, revocation, throttling, no indexing          | Duplicate/expired/invalid token tests         |
 | Double booking and stale approvals | Transactional constraint/lock and execution-time revalidation                            | Concurrent database tests                     |
-| Forged or replayed webhooks        | Signature verification, stored event ID, idempotent processing, reconciliation           | Signed/unsigned/replayed webhook tests        |
+| Forged or replayed webhooks        | Raw-body HMAC verification, timestamp bound, event ID/payload hash, idempotent ordering  | Signed/unsigned/replayed webhook tests        |
 | False payment confirmation         | Link clicks never mutate payment state; source-labelled ledger records                   | End-to-end payment-boundary test              |
 | Malicious uploads                  | Size/type validation, malware scanning, private storage, short-lived authorized URLs     | Upload abuse tests                            |
 | Prompt injection/data exfiltration | Tenant-scoped retrieval, untrusted-content boundary, tool allowlists, approval policy    | AI evaluation suite before AI release         |
@@ -32,5 +32,6 @@ Protected assets include tenant customer data, schedules, quotes/invoices, uploa
 - Public access to raw uploads or tenant documents
 - Secrets committed to source or included in browser/mobile bundles
 - A payment or entitlement state derived only from a redirect/click
+- Live billing enabled without approved plan/legal configuration and separate production credentials
 
 The threat model must be updated at each phase and whenever a new provider or trust boundary is introduced.

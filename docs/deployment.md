@@ -40,16 +40,18 @@ The native app owns the `crewflow` URL scheme with Android package and iOS bundl
 8. Deploy a preview, then add its HTTPS callback URL to Supabase Auth URL Configuration.
 9. Test signup, email confirmation, reset, onboarding, logout, and unauthorized tenant access.
 10. Build the mobile development/internal client and smoke-test `crewflow://auth/reset` on a physical device.
-11. Promote the same reviewed commit to production only after all release blockers are closed.
+11. For Phase 5 sandbox billing, set `PADDLE_SANDBOX_WEBHOOK_SECRET` only in Supabase Secrets, deploy `paddle-billing-webhook`, and configure a Paddle sandbox notification destination to its HTTPS function URL.
+12. Replay signed, duplicate, out-of-order, pause, cancellation, and recovery simulations before enabling any checkout UI.
+13. Promote the same reviewed commit to production only after all release blockers are closed.
 
 ## Secrets
 
-The Supabase access token, database password, service-role key, SMTP credentials, Vercel token, and future provider keys belong only in the relevant platform secret store. They must never be pasted into source files, `NEXT_PUBLIC_*` variables, build logs, or Git history.
+The Supabase access token, database password, service-role key, Paddle webhook/API credentials, SMTP credentials, Vercel token, and future provider keys belong only in the relevant platform secret store. They must never be pasted into source files, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, build logs, or Git history.
 
 ## Current external state
 
 - Supabase project URL and publishable key respond successfully; email signup is enabled and email confirmation is required.
-- The repository is linked to Supabase project `mlgfyxsqorualqwbecmp`; migrations `202610120001` and `202610120002` are applied and the hosted schema lint is clean.
+- The repository is linked to Supabase project `mlgfyxsqorualqwbecmp`; committed migrations are promoted through the CLI and the hosted schema lint is checked after each push.
 - GitHub remote `mairakhalid854-sebt/crewflow` is connected locally.
 - Generated database types match the hosted schema. Full pgTAP execution awaits Docker/Podman on a test runner.
 - Vercel project `saas-team-crew-flow/crewflow` is linked and the protected Preview alias at `https://crewflow-git-staging-saas-team-crew-flow.vercel.app` builds successfully from `staging`.
