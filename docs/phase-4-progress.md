@@ -100,6 +100,10 @@ browser update access to job records.
   `@mairakhalids-crewflow/crewflow` EAS project. Push registration reads the
   committed public project ID with an optional environment override, while
   Supabase and web public values remain environment-specific.
+- The first owner-controlled Android development APK and iOS simulator
+  development archive completed successfully through EAS. Both artifact
+  endpoints were verified before their automatic expiry; installed acceptance
+  testing remains deferred to the combined device test pass.
 
 ## Remaining Phase 4 work
 
@@ -112,8 +116,8 @@ browser update access to job records.
   cancellation, approval, token-rotation, opt-out, and deep-link behavior
 - Installed-device owner/office overview and guarded approval-action
   verification
-- Owner-controlled Expo project linking, Android/iOS test-build execution, and
-  installed device or simulator verification
+- Installed Android development-client and iOS simulator verification; a
+  physical-iPhone build additionally requires Apple signing credentials
 - Final support contact/domain, counsel-approved privacy notice, store
   screenshots, signing credentials, and store-console submission
 
@@ -142,10 +146,11 @@ browser update access to job records.
   approval source depends on the Phase 6 approval queue; FCM/APNs credentials
   and installed development-build verification also remain.
 - FR-055: Partial - native icon/splash/notification assets, public draft privacy
-  notice, draft store metadata, development-client dependency, and EAS build
-  profiles and owner-controlled EAS project linkage are implemented. Store
-  accounts, signing/push credentials, actual test builds, device verification,
-  final contact/domain, screenshots, and legal review remain.
+  notice, draft store metadata, development-client dependency, EAS build
+  profiles, owner-controlled project linkage, an Android development APK, and
+  an iOS simulator archive are complete. Store accounts, physical-iOS
+  signing/push credentials, installed verification, final contact/domain,
+  screenshots, and legal review remain.
 - FR-056: Delivered in application code - pending photos and progress-note
   drafts are durably recoverable across restarts, retries are explicit, status
   changes remain online-only, and stale job/transition conflicts block silent
