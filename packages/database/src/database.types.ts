@@ -1645,6 +1645,10 @@ export type Database = {
         Args: { target_delivery_ids: string[] };
         Returns: number;
       };
+      configure_push_notification_cron: {
+        Args: { target_project_url: string; target_service_key: string };
+        Returns: number;
+      };
       deactivate_team_member: {
         Args: { target_membership_id: string };
         Returns: undefined;
@@ -1675,6 +1679,16 @@ export type Database = {
           cancellations_enabled: boolean;
           job_assignments_enabled: boolean;
           schedule_changes_enabled: boolean;
+        }[];
+      };
+      get_push_notification_cron_status: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          active: boolean;
+          job_id: number;
+          last_run_at: string | null;
+          last_status: string | null;
+          schedule: string;
         }[];
       };
       is_allowed_external_payment_url: {
