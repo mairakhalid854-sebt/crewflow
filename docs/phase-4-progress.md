@@ -91,10 +91,15 @@ browser update access to job records.
   splash assets are configured. Expo development-client support and separate
   physical-device, simulator, preview, and production EAS profiles are ready
   for owner-controlled project linking and credentials.
-- A public staging privacy-notice route and draft App Store/Play Store metadata,
-  privacy-label inventory, build runbook, and external release checklist are
-  documented. The notice remains a pre-launch draft pending final contact,
-  domain, and legal review.
+- An application-public privacy-notice route and draft App Store/Play Store
+  metadata, privacy-label inventory, build runbook, and external release
+  checklist are documented. Vercel Deployment Protection still blocks
+  anonymous staging access, and the notice remains a pre-launch draft pending
+  final contact, domain, and legal review.
+- The mobile application is linked to the owner-controlled
+  `@mairakhalids-crewflow/crewflow` EAS project. Push registration reads the
+  committed public project ID with an optional environment override, while
+  Supabase and web public values remain environment-specific.
 
 ## Remaining Phase 4 work
 
@@ -134,13 +139,13 @@ browser update access to job records.
   opt-outs, transactional assignment/schedule/cancellation events, retryable
   Expo delivery, and role-authorized deep links are implemented. Draft customer
   document approvals also use the same safe delivery path. The PRD's AI-agent
-  approval source depends on the Phase 6 approval queue; EAS project
-  credentials and installed development-build verification also remain.
+  approval source depends on the Phase 6 approval queue; FCM/APNs credentials
+  and installed development-build verification also remain.
 - FR-055: Partial - native icon/splash/notification assets, public draft privacy
   notice, draft store metadata, development-client dependency, and EAS build
-  profiles are implemented. Owner-controlled EAS/store accounts, credentials,
-  actual test builds, device verification, final contact/domain, screenshots,
-  and legal review remain.
+  profiles and owner-controlled EAS project linkage are implemented. Store
+  accounts, signing/push credentials, actual test builds, device verification,
+  final contact/domain, screenshots, and legal review remain.
 - FR-056: Delivered in application code - pending photos and progress-note
   drafts are durably recoverable across restarts, retries are explicit, status
   changes remain online-only, and stale job/transition conflicts block silent

@@ -2,10 +2,11 @@
 
 Updated: 2026-10-19
 
-CrewFlow now has native release assets, Expo development-client support, EAS
-build profiles, a public privacy-notice route, and draft store metadata. Store
-publication remains blocked until the owner controls the required external
-accounts and the privacy/legal details are approved.
+CrewFlow now has native release assets, Expo development-client support, an
+owner-controlled EAS project, EAS build profiles, an application-public
+privacy-notice route, and draft store metadata. Store publication remains
+blocked until the required external accounts and privacy/legal details are
+approved.
 
 ## Build profiles
 
@@ -19,20 +20,25 @@ Run EAS commands from `apps/mobile`.
 | `preview-simulator`     | Production-like iOS simulator testing   | Simulator `.app`                                 |
 | `production`            | Store submission candidate              | Android `.aab` / iOS store archive               |
 
-Required setup before the first cloud build:
+Linked project:
 
-1. Create or select the owner-controlled Expo account and run
-   `npx eas-cli@latest login`.
-2. From `apps/mobile`, run `npx eas-cli@latest init` and commit the generated
-   EAS project linkage. Do not invent or copy another project's ID.
-3. Configure these EAS environment variables for the intended environment:
+- EAS owner: `mairakhalids-crewflow`
+- EAS project: `@mairakhalids-crewflow/crewflow`
+- Dashboard: `https://expo.dev/accounts/mairakhalids-crewflow/projects/crewflow`
+- The public EAS project ID is committed under `expo.extra.eas.projectId` and
+  push registration reads that value automatically.
+
+Required setup for cloud builds:
+
+1. Configure these EAS environment variables for the intended environment:
    `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
-   `EXPO_PUBLIC_WEB_APP_URL`, and `EXPO_PUBLIC_EAS_PROJECT_ID`.
-4. Configure FCM v1 and Apple push credentials in the owner-controlled Expo,
+   and `EXPO_PUBLIC_WEB_APP_URL`. `EXPO_PUBLIC_EAS_PROJECT_ID` remains an
+   optional local override only.
+2. Configure FCM v1 and Apple push credentials in the owner-controlled Expo,
    Google, and Apple accounts.
-5. Create an Android test build with
+3. Create an Android test build with
    `npx eas-cli@latest build --platform android --profile development`.
-6. For an iOS simulator build, run
+4. For an iOS simulator build, run
    `npx eas-cli@latest build --platform ios --profile development-simulator`.
 
 After a development build is installed, start Metro with
@@ -48,7 +54,7 @@ development client has its own launch UI.
 - Secondary category: `Productivity`
 - Android short description: `Run jobs, schedules, field updates, and approvals from one secure workspace.`
 - Promotional text: `Give owners, office teams, and technicians a clearer view of every job.`
-- Privacy URL (staging):
+- Privacy URL candidate (currently protected by Vercel Deployment Protection):
   `https://crewflow-git-staging-saas-team-crew-flow.vercel.app/privacy`
 - Support URL: blocked until a final public domain and support channel exist.
 - Marketing URL: blocked until the public marketing site and final domain exist.
@@ -106,7 +112,7 @@ External work still required:
 - a monitored public support email or support form;
 - legal entity/controller contact details and counsel-approved privacy notice;
 - owner-controlled Apple Developer and Google Play Console accounts;
-- owner-controlled Expo project plus FCM/APNs credentials;
+- FCM/APNs credentials for the linked owner-controlled Expo project;
 - final device screenshots and store-review notes;
 - physical-device and simulator verification from the combined Phase 4 test
   checklist.

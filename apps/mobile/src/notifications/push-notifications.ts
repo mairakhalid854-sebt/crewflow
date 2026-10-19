@@ -34,6 +34,14 @@ export type PushRegistrationResult =
         | 'unavailable';
     };
 
+function projectIdFromExtra(extra: unknown): string | undefined {
+  if (typeof extra !== 'object' || extra === null) return undefined;
+  const eas = (extra as Record<string, unknown>)['eas'];
+  if (typeof eas !== 'object' || eas === null) return undefined;
+  const value = (eas as Record<string, unknown>)['projectId'];
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
 Notifications.setNotificationHandler({
   handleNotification: () =>
     Promise.resolve({
@@ -45,7 +53,16 @@ Notifications.setNotificationHandler({
 });
 
 function projectId(): string | undefined {
-  return process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() || undefined;
+  const environmentProjectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim();
+  if (environmentProjectId) return environmentProjectId;
+
+  const configuredProjectId = projectIdFromExtra(Constants.expoConfig?.extra);
+  if (configuredProjectId) return configuredProjectId;
+
+  const buildProjectId: unknown = Constants.easConfig?.projectId;
+  return typeof buildProjectId === 'string' && buildProjectId.trim()
+    ? buildProjectId.trim()
+    : undefined;
 }
 
 function isExpoGo(): boolean {
