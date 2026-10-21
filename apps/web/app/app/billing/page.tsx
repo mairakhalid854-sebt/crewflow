@@ -2,6 +2,11 @@ import { requireTenantContext } from '../../../lib/auth/tenant-context';
 import { createClient } from '../../../lib/supabase/server';
 
 import { openBillingPortalAction } from './actions';
+import {
+  isSandboxCheckoutConfigured,
+  type SandboxCheckoutPlan,
+} from './paddle-checkout';
+import { SandboxCheckout } from './sandbox-checkout';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,14 +27,17 @@ function formatLimit(value: number | null): string {
 }
 
 interface BillingPageProps {
-  readonly searchParams: Promise<{ portal?: string }>;
+  readonly searchParams: Promise<{ checkout?: string; portal?: string }>;
 }
 
 export default async function BillingPage({ searchParams }: BillingPageProps) {
   const query = await searchParams;
   const context = await requireTenantContext(['owner']);
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc('get_owner_billing_summary');
+  const [{ data, error }, plansResult] = await Promise.all([
+    supabase.rpc('get_owner_billing_summary'),
+    supabase.rpc('list_owner_paddle_sandbox_plans'),
+  ]);
 
   if (error || !data?.[0]) {
     throw new Error('CrewFlow billing details could not be loaded.');
@@ -37,6 +45,22 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
 
   const billing = data[0];
   const isStub = billing.provider === 'stub';
+  const sandboxPlans: SandboxCheckoutPlan[] = (plansResult.data ?? []).map(
+    (plan) => ({
+      amountCents: plan.amount_cents,
+      billingInterval: plan.billing_interval,
+      code: plan.code,
+      currencyCode: plan.currency_code,
+      displayName: plan.display_name,
+      priceId: plan.provider_price_id,
+      seatLimit: plan.seat_limit,
+      trialDays: plan.trial_days,
+    }),
+  );
+  const paddleClientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+  const checkoutConfigured =
+    !plansResult.error &&
+    isSandboxCheckoutConfigured(paddleClientToken, sandboxPlans);
 
   return (
     <div className="workspace-page billing-page">
@@ -119,6 +143,34 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           </div>
         </dl>
       </section>
+
+      {query.checkout === 'success' ? (
+        <p className="billing-checkout-success" role="status">
+          Test checkout completed. Paddle is syncing the subscription; refresh
+          this page in a few seconds if the status has not changed yet.
+        </p>
+      ) : null}
+
+      {isStub && checkoutConfigured && paddleClientToken ? (
+        <SandboxCheckout
+          clientToken={paddleClientToken}
+          plans={sandboxPlans}
+          tenantId={context.tenantId}
+        />
+      ) : null}
+
+      {isStub && !checkoutConfigured ? (
+        <section className="billing-plan-panel">
+          <div>
+            <p className="workspace-kicker">Sandbox catalog</p>
+            <h2>Checkout setup pending</h2>
+            <p>
+              CrewFlow needs active Paddle sandbox price IDs and a sandbox
+              client-side token before test checkout can be opened.
+            </p>
+          </div>
+        </section>
+      ) : null}
 
       <section className="billing-portal-panel">
         <div>

@@ -1959,6 +1959,19 @@ export type Database = {
           trial_days: number;
         }[];
       };
+      list_owner_paddle_sandbox_plans: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          amount_cents: number;
+          billing_interval: Database['public']['Enums']['billing_interval'];
+          code: string;
+          currency_code: string;
+          display_name: string;
+          provider_price_id: string;
+          seat_limit: number | null;
+          trial_days: number;
+        }[];
+      };
       get_owner_billing_portal_context: {
         Args: { target_user_id: string };
         Returns: {
