@@ -1760,6 +1760,7 @@
 
 .billing-summary-card,
 .billing-detail-panel,
+.billing-portal-panel,
 .billing-safety-panel {
   border: 1px solid #d0ddd5;
   border-radius: 1rem;
@@ -1797,6 +1798,7 @@
 }
 
 .billing-detail-panel h2,
+.billing-portal-panel h2,
 .billing-safety-panel h2 {
   margin: 0;
   color: #17231e;
@@ -1828,6 +1830,32 @@
   margin: 0.35rem 0 0;
   color: #17231e;
   font-weight: 750;
+}
+
+.billing-portal-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  padding: 1.4rem;
+}
+
+.billing-portal-panel p {
+  max-width: 680px;
+  margin: 0.55rem 0 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.billing-portal-panel form,
+.billing-portal-panel button {
+  flex: 0 0 auto;
+}
+
+.billing-portal-error {
+  color: #a32626 !important;
+  font-weight: 700;
 }
 
 .billing-safety-panel {
@@ -1872,6 +1900,11 @@
 
   .billing-detail-list > div:first-child {
     border-top: 0;
+  }
+
+  .billing-portal-panel {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

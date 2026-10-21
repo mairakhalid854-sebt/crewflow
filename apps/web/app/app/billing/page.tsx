@@ -1,6 +1,8 @@
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
 import { createClient } from '../../../lib/supabase/server';
 
+import { openBillingPortalAction } from './actions';
+
 export const dynamic = 'force-dynamic';
 
 function label(value: string): string {
@@ -19,7 +21,12 @@ function formatLimit(value: number | null): string {
   return value === null ? 'Not configured' : value.toLocaleString('en-US');
 }
 
-export default async function BillingPage() {
+interface BillingPageProps {
+  readonly searchParams: Promise<{ portal?: string }>;
+}
+
+export default async function BillingPage({ searchParams }: BillingPageProps) {
+  const query = await searchParams;
   const context = await requireTenantContext(['owner']);
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('get_owner_billing_summary');
@@ -111,6 +118,35 @@ export default async function BillingPage() {
             </dd>
           </div>
         </dl>
+      </section>
+
+      <section className="billing-portal-panel">
+        <div>
+          <p className="workspace-kicker">Subscription management</p>
+          <h2>Billing portal</h2>
+          <p>
+            {isStub
+              ? 'The customer portal becomes available after a Paddle sandbox subscription is linked to this workspace.'
+              : 'Open Paddle’s hosted sandbox portal to review invoices, payment methods, and subscription settings.'}
+          </p>
+          {query.portal === 'unavailable' ? (
+            <p className="billing-portal-error" role="alert">
+              The sandbox billing portal is temporarily unavailable. Please try
+              again.
+            </p>
+          ) : null}
+        </div>
+        {isStub ? (
+          <button className="secondary-button" disabled type="button">
+            Portal not configured
+          </button>
+        ) : (
+          <form action={openBillingPortalAction}>
+            <button className="primary-button" type="submit">
+              Open sandbox portal
+            </button>
+          </form>
+        )}
       </section>
 
       <section className="billing-safety-panel">

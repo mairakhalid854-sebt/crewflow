@@ -1,6 +1,6 @@
 # Phase 5 progress: SaaS subscription billing
 
-Updated: 2026-10-19
+Updated: 2026-10-21
 
 Phase 5 has started with a provider-safe entitlement foundation. CrewFlow does
 not have a live billing provider, live prices, or any client-side authority to
@@ -32,6 +32,15 @@ grant access.
   price IDs to tenant plans. A browser redirect can never grant an entitlement.
 - Billing entitlement changes create a tenant audit event containing only safe
   provider, event type, status, and access-mode metadata.
+- A service-only reconciliation worker can compare linked sandbox subscriptions
+  with Paddle's API, rejects stale or mismatched snapshots, and records bounded
+  run counts without storing provider payloads or billing PII.
+- The hourly reconciliation cron installer is shipped but deliberately dormant
+  until a sandbox API key is stored as an Edge Function secret.
+- Authenticated owners with an existing sandbox subscription can request a
+  fresh, temporary Paddle-hosted customer portal link. Stub tenants do not see
+  an active portal button, and portal URLs are restricted to Paddle's exact
+  sandbox host.
 
 ## Remaining Phase 5 work
 
@@ -39,8 +48,8 @@ grant access.
   proration, cancellation, and downgrade terms
 - Paddle seller approval and verified Pakistan payout/identity eligibility
 - Sandbox plan/price configuration and owner-approved checkout launch
-- Paddle customer-portal session adapter after sandbox credentials exist
-- Scheduled provider reconciliation against Paddle's API
+- Configure the sandbox API key, then enable and verify the hourly provider
+  reconciliation schedule
 - Database integration tests on a PostgreSQL-enabled runner, including signed,
   unsigned, duplicate, changed-payload, and out-of-order scenarios
 - End-to-end sandbox purchase, renewal, failed-payment, recovery, pause, and
@@ -55,8 +64,8 @@ grant access.
 - FR-041: Partial — plan terms are configuration-driven, but the actual plan
   configuration remains an open business decision.
 - FR-042: Partial — signature verification, idempotency, ordering, entitlement
-  sync, and audit are implemented for sandbox subscription events. Portal and
-  scheduled API reconciliation remain.
+  sync, audit, customer portal, and provider reconciliation code are delivered.
+  Credentialed sandbox and end-to-end lifecycle verification remain.
 - FR-043: Delivered in application/database code — every tenant has a price-free
   stub entitlement and core workflows remain testable without real money.
 - FR-044: Partial — data-preserving grace/read-only states and database write

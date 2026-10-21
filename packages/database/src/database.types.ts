@@ -137,6 +137,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      billing_reconciliation_runs: {
+        Row: {
+          checked_count: number;
+          error_code: string | null;
+          failure_count: number;
+          finished_at: string | null;
+          id: string;
+          provider: Database['public']['Enums']['billing_provider'];
+          started_at: string;
+          status: Database['public']['Enums']['billing_reconciliation_status'];
+          updated_count: number;
+        };
+        Insert: {
+          checked_count?: number;
+          error_code?: string | null;
+          failure_count?: number;
+          finished_at?: string | null;
+          id?: string;
+          provider: Database['public']['Enums']['billing_provider'];
+          started_at?: string;
+          status?: Database['public']['Enums']['billing_reconciliation_status'];
+          updated_count?: number;
+        };
+        Update: {
+          checked_count?: number;
+          error_code?: string | null;
+          failure_count?: number;
+          finished_at?: string | null;
+          id?: string;
+          provider?: Database['public']['Enums']['billing_provider'];
+          started_at?: string;
+          status?: Database['public']['Enums']['billing_reconciliation_status'];
+          updated_count?: number;
+        };
+        Relationships: [];
+      };
       billing_webhook_events: {
         Row: {
           event_type: string;
@@ -1768,6 +1804,24 @@ export type Database = {
         };
         Returns: string;
       };
+      apply_paddle_sandbox_reconciliation_snapshot: {
+        Args: {
+          target_cancel_at_period_end: boolean;
+          target_period_ends_at: string | null;
+          target_period_starts_at: string | null;
+          target_provider_customer_id: string;
+          target_provider_price_id: string;
+          target_provider_subscription_id: string;
+          target_provider_updated_at: string;
+          target_status: Database['public']['Enums']['subscription_status'];
+          target_tenant_id: string;
+        };
+        Returns: string;
+      };
+      begin_paddle_sandbox_reconciliation: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
       create_team_invitation: {
         Args: {
           expiry_hours?: number;
@@ -1829,6 +1883,10 @@ export type Database = {
         Args: { target_delivery_ids: string[] };
         Returns: number;
       };
+      configure_paddle_reconciliation_cron: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
       configure_push_notification_cron: {
         Args: { target_project_url: string; target_service_key: string };
         Returns: number;
@@ -1852,6 +1910,17 @@ export type Database = {
       finalize_assigned_job_media: {
         Args: { target_media_id: string };
         Returns: string;
+      };
+      finish_paddle_sandbox_reconciliation: {
+        Args: {
+          target_checked_count: number;
+          target_error_code?: string | null;
+          target_failure_count: number;
+          target_run_id: string;
+          target_status: Database['public']['Enums']['billing_reconciliation_status'];
+          target_updated_count: number;
+        };
+        Returns: undefined;
       };
       get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
       get_public_quote: { Args: { quote_token: string }; Returns: Json };
@@ -1890,6 +1959,24 @@ export type Database = {
           trial_days: number;
         }[];
       };
+      get_owner_billing_portal_context: {
+        Args: { target_user_id: string };
+        Returns: {
+          provider: Database['public']['Enums']['billing_provider'];
+          provider_customer_id: string | null;
+          provider_subscription_id: string | null;
+        }[];
+      };
+      get_paddle_reconciliation_cron_status: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          active: boolean;
+          job_id: number;
+          last_run_at: string | null;
+          last_status: string | null;
+          schedule: string;
+        }[];
+      };
       get_push_notification_cron_status: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -1903,6 +1990,14 @@ export type Database = {
       is_allowed_external_payment_url: {
         Args: { candidate: string };
         Returns: boolean;
+      };
+      list_paddle_sandbox_subscriptions_for_reconciliation: {
+        Args: { batch_size?: number };
+        Returns: {
+          provider_customer_id: string;
+          provider_subscription_id: string;
+          tenant_id: string;
+        }[];
       };
       publish_job_invoice: {
         Args: { target_invoice_id: string };
@@ -2066,6 +2161,8 @@ export type Database = {
       billing_event_status: 'processed' | 'ignored' | 'failed';
       billing_interval: 'month' | 'year';
       billing_provider: 'stub' | 'paddle_sandbox';
+      billing_reconciliation_status:
+        'running' | 'succeeded' | 'partial' | 'failed';
       invoice_status: 'draft' | 'sent' | 'partially_paid' | 'paid' | 'void';
       job_media_kind: 'before' | 'after';
       job_priority: 'low' | 'normal' | 'high' | 'urgent';
@@ -2231,6 +2328,12 @@ export const Constants = {
       billing_event_status: ['processed', 'ignored', 'failed'],
       billing_interval: ['month', 'year'],
       billing_provider: ['stub', 'paddle_sandbox'],
+      billing_reconciliation_status: [
+        'running',
+        'succeeded',
+        'partial',
+        'failed',
+      ],
       invoice_status: ['draft', 'sent', 'partially_paid', 'paid', 'void'],
       job_priority: ['low', 'normal', 'high', 'urgent'],
       job_status: [
