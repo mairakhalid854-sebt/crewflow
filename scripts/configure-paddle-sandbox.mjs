@@ -1,4 +1,4 @@
-/* global URL, console, fetch, process */
+/* global AbortSignal, URL, console, fetch, process */
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -7,6 +7,7 @@ const API_ORIGIN = 'https://sandbox-api.paddle.com';
 const API_KEY_PATTERN =
   /^pdl_sdbx_apikey_[a-z\d]{26}_[a-zA-Z\d]{22}_[a-zA-Z\d]{3}$/;
 const OUTPUT_DIRECTORY = resolve('output');
+const REQUEST_TIMEOUT_MS = 30_000;
 
 const plans = [
   {
@@ -62,6 +63,7 @@ async function paddleRequest(apiKey, pathOrUrl, options = {}) {
       'paddle-version': '1',
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   const payload = await response.json().catch(() => undefined);
 
@@ -223,6 +225,7 @@ function catalogSql(catalog) {
 
 async function main() {
   const apiKey = requireApiKey();
+  console.log('Connecting to Paddle sandbox...');
   const allProducts = await listAll(
     apiKey,
     '/products?status=active&per_page=200',
@@ -230,6 +233,7 @@ async function main() {
   const catalogPlans = [];
 
   for (const plan of plans) {
+    console.log(`Checking ${plan.displayName} product and price...`);
     const product = await ensureProduct(apiKey, plan, allProducts);
     const price = await ensurePrice(apiKey, plan, product.id);
     catalogPlans.push({
@@ -239,6 +243,7 @@ async function main() {
     });
   }
 
+  console.log('Checking CrewFlow sandbox client-side token...');
   const clientToken = await ensureClientToken(apiKey);
   if (!/^test_[a-zA-Z\d]+$/.test(clientToken?.token ?? '')) {
     throw new Error('Paddle did not return a sandbox client-side token.');
