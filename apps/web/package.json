@@ -12,6 +12,7 @@
     "@crewflow/database": "*",
     "@crewflow/types": "*",
     "@crewflow/ui": "*",
+    "@paddle/paddle-js": "^1.6.5",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",
     "next": "16.4.0",

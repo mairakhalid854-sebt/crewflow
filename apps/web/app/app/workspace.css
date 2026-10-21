@@ -1760,6 +1760,7 @@
 
 .billing-summary-card,
 .billing-detail-panel,
+.billing-plan-panel,
 .billing-portal-panel,
 .billing-safety-panel {
   border: 1px solid #d0ddd5;
@@ -1798,10 +1799,70 @@
 }
 
 .billing-detail-panel h2,
+.billing-plan-panel h2,
 .billing-portal-panel h2,
 .billing-safety-panel h2 {
   margin: 0;
   color: #17231e;
+}
+
+.billing-plan-panel {
+  margin-top: 1rem;
+  padding: 1.4rem;
+}
+
+.billing-plan-panel > div:first-child > p:not(.workspace-kicker) {
+  max-width: 720px;
+  margin: 0.55rem 0 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.billing-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.billing-plan-card {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1.1rem;
+  border: 1px solid #d0ddd5;
+  border-radius: 0.85rem;
+  background: #f8fafc;
+}
+
+.billing-plan-card h3,
+.billing-plan-card p {
+  margin: 0;
+}
+
+.billing-plan-card > strong {
+  color: #17231e;
+  font-size: 1.55rem;
+}
+
+.billing-plan-card > strong span,
+.billing-plan-card small,
+.billing-plan-card p {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.billing-plan-card button {
+  margin-top: 0.35rem;
+}
+
+.billing-checkout-success {
+  margin: 1rem 0 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid #8fd0aa;
+  border-radius: 0.75rem;
+  background: #eefbf3;
+  color: #17643a;
+  font-weight: 700;
 }
 
 .billing-detail-list {
@@ -1888,7 +1949,8 @@
 
 @media (max-width: 760px) {
   .billing-summary-grid,
-  .billing-detail-list {
+  .billing-detail-list,
+  .billing-plan-grid {
     grid-template-columns: 1fr;
   }
 
