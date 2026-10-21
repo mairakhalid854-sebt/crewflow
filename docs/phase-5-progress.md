@@ -35,12 +35,28 @@ grant access.
 - A service-only reconciliation worker can compare linked sandbox subscriptions
   with Paddle's API, rejects stale or mismatched snapshots, and records bounded
   run counts without storing provider payloads or billing PII.
-- The hourly reconciliation cron installer is shipped but deliberately dormant
-  until a sandbox API key is stored as an Edge Function secret.
+- The Paddle sandbox webhook destination is active for the eight supported
+  subscription lifecycle events. Its signing secret and a least-privilege API
+  key are stored only as encrypted Supabase Edge Function secrets.
+- The hourly reconciliation cron is active at minute 17. A credentialed
+  one-off run completed successfully with zero linked sandbox subscriptions,
+  zero updates, and zero failures.
 - Authenticated owners with an existing sandbox subscription can request a
   fresh, temporary Paddle-hosted customer portal link. Stub tenants do not see
   an active portal button, and portal URLs are restricted to Paddle's exact
   sandbox host.
+
+## Hosted sandbox verification
+
+- Paddle sandbox seller account: created and email-verified for CrewFlow
+- Webhook destination: active, platform usage, exactly eight supported
+  `subscription.*` events
+- Unsigned webhook probe: rejected with HTTP 401 and `Invalid webhook
+signature`, confirming the signing secret is loaded
+- Reconciliation cron: active as job ID 4 with schedule `17 * * * *`
+- Manual reconciliation smoke test: `succeeded`, checked `0`, updated `0`,
+  failures `0`, error `NULL`
+- Sandbox API key rotation deadline: January 19, 2027
 
 ## Remaining Phase 5 work
 
@@ -48,8 +64,8 @@ grant access.
   proration, cancellation, and downgrade terms
 - Paddle seller approval and verified Pakistan payout/identity eligibility
 - Sandbox plan/price configuration and owner-approved checkout launch
-- Configure the sandbox API key, then enable and verify the hourly provider
-  reconciliation schedule
+- Credentialed lifecycle testing with a real sandbox subscription so the
+  webhook, reconciliation worker, and customer portal all process linked data
 - Database integration tests on a PostgreSQL-enabled runner, including signed,
   unsigned, duplicate, changed-payload, and out-of-order scenarios
 - End-to-end sandbox purchase, renewal, failed-payment, recovery, pause, and
@@ -64,8 +80,9 @@ grant access.
 - FR-041: Partial — plan terms are configuration-driven, but the actual plan
   configuration remains an open business decision.
 - FR-042: Partial — signature verification, idempotency, ordering, entitlement
-  sync, audit, customer portal, and provider reconciliation code are delivered.
-  Credentialed sandbox and end-to-end lifecycle verification remain.
+  sync, audit, customer portal, provider reconciliation, hosted webhook
+  secrets, and the hourly reconciliation schedule are delivered. End-to-end
+  lifecycle verification with a real sandbox subscription remains.
 - FR-043: Delivered in application/database code — every tenant has a price-free
   stub entitlement and core workflows remain testable without real money.
 - FR-044: Partial — data-preserving grace/read-only states and database write
