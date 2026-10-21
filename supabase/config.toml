@@ -400,6 +400,14 @@ entrypoint = './functions/process-push-notifications/index.js'
 verify_jwt = false
 entrypoint = './functions/paddle-billing-webhook/index.js'
 
+[functions.reconcile-paddle-billing]
+verify_jwt = false
+entrypoint = './functions/reconcile-paddle-billing/index.js'
+
+[functions.create-paddle-portal-session]
+verify_jwt = false
+entrypoint = './functions/create-paddle-portal-session/index.js'
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
