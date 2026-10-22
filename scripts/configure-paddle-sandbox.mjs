@@ -1,4 +1,4 @@
-/* global URL, console, fetch, process */
+/* global AbortSignal, URL, console, fetch, process, setTimeout */
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -7,6 +7,9 @@ const API_ORIGIN = 'https://sandbox-api.paddle.com';
 const API_KEY_PATTERN =
   /^pdl_sdbx_apikey_[a-z\d]{26}_[a-zA-Z\d]{22}_[a-zA-Z\d]{3}$/;
 const OUTPUT_DIRECTORY = resolve('output');
+const REQUEST_TIMEOUT_MS = 30_000;
+const MAX_API_RETRIES = 3;
+const MAX_LIST_PAGES = 50;
 
 const plans = [
   {
@@ -54,35 +57,72 @@ async function paddleRequest(apiKey, pathOrUrl, options = {}) {
     throw new Error('Paddle pagination returned an unexpected API origin.');
   }
 
-  const response = await fetch(url, {
-    method: options.method ?? 'GET',
-    headers: {
-      authorization: `Bearer ${apiKey}`,
-      'content-type': 'application/json',
-      'paddle-version': '1',
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-  const payload = await response.json().catch(() => undefined);
+  for (let attempt = 0; attempt <= MAX_API_RETRIES; attempt += 1) {
+    const response = await fetch(url, {
+      method: options.method ?? 'GET',
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        'content-type': 'application/json',
+        'paddle-version': '1',
+        ...(options.skipCount ? { 'skip-count': 'true' } : {}),
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    const payload = await response.json().catch(() => undefined);
 
-  if (!response.ok) {
+    if (response.ok) return payload;
+
     const code = payload?.error?.code ?? `http_${response.status}`;
+    if (
+      response.status === 429 &&
+      code === 'too_many_requests' &&
+      attempt < MAX_API_RETRIES
+    ) {
+      const retryAfter = Number(response.headers.get('retry-after'));
+      const delaySeconds = Number.isFinite(retryAfter)
+        ? Math.min(Math.max(retryAfter, 1), 65)
+        : Math.min(2 ** attempt, 30);
+      console.log(
+        `Paddle rate limit active; retrying in ${delaySeconds} seconds...`,
+      );
+      await new Promise((resolveDelay) =>
+        setTimeout(resolveDelay, delaySeconds * 1000),
+      );
+      continue;
+    }
+
     throw new Error(`Paddle request failed (${code}).`);
   }
-  return payload;
+
+  throw new Error('Paddle request failed after retrying.');
 }
 
 async function listAll(apiKey, path) {
   const items = [];
   let next = new URL(path, API_ORIGIN).toString();
+  const visited = new Set();
 
   while (next) {
-    const payload = await paddleRequest(apiKey, next);
+    if (visited.has(next) || visited.size >= MAX_LIST_PAGES) {
+      throw new Error('Paddle returned an invalid pagination sequence.');
+    }
+    visited.add(next);
+
+    const payload = await paddleRequest(apiKey, next, { skipCount: true });
     if (!Array.isArray(payload?.data)) {
       throw new Error('Paddle returned an invalid list response.');
     }
     items.push(...payload.data);
-    next = payload.meta?.pagination?.next ?? '';
+    const pagination = payload.meta?.pagination;
+    if (pagination?.has_more === true) {
+      if (typeof pagination.next !== 'string' || pagination.next.length === 0) {
+        throw new Error('Paddle omitted the next pagination URL.');
+      }
+      next = pagination.next;
+    } else {
+      next = '';
+    }
   }
   return items;
 }
@@ -223,6 +263,7 @@ function catalogSql(catalog) {
 
 async function main() {
   const apiKey = requireApiKey();
+  console.log('Connecting to Paddle sandbox...');
   const allProducts = await listAll(
     apiKey,
     '/products?status=active&per_page=200',
@@ -230,6 +271,7 @@ async function main() {
   const catalogPlans = [];
 
   for (const plan of plans) {
+    console.log(`Checking ${plan.displayName} product and price...`);
     const product = await ensureProduct(apiKey, plan, allProducts);
     const price = await ensurePrice(apiKey, plan, product.id);
     catalogPlans.push({
@@ -239,6 +281,7 @@ async function main() {
     });
   }
 
+  console.log('Checking CrewFlow sandbox client-side token...');
   const clientToken = await ensureClientToken(apiKey);
   if (!/^test_[a-zA-Z\d]+$/.test(clientToken?.token ?? '')) {
     throw new Error('Paddle did not return a sandbox client-side token.');
