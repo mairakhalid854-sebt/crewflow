@@ -20,6 +20,13 @@ const supabaseConfig = readFileSync(
   new URL('../../../supabase/config.toml', import.meta.url),
   'utf8',
 );
+const simulationEventIdMigration = readFileSync(
+  new URL(
+    '../../../supabase/migrations/202610220001_allow_paddle_simulation_event_ids.sql',
+    import.meta.url,
+  ),
+  'utf8',
+);
 
 describe('phase 5 subscription billing foundation', () => {
   it('keeps plans configuration-driven and live billing unavailable', () => {
@@ -77,6 +84,24 @@ describe('phase 5 subscription billing foundation', () => {
     expect(migration).toContain('target_occurred_at < latest_event_at');
     expect(migration).toContain("RETURN 'out_of_order'");
     expect(migration).toContain("auth.role() IS DISTINCT FROM 'service_role'");
+  });
+
+  it('accepts Paddle simulator event IDs without relaxing provider ID checks', () => {
+    expect(simulationEventIdMigration).toContain(
+      "external_event_id ~ '^(evt|ntfsimevt)_[a-z0-9]{26}$'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "target_event_id !~ '^(evt|ntfsimevt)_[a-z0-9]{26}$'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "target_provider_customer_id !~ '^ctm_[a-z0-9]{26}$'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "target_provider_subscription_id !~ '^sub_[a-z0-9]{26}$'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "target_provider_price_id !~ '^pri_[a-z0-9]{26}$'",
+    );
   });
 
   it('preserves data and blocks business writes only in read-only mode', () => {
