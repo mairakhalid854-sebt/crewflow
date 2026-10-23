@@ -121,6 +121,46 @@ describe('phase 5 subscription billing foundation', () => {
     );
   });
 
+  it('maps every Paddle subscription state to the intended access mode', () => {
+    expect(simulationEventIdMigration).toContain("WHEN 'active' THEN 'full'");
+    expect(simulationEventIdMigration).toContain("WHEN 'trialing' THEN 'full'");
+    expect(simulationEventIdMigration).toContain(
+      "WHEN 'past_due' THEN 'grace'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "WHEN 'paused' THEN 'read_only'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "WHEN 'canceled' THEN 'read_only'",
+    );
+  });
+
+  it('accepts renewal, pause, and recovery events and persists renewed periods', () => {
+    for (const eventType of [
+      'subscription.created',
+      'subscription.updated',
+      'subscription.activated',
+      'subscription.trialing',
+      'subscription.past_due',
+      'subscription.paused',
+      'subscription.resumed',
+      'subscription.canceled',
+    ]) {
+      expect(edgeFunction).toContain(`'${eventType}'`);
+      expect(simulationEventIdMigration).toContain(`'${eventType}'`);
+    }
+
+    expect(simulationEventIdMigration).toContain(
+      'current_period_starts_at = EXCLUDED.current_period_starts_at',
+    );
+    expect(simulationEventIdMigration).toContain(
+      'current_period_ends_at = EXCLUDED.current_period_ends_at',
+    );
+    expect(simulationEventIdMigration).toContain(
+      'last_provider_event_at = EXCLUDED.last_provider_event_at',
+    );
+  });
+
   it('verifies Paddle HMAC over the untouched body before parsing', () => {
     const rawBodyRead = edgeFunction.indexOf(
       'const rawBody = await request.text()',
