@@ -2223,6 +2223,8 @@ function AssignedJobDetail({
     (media) => media.uploaded_at !== null,
   );
   const customerSignature = job.job_signatures[0];
+  const completionNeedsSignature =
+    progressAction?.status === 'completed' && !customerSignature;
   const workNotes = [...job.job_work_notes].sort(
     (left, right) =>
       new Date(right.created_at).getTime() -
@@ -2785,13 +2787,24 @@ function AssignedJobDetail({
               {progressError}
             </Text>
           ) : null}
+          {completionNeedsSignature ? (
+            <Text accessibilityRole="alert" style={styles.signatureRequired}>
+              Ask the customer to sign above before completing this job.
+            </Text>
+          ) : null}
           <Pressable
             accessibilityRole="button"
-            disabled={progressPending || progressDraftConflict}
+            disabled={
+              progressPending ||
+              progressDraftConflict ||
+              completionNeedsSignature
+            }
             onPress={() => void submitProgress()}
             style={({ pressed }) => [
               styles.primaryButton,
-              (progressPending || progressDraftConflict) &&
+              (progressPending ||
+                progressDraftConflict ||
+                completionNeedsSignature) &&
                 styles.buttonDisabled,
               pressed && styles.buttonPressed,
             ]}
@@ -3889,6 +3902,13 @@ const styles = StyleSheet.create({
   safeArea: {
     backgroundColor: '#F6F8FC',
     flex: 1,
+  },
+  signatureRequired: {
+    color: '#B42318',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
+    marginTop: 12,
   },
   secondaryButton: {
     alignItems: 'center',
