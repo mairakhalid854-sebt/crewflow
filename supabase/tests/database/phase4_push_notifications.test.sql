@@ -35,6 +35,11 @@ INSERT INTO public.tenants (
     'Push Tenant B', 'push-b@crewflow.test', 'America/New_York', ARRAY['Cleaning']
   );
 
+INSERT INTO public.tenant_settings (tenant_id)
+VALUES
+  ('29000000-0000-4000-8000-000000000001'),
+  ('29000000-0000-4000-8000-000000000002');
+
 INSERT INTO public.memberships (id, tenant_id, user_id, role, status, joined_at)
 VALUES
   (

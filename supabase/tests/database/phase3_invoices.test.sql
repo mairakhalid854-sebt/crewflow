@@ -104,13 +104,14 @@ SELECT is(
   'sent',
   'Anonymous customer can read the token-scoped invoice'
 );
+
+RESET ROLE;
 SELECT is(
   (SELECT paid_cents FROM public.invoices),
   0::bigint,
   'Reading or clicking the external link does not record payment'
 );
 
-RESET ROLE;
 SET LOCAL ROLE authenticated;
 SELECT set_config(
   'request.jwt.claims',
