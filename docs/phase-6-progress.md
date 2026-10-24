@@ -31,6 +31,14 @@ enabled by this slice.
   immutable audit event.
 - Browser roles have no direct insert/update/delete access to AI governance
   tables; orchestration writes stay behind the privileged server boundary.
+- The Intake Agent now has a deterministic one-question-at-a-time policy with
+  validated name, contact, address, problem, and catalog confirmation stages.
+- Persistent intake sessions are tenant-bound, expire within 24 hours, store
+  only a SHA-256 session-token digest, and freeze a bounded enabled-service
+  catalog snapshot so later catalog edits cannot change an active conversation.
+- Intake transcripts are immutable, unavailable directly to anonymous clients,
+  and limited to 1,000 bounded messages. Owner/office human takeover stops
+  automation and writes a tenant audit event.
 
 ## Validation
 
@@ -39,11 +47,15 @@ enabled by this slice.
 - A pgTAP integration suite covers disabled and exhausted budgets, idempotent
   starts, changed-correlation rejection, technician isolation, immutable traces,
   approval lifetime, single-use decisions, and expiry.
+- Intake policy unit tests cover validation, US phone normalization, catalog
+  grounding, ambiguity, prompt injection, cross-tenant requests, and escalation.
+- Intake persistence tests cover hashed tokens, catalog snapshots, wrong-token
+  denial, immutable messages, role-scoped takeover, and takeover auditing.
 
 ## Next Phase 6 slices
 
-1. Build the Intake Agent as a deterministic, one-question-at-a-time state
-   machine with strict field validation and human takeover.
+1. Connect the Intake policy and persistence boundary to a rate-limited public
+   API endpoint and embeddable web chat, then add the owner inbox/takeover UI.
 2. Add tenant knowledge-document quarantine, parsing, versioning, citations,
    size/type limits, and malware-scan status before retrieval is enabled.
 3. Add the web AI-runs and approval-queue screens.
