@@ -658,6 +658,64 @@ export default function App() {
     setAssignedJobsRefreshKey((key) => key + 1);
   }
 
+  if (
+    session &&
+    authClient &&
+    !configurationError &&
+    (recoveryState.status === 'idle' || recoveryState.status === 'success')
+  ) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.flex}
+        >
+          <AuthenticatedView
+            accessState={accessState}
+            assignedJobsState={assignedJobsState}
+            client={authClient}
+            deepLink={pendingDeepLink}
+            deepLinkMessage={deepLinkMessage}
+            email={session.user.email ?? 'Signed-in user'}
+            message={
+              recoveryState.status === 'success'
+                ? 'Your password has been updated securely.'
+                : undefined
+            }
+            onAdvanceJob={progressAssignedJob}
+            onCapturePhoto={captureAssignedJobPhoto}
+            onDeepLinkHandled={() => setPendingDeepLink(undefined)}
+            onDiscardPhoto={discardAssignedJobPhoto}
+            onPullRefresh={() => {
+              setPullRefreshing(true);
+              const role =
+                accessState.status === 'loaded' && accessState.access.allowed
+                  ? accessState.access.membership.role
+                  : undefined;
+              if (role === 'technician') {
+                setAssignedJobsRefreshKey((key) => key + 1);
+              } else {
+                setOperationsRefreshKey((key) => key + 1);
+              }
+            }}
+            onRecordSignature={signAssignedJob}
+            onRefreshJobs={() => setAssignedJobsRefreshKey((key) => key + 1)}
+            onRefreshOperations={() =>
+              setOperationsRefreshKey((key) => key + 1)
+            }
+            onRetryPhoto={retryAssignedJobPhoto}
+            onSignOut={signOut}
+            operationsState={operationsState}
+            pending={pending}
+            pendingPhotoResults={pendingPhotoResults}
+            refreshing={pullRefreshing}
+            userId={session.user.id}
+          />
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
+
   if (session === undefined) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -859,6 +917,7 @@ function AuthenticatedView({
   onCapturePhoto,
   onDeepLinkHandled,
   onDiscardPhoto,
+  onPullRefresh,
   onRecordSignature,
   onRetryPhoto,
   onRefreshJobs,
@@ -867,6 +926,7 @@ function AuthenticatedView({
   operationsState,
   pending,
   pendingPhotoResults,
+  refreshing = false,
   userId,
 }: Readonly<{
   accessState: AccessState;
@@ -887,6 +947,7 @@ function AuthenticatedView({
   ) => Promise<JobPhotoUploadResult>;
   onDeepLinkHandled: () => void;
   onDiscardPhoto: (upload: PendingJobPhotoUpload) => Promise<void>;
+  onPullRefresh?: () => void;
   onRecordSignature: (
     jobId: string,
     signerName: string,
@@ -901,22 +962,24 @@ function AuthenticatedView({
   operationsState: MobileOperationsState;
   pending: boolean;
   pendingPhotoResults: readonly JobPhotoUploadPendingResult[];
+  refreshing?: boolean;
   userId: string;
 }>) {
-  const [notificationSettingsOpen, setNotificationSettingsOpen] =
-    useState(false);
+  const [activeTab, setActiveTab] = useState<'account' | 'alerts' | 'home'>(
+    'home',
+  );
 
   useEffect(() => {
-    if (!notificationSettingsOpen) return;
+    if (activeTab === 'home') return;
     const subscription = BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
-        setNotificationSettingsOpen(false);
+        setActiveTab('home');
         return true;
       },
     );
     return () => subscription.remove();
-  }, [notificationSettingsOpen]);
+  }, [activeTab]);
   let routableDeepLink: CrewFlowDeepLink | undefined;
   if (
     accessState.status === 'loaded' &&
@@ -1054,60 +1117,151 @@ function AuthenticatedView({
     accessContent = null;
   }
 
-  if (
-    notificationSettingsOpen &&
-    accessState.status === 'loaded' &&
-    accessState.access.allowed
-  ) {
-    return (
-      <View style={styles.card}>
-        <NotificationSettingsView
-          client={client}
-          onBack={() => setNotificationSettingsOpen(false)}
-          role={accessState.access.membership.role}
+  return (
+    <View style={styles.mobileShell}>
+      <View style={styles.mobileHeader}>
+        <View style={styles.mobileBrandMark}>
+          <Text style={styles.mobileBrandLetter}>C</Text>
+        </View>
+        <View style={styles.flex}>
+          <Text style={styles.mobileHeaderTitle}>CrewFlow</Text>
+          <Text numberOfLines={1} style={styles.mobileHeaderSubtitle}>
+            {email}
+          </Text>
+        </View>
+      </View>
+      <ScrollView
+        contentContainerStyle={styles.mobileContent}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          onPullRefresh ? (
+            <RefreshControl
+              colors={['#1769F4']}
+              onRefresh={onPullRefresh}
+              refreshing={refreshing}
+              tintColor="#1769F4"
+            />
+          ) : undefined
+        }
+      >
+        {message ? <Text style={styles.successText}>{message}</Text> : null}
+        {deepLinkMessage ? (
+          <Text accessibilityRole="alert" style={styles.errorText}>
+            {deepLinkMessage}
+          </Text>
+        ) : null}
+        {activeTab === 'home' ? (
+          <View style={styles.mobileSurface}>{accessContent}</View>
+        ) : activeTab === 'alerts' &&
+          accessState.status === 'loaded' &&
+          accessState.access.allowed ? (
+          <View style={styles.mobileSurface}>
+            <NotificationSettingsView
+              client={client}
+              onBack={() => setActiveTab('home')}
+              role={accessState.access.membership.role}
+            />
+          </View>
+        ) : (
+          <View style={styles.mobileSurface}>
+            <Text style={styles.jobsEyebrow}>ACCOUNT</Text>
+            <Text style={styles.jobsTitle}>Your CrewFlow account</Text>
+            <Text style={styles.body}>{email}</Text>
+            <View style={styles.accountNotice}>
+              <Text style={styles.noticeTitle}>Secure workspace access</Text>
+              <Text style={styles.noticeBody}>
+                Your role and company access are managed by your CrewFlow
+                workspace.
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              disabled={pending}
+              onPress={() => void onSignOut()}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pending && styles.buttonDisabled,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.secondaryButtonText}>
+                {pending ? 'Signing out…' : 'Sign out'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+      </ScrollView>
+      <View style={styles.bottomNavigation}>
+        <MobileTabButton
+          active={activeTab === 'home'}
+          label="Home"
+          name="home"
+          onPress={() => setActiveTab('home')}
+        />
+        <MobileTabButton
+          active={activeTab === 'alerts'}
+          label="Alerts"
+          name="alerts"
+          onPress={() => setActiveTab('alerts')}
+        />
+        <MobileTabButton
+          active={activeTab === 'account'}
+          label="Account"
+          name="account"
+          onPress={() => setActiveTab('account')}
         />
       </View>
-    );
-  }
+    </View>
+  );
+}
+
+function MobileTabButton({
+  active,
+  label,
+  name,
+  onPress,
+}: Readonly<{
+  active: boolean;
+  label: string;
+  name: 'account' | 'alerts' | 'home';
+  onPress: () => void;
+}>) {
+  const paths = {
+    account: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0',
+    alerts: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Zm-8 12h4',
+    home: 'M3 11 12 3l9 8v10h-6v-6H9v6H3V11Z',
+  } as const;
 
   return (
-    <View style={[styles.card, styles.authenticatedCard]}>
-      <Text style={styles.title}>You’re signed in</Text>
-      <Text style={styles.body}>{email}</Text>
-      {message ? <Text style={styles.successText}>{message}</Text> : null}
-      {deepLinkMessage ? (
-        <Text accessibilityRole="alert" style={styles.errorText}>
-          {deepLinkMessage}
-        </Text>
-      ) : null}
-      {accessState.status === 'loaded' && accessState.access.allowed ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setNotificationSettingsOpen(true)}
-          style={({ pressed }) => [
-            styles.notificationSettingsButton,
-            pressed && styles.buttonPressed,
-          ]}
-        >
-          <Text style={styles.compactButtonText}>Notification settings</Text>
-        </Pressable>
-      ) : null}
-      {accessContent}
-      <Pressable
-        accessibilityRole="button"
-        disabled={pending}
-        onPress={() => void onSignOut()}
-        style={({ pressed }) => [
-          styles.secondaryButton,
-          pending && styles.buttonDisabled,
-          pressed && styles.buttonPressed,
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.bottomNavigationItem,
+        active && styles.bottomNavigationItemActive,
+        pressed && styles.buttonPressed,
+      ]}
+    >
+      <Svg height={22} viewBox="0 0 24 24" width={22}>
+        <Path
+          d={paths[name]}
+          fill={name === 'home' ? (active ? '#1769F4' : '#64748B') : 'none'}
+          stroke={active ? '#1769F4' : '#64748B'}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+        />
+      </Svg>
+      <Text
+        style={[
+          styles.bottomNavigationLabel,
+          active && styles.bottomNavigationLabelActive,
         ]}
       >
-        <Text style={styles.secondaryButtonText}>
-          {pending ? 'Signing out…' : 'Sign out'}
-        </Text>
-      </Pressable>
-    </View>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -3143,6 +3297,95 @@ function RecoveryView({
 }
 
 const styles = StyleSheet.create({
+  accountNotice: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 16,
+    marginTop: 22,
+    padding: 18,
+  },
+  bottomNavigation: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    paddingBottom: Platform.OS === 'android' ? 10 : 4,
+    paddingHorizontal: 18,
+    paddingTop: 8,
+  },
+  bottomNavigationItem: {
+    alignItems: 'center',
+    borderRadius: 14,
+    flex: 1,
+    gap: 3,
+    justifyContent: 'center',
+    minHeight: 54,
+  },
+  bottomNavigationItemActive: {
+    backgroundColor: '#EFF6FF',
+  },
+  bottomNavigationLabel: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  bottomNavigationLabelActive: {
+    color: '#1769F4',
+  },
+  mobileBrandLetter: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  mobileBrandMark: {
+    alignItems: 'center',
+    backgroundColor: '#1769F4',
+    borderRadius: 12,
+    height: 42,
+    justifyContent: 'center',
+    marginRight: 12,
+    transform: [{ rotate: '-3deg' }],
+    width: 42,
+  },
+  mobileContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  mobileHeader: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderBottomColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  mobileHeaderSubtitle: {
+    color: '#64748B',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  mobileHeaderTitle: {
+    color: '#0F2747',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  mobileShell: {
+    backgroundColor: '#F4F7FB',
+    flex: 1,
+  },
+  mobileSurface: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 20,
+    shadowColor: '#0F2747',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+  },
   approvalResultActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
