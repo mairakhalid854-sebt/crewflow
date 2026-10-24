@@ -11,6 +11,11 @@ const migration = readFileSync(
 );
 
 describe('phase 4 push notification scheduler', () => {
+  it('bootstraps the required extensions on a fresh database', () => {
+    expect(migration).toContain('CREATE EXTENSION IF NOT EXISTS pg_cron');
+    expect(migration).toContain('CREATE EXTENSION IF NOT EXISTS pg_net');
+  });
+
   it('keeps project URL and function credentials encrypted in Vault', () => {
     expect(migration).toContain("'crewflow_project_url'");
     expect(migration).toContain("'crewflow_edge_function_service_key'");

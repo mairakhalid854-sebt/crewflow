@@ -1,6 +1,12 @@
 -- CrewFlow Phase 4: configure the push delivery worker through pg_cron and
 -- pg_net while keeping the Edge Function secret encrypted in Supabase Vault.
 
+-- Hosted environments may already have these enabled, while a fresh local or
+-- CI database does not. Keeping extension setup in the migration makes a full
+-- schema replay deterministic.
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_net;
+
 CREATE FUNCTION public.configure_push_notification_cron(
   target_project_url text,
   target_service_key text
