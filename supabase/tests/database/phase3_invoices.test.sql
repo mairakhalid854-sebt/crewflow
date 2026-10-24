@@ -39,6 +39,13 @@ VALUES
     '13000000-0000-4000-8000-000000000002', 'technician', 'active', now()
   );
 
+INSERT INTO public.staff_availability (
+  tenant_id, membership_id, day_of_week, is_available, starts_at, ends_at
+) VALUES (
+  '23000000-0000-4000-8000-000000000001',
+  '33000000-0000-4000-8000-000000000002', 2, true, '00:00', '23:59'
+);
+
 INSERT INTO public.customers (id, tenant_id, first_name, last_name, postal_code)
 VALUES (
   '53000000-0000-4000-8000-000000000001',
@@ -53,7 +60,7 @@ INSERT INTO public.jobs (
   '23000000-0000-4000-8000-000000000001',
   '53000000-0000-4000-8000-000000000001',
   '33000000-0000-4000-8000-000000000002', 'Completed repair',
-  now() - interval '2 hours', now() - interval '1 hour'
+  '2026-10-20T15:00:00Z', '2026-10-20T16:00:00Z'
 );
 
 UPDATE public.jobs SET status = 'quoted' WHERE id = '63000000-0000-4000-8000-000000000001';

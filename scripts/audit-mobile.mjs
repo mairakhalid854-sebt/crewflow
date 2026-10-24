@@ -3,15 +3,6 @@ import process from 'node:process';
 
 const reviewedAdvisories = new Map([
   [
-    'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm',
-    {
-      packageName: 'braces',
-      reviewBy: '2026-10-27',
-      severity: 'high',
-      source: 1240992,
-    },
-  ],
-  [
     'https://github.com/advisories/GHSA-86w9-cpqp-85rv',
     {
       packageName: 'node-forge',
@@ -27,6 +18,15 @@ const reviewedAdvisories = new Map([
       reviewBy: '2026-10-27',
       severity: 'moderate',
       source: 1119441,
+    },
+  ],
+  [
+    'https://github.com/advisories/GHSA-mrhx-c7xc-m3w5',
+    {
+      packageName: 'zod',
+      reviewBy: '2026-10-27',
+      severity: 'high',
+      source: 1243066,
     },
   ],
 ]);

@@ -52,7 +52,7 @@ SET LOCAL ROLE anon;
 SELECT throws_ok(
   $$SELECT * FROM public.get_owner_billing_summary()$$,
   '42501',
-  'permission denied for function get_owner_billing_summary',
+  'owner membership required',
   'Anonymous callers cannot inspect billing details'
 );
 
@@ -106,7 +106,7 @@ SELECT throws_ok(
     false
   )$$,
   '42501',
-  'permission denied for function apply_paddle_sandbox_subscription_event',
+  'service role required',
   'Authenticated callers cannot apply provider events'
 );
 
