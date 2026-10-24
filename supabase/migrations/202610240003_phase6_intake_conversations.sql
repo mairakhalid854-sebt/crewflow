@@ -288,13 +288,15 @@ BEGIN
     RAISE EXCEPTION 'completed intake stage required' USING ERRCODE = '22023';
   END IF;
 
-  IF next_status = 'collecting' AND next_stage IS DISTINCT FROM CASE conversation.stage
-    WHEN 'name' THEN 'contact'::public.intake_conversation_stage
-    WHEN 'contact' THEN 'address'::public.intake_conversation_stage
-    WHEN 'address' THEN 'problem'::public.intake_conversation_stage
-    WHEN 'problem' THEN 'service_confirmation'::public.intake_conversation_stage
-    ELSE NULL
-  END THEN
+  IF next_status = 'collecting' AND next_stage IS DISTINCT FROM (
+    CASE conversation.stage
+      WHEN 'name' THEN 'contact'::public.intake_conversation_stage
+      WHEN 'contact' THEN 'address'::public.intake_conversation_stage
+      WHEN 'address' THEN 'problem'::public.intake_conversation_stage
+      WHEN 'problem' THEN 'service_confirmation'::public.intake_conversation_stage
+      ELSE NULL
+    END
+  ) THEN
     RAISE EXCEPTION 'invalid intake stage transition' USING ERRCODE = '22023';
   END IF;
 
