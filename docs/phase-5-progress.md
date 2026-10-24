@@ -55,6 +55,9 @@ grant access.
   read-only write enforcement, recovery, data preservation, role boundaries,
   and unknown-tenant failure handling. CI starts an isolated local Supabase
   stack and runs the complete database suite on every pull request.
+- Pull request 46 and its post-merge staging run passed the full quality gate,
+  production dependency audit, secret scan, Vercel deployment, and complete
+  ten-file pgTAP suite on October 24, 2026.
 
 ## Hosted sandbox verification
 
@@ -75,6 +78,9 @@ signature`, confirming the signing secret is loaded
   recovery restored full access; cancellation and pause produced
   data-preserving read-only access; and resume restored full access. Every
   corrected webhook returned HTTP 200 with `processed`.
+- Hosted database migrations are fully synchronized through
+  `202610240001_preserve_unknown_billing_webhook_events.sql`, which preserves
+  an auditable `tenant_not_found` result without a dangling tenant reference.
 - Sandbox API key rotation deadline: January 19, 2027
 
 ## Remaining Phase 5 work
@@ -84,8 +90,6 @@ signature`, confirming the signing secret is loaded
 - Paddle seller approval and verified Pakistan payout/identity eligibility
 - Owner approval of the final production catalog and checkout wording; the
   sandbox Starter plan and USD 29 monthly trial are configured and tested
-- First CI execution of the new PostgreSQL-backed Phase 5 suite; local
-  execution remains unavailable on this Windows host until Docker is installed
 - Edge Function HTTP tests for signed and unsigned requests; database-level
   duplicate, changed-payload, out-of-order, lifecycle, and access-mode coverage
   is now present, while hosted signature rejection is already verified
@@ -100,8 +104,9 @@ signature`, confirming the signing secret is loaded
   configuration remains an open business decision.
 - FR-042: Partial — signature verification, idempotency, ordering, entitlement
   sync, audit, customer portal, provider reconciliation, hosted webhook
-  secrets, and the hourly reconciliation schedule are delivered. End-to-end
-  lifecycle verification with a real sandbox subscription remains.
+  secrets, the hourly schedule, real sandbox lifecycle verification, and
+  PostgreSQL integration coverage are delivered. Automated Edge Function HTTP
+  coverage and the explicit live-provider production migration remain.
 - FR-043: Delivered in application/database code — every tenant has a price-free
   stub entitlement and core workflows remain testable without real money.
 - FR-044: Partial — data-preserving grace/read-only states and database write
