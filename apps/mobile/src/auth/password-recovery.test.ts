@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseRecoveryLink, validateNewPassword } from './password-recovery';
+import {
+  parseRecoveryLink,
+  passwordRecoveryRedirectUrl,
+  validateNewPassword,
+} from './password-recovery';
+
+describe('passwordRecoveryRedirectUrl', () => {
+  it('uses the hosted reset page when the web app is configured', () => {
+    expect(passwordRecoveryRedirectUrl('https://crewflow.example/')).toBe(
+      'https://crewflow.example/auth/confirm?next=/update-password',
+    );
+  });
+
+  it('falls back to the installed-app deep link', () => {
+    expect(passwordRecoveryRedirectUrl()).toBe('crewflow://auth/reset');
+  });
+});
 
 describe('parseRecoveryLink', () => {
   it('accepts an implicit recovery callback with tokens in the fragment', () => {

@@ -5,12 +5,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  BackHandler,
   KeyboardAvoidingView,
   PanResponder,
   Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
+  RefreshControl,
   Share,
   StyleSheet,
   Text,
@@ -24,7 +26,7 @@ import {
   resolveMembershipAccess,
 } from './src/auth/membership-access';
 import {
-  MOBILE_RECOVERY_REDIRECT_URL,
+  passwordRecoveryRedirectUrl,
   parseRecoveryLink,
   validateNewPassword,
 } from './src/auth/password-recovery';
@@ -157,6 +159,7 @@ export default function App() {
   const [pendingDeepLink, setPendingDeepLink] = useState<CrewFlowDeepLink>();
   const [deepLinkMessage, setDeepLinkMessage] = useState<string>();
   const [pending, setPending] = useState(false);
+  const [pullRefreshing, setPullRefreshing] = useState(false);
   const [pendingPhotoState, setPendingPhotoState] = useState<{
     readonly results: readonly JobPhotoUploadPendingResult[];
     readonly userId?: string;
@@ -171,6 +174,18 @@ export default function App() {
   const sessionUserId = session?.user.id;
   const pendingPhotoResults =
     pendingPhotoState.userId === sessionUserId ? pendingPhotoState.results : [];
+
+  useEffect(() => {
+    if (!pullRefreshing) return;
+    if (
+      assignedJobsState.status === 'loaded' ||
+      assignedJobsState.status === 'error' ||
+      operationsState.status === 'loaded' ||
+      operationsState.status === 'error'
+    ) {
+      setPullRefreshing(false);
+    }
+  }, [assignedJobsState, operationsState, pullRefreshing]);
 
   useEffect(() => {
     let active = true;
@@ -378,7 +393,9 @@ export default function App() {
       };
     }
 
-    setAssignedJobsState({ status: 'loading' });
+    setAssignedJobsState((current) =>
+      current.status === 'loaded' ? current : { status: 'loading' },
+    );
     void loadAssignedJobs(authClient, access.membership)
       .then((snapshot) => {
         if (active) setAssignedJobsState({ snapshot, status: 'loaded' });
@@ -410,7 +427,9 @@ export default function App() {
       };
     }
 
-    setOperationsState({ status: 'loading' });
+    setOperationsState((current) =>
+      current.status === 'loaded' ? current : { status: 'loading' },
+    );
     void loadMobileOperations(authClient, access.membership)
       .then((snapshot) => {
         if (active) setOperationsState({ snapshot, status: 'loaded' });
@@ -499,8 +518,13 @@ export default function App() {
 
     setFormMessage(undefined);
     setPending(true);
+    const configuredWebAppUrl = process.env.EXPO_PUBLIC_WEB_APP_URL as unknown;
     await authClient.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: MOBILE_RECOVERY_REDIRECT_URL,
+      redirectTo: passwordRecoveryRedirectUrl(
+        typeof configuredWebAppUrl === 'string'
+          ? configuredWebAppUrl
+          : undefined,
+      ),
     });
     setPending(false);
     setRecoveryRequestSent(true);
@@ -652,8 +676,33 @@ export default function App() {
         style={styles.flex}
       >
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={[
+            styles.container,
+            session ? styles.authenticatedContainer : undefined,
+          ]}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            session ? (
+              <RefreshControl
+                colors={['#1769F4']}
+                onRefresh={() => {
+                  setPullRefreshing(true);
+                  const role =
+                    accessState.status === 'loaded' &&
+                    accessState.access.allowed
+                      ? accessState.access.membership.role
+                      : undefined;
+                  if (role === 'technician') {
+                    setAssignedJobsRefreshKey((key) => key + 1);
+                  } else {
+                    setOperationsRefreshKey((key) => key + 1);
+                  }
+                }}
+                refreshing={pullRefreshing}
+                tintColor="#1769F4"
+              />
+            ) : undefined
+          }
         >
           <View style={styles.brandMark}>
             <Text style={styles.brandLetter}>C</Text>
@@ -856,6 +905,18 @@ function AuthenticatedView({
 }>) {
   const [notificationSettingsOpen, setNotificationSettingsOpen] =
     useState(false);
+
+  useEffect(() => {
+    if (!notificationSettingsOpen) return;
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        setNotificationSettingsOpen(false);
+        return true;
+      },
+    );
+    return () => subscription.remove();
+  }, [notificationSettingsOpen]);
   let routableDeepLink: CrewFlowDeepLink | undefined;
   if (
     accessState.status === 'loaded' &&
@@ -1010,7 +1071,7 @@ function AuthenticatedView({
   }
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, styles.authenticatedCard]}>
       <Text style={styles.title}>You’re signed in</Text>
       <Text style={styles.body}>{email}</Text>
       {message ? <Text style={styles.successText}>{message}</Text> : null}
@@ -1076,6 +1137,20 @@ function OperationsOverviewView({
   );
 
   useEffect(() => {
+    if (!selectedJobId && !selectedApprovalKey) return;
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        setApprovalError(undefined);
+        setSelectedApprovalKey(undefined);
+        setSelectedJobId(undefined);
+        return true;
+      },
+    );
+    return () => subscription.remove();
+  }, [selectedApprovalKey, selectedJobId]);
+
+  useEffect(() => {
     if (!deepLink) return;
     if (deepLink.kind === 'job') {
       setSelectedJobId(deepLink.jobId);
@@ -1091,11 +1166,15 @@ function OperationsOverviewView({
     setApprovalError(undefined);
     setApprovalPending(true);
     try {
+      const configuredWebAppUrl = process.env
+        .EXPO_PUBLIC_WEB_APP_URL as unknown;
       const result = await approveOperationsItem(
         getSupabaseClient(),
         snapshot.role,
         approval,
-        process.env.EXPO_PUBLIC_WEB_APP_URL,
+        typeof configuredWebAppUrl === 'string'
+          ? configuredWebAppUrl
+          : undefined,
       );
       setApprovalResult({
         approvalKey: `${approval.kind}-${approval.id}`,
@@ -1739,6 +1818,18 @@ function AssignedJobsView({
   const unavailablePendingPhotos = pendingPhotoResults.filter(
     (result) => !snapshot.jobs.some((job) => job.id === result.upload.jobId),
   );
+
+  useEffect(() => {
+    if (!selectedJobId) return;
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        setSelectedJobId(undefined);
+        return true;
+      },
+    );
+    return () => subscription.remove();
+  }, [selectedJobId]);
 
   useEffect(() => {
     if (deepLink?.kind !== 'job') return;
@@ -3120,6 +3211,12 @@ const styles = StyleSheet.create({
     padding: 22,
     width: '100%',
   },
+  authenticatedCard: {
+    borderRadius: 24,
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+  },
   centered: {
     alignItems: 'center',
     flex: 1,
@@ -3175,6 +3272,11 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 28,
+  },
+  authenticatedContainer: {
+    justifyContent: 'flex-start',
+    paddingHorizontal: 16,
+    paddingTop: 18,
   },
   errorText: {
     color: '#B42318',
