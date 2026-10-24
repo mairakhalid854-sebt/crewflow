@@ -53,7 +53,7 @@ The Supabase access token, database password, service-role key, Paddle webhook/A
 
 - Supabase project URL and publishable key respond successfully; email signup is enabled and email confirmation is required.
 - The repository is linked to Supabase project `mlgfyxsqorualqwbecmp`; committed migrations are promoted through the CLI and the hosted schema lint is checked after each push.
-- The sandbox reconciliation and customer-portal functions are deployed, but `PADDLE_SANDBOX_API_KEY` is absent and the hourly reconciliation cron is intentionally not scheduled. Both functions therefore remain dormant for billing activity.
+- The sandbox reconciliation and customer-portal functions are deployed. The least-privilege sandbox API key is stored in Supabase Secrets, and the hourly reconciliation cron is active at minute 17. Hosted verification on October 22, 2026 showed five consecutive successful runs against the linked sandbox subscription with zero failures.
 - GitHub remote `mairakhalid854-sebt/crewflow` is connected locally.
 - Generated database types match the hosted schema. Full pgTAP execution awaits Docker/Podman on a test runner.
 - Vercel project `saas-team-crew-flow/crewflow` is linked and the protected Preview alias at `https://crewflow-git-staging-saas-team-crew-flow.vercel.app` builds successfully from `staging`.

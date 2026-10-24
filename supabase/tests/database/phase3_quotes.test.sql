@@ -60,7 +60,7 @@ SELECT lives_ok(
 
 SELECT is(
   (SELECT total_cents FROM public.quotes WHERE job_id = '62000000-0000-4000-8000-000000000001'),
-  20568,
+  20568::bigint,
   'Database calculates proportional discount tax and quote total'
 );
 SELECT is(

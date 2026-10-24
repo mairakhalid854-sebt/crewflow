@@ -20,6 +20,20 @@ const supabaseConfig = readFileSync(
   new URL('../../../supabase/config.toml', import.meta.url),
   'utf8',
 );
+const simulationEventIdMigration = readFileSync(
+  new URL(
+    '../../../supabase/migrations/202610220001_allow_paddle_simulation_event_ids.sql',
+    import.meta.url,
+  ),
+  'utf8',
+);
+const unknownTenantEventMigration = readFileSync(
+  new URL(
+    '../../../supabase/migrations/202610240001_preserve_unknown_billing_webhook_events.sql',
+    import.meta.url,
+  ),
+  'utf8',
+);
 
 describe('phase 5 subscription billing foundation', () => {
   it('keeps plans configuration-driven and live billing unavailable', () => {
@@ -79,6 +93,40 @@ describe('phase 5 subscription billing foundation', () => {
     expect(migration).toContain("auth.role() IS DISTINCT FROM 'service_role'");
   });
 
+  it('accepts Paddle simulator event IDs without relaxing provider ID checks', () => {
+    expect(simulationEventIdMigration).toContain(
+      "external_event_id ~ '^(evt|ntfsimevt)_[a-z0-9]{26}$'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "target_event_id !~ '^(evt|ntfsimevt)_[a-z0-9]{26}$'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "target_provider_customer_id !~ '^ctm_[a-z0-9]{26}$'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "target_provider_subscription_id !~ '^sub_[a-z0-9]{26}$'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "target_provider_price_id !~ '^pri_[a-z0-9]{26}$'",
+    );
+  });
+
+  it('records unknown-tenant webhook attempts without dangling references', () => {
+    expect(unknownTenantEventMigration).toContain(
+      'CREATE FUNCTION public.normalize_billing_webhook_event_tenant()',
+    );
+    expect(unknownTenantEventMigration).toContain(
+      'billing_webhook_events_normalize_unknown_tenant',
+    );
+    expect(unknownTenantEventMigration).toContain('NEW.tenant_id := NULL');
+    expect(unknownTenantEventMigration).toContain(
+      'REVOKE ALL ON FUNCTION public.normalize_billing_webhook_event_tenant()',
+    );
+    expect(unknownTenantEventMigration).not.toContain(
+      'DROP CONSTRAINT billing_webhook_events_tenant_id_fkey',
+    );
+  });
+
   it('preserves data and blocks business writes only in read-only mode', () => {
     expect(migration).toContain(
       "CREATE TYPE public.billing_access_mode AS ENUM ('full', 'grace', 'read_only')",
@@ -93,6 +141,46 @@ describe('phase 5 subscription billing foundation', () => {
     expect(migration).toContain('job_media_require_write_entitlement');
     expect(migration).not.toMatch(
       /DELETE FROM public\.(customers|jobs|tenants)/,
+    );
+  });
+
+  it('maps every Paddle subscription state to the intended access mode', () => {
+    expect(simulationEventIdMigration).toContain("WHEN 'active' THEN 'full'");
+    expect(simulationEventIdMigration).toContain("WHEN 'trialing' THEN 'full'");
+    expect(simulationEventIdMigration).toContain(
+      "WHEN 'past_due' THEN 'grace'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "WHEN 'paused' THEN 'read_only'",
+    );
+    expect(simulationEventIdMigration).toContain(
+      "WHEN 'canceled' THEN 'read_only'",
+    );
+  });
+
+  it('accepts renewal, pause, and recovery events and persists renewed periods', () => {
+    for (const eventType of [
+      'subscription.created',
+      'subscription.updated',
+      'subscription.activated',
+      'subscription.trialing',
+      'subscription.past_due',
+      'subscription.paused',
+      'subscription.resumed',
+      'subscription.canceled',
+    ]) {
+      expect(edgeFunction).toContain(`'${eventType}'`);
+      expect(simulationEventIdMigration).toContain(`'${eventType}'`);
+    }
+
+    expect(simulationEventIdMigration).toContain(
+      'current_period_starts_at = EXCLUDED.current_period_starts_at',
+    );
+    expect(simulationEventIdMigration).toContain(
+      'current_period_ends_at = EXCLUDED.current_period_ends_at',
+    );
+    expect(simulationEventIdMigration).toContain(
+      'last_provider_event_at = EXCLUDED.last_provider_event_at',
     );
   });
 

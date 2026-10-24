@@ -35,6 +35,11 @@ INSERT INTO public.tenants (
     'Push Tenant B', 'push-b@crewflow.test', 'America/New_York', ARRAY['Cleaning']
   );
 
+INSERT INTO public.tenant_settings (tenant_id)
+VALUES
+  ('29000000-0000-4000-8000-000000000001'),
+  ('29000000-0000-4000-8000-000000000002');
+
 INSERT INTO public.memberships (id, tenant_id, user_id, role, status, joined_at)
 VALUES
   (
@@ -52,6 +57,13 @@ VALUES
     '29000000-0000-4000-8000-000000000002',
     '19000000-0000-4000-8000-000000000003', 'owner', 'active', now()
   );
+
+INSERT INTO public.staff_availability (
+  tenant_id, membership_id, day_of_week, is_available, starts_at, ends_at
+) VALUES (
+  '29000000-0000-4000-8000-000000000001',
+  '39000000-0000-4000-8000-000000000002', 2, true, '00:00', '23:59'
+);
 
 INSERT INTO public.customers (id, tenant_id, first_name, last_name, postal_code)
 VALUES (

@@ -63,6 +63,13 @@ VALUES
     '15000000-0000-4000-8000-000000000004', 'technician', 'active', now()
   );
 
+INSERT INTO public.staff_availability (
+  tenant_id, membership_id, day_of_week, is_available, starts_at, ends_at
+) VALUES (
+  '25000000-0000-4000-8000-000000000001',
+  '35000000-0000-4000-8000-000000000003', 2, true, '00:00', '23:59'
+);
+
 INSERT INTO public.customers (id, tenant_id, first_name, last_name, postal_code)
 VALUES (
   '55000000-0000-4000-8000-000000000001',

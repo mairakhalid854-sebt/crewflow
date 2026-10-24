@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT plan(11);
+SELECT plan(12);
 
 SELECT is(
   (
@@ -232,7 +232,7 @@ SELECT throws_ok(
 );
 
 SELECT is(
-  (SELECT count(*) FROM public.audit_events),
+  (SELECT count(DISTINCT tenant_id) FROM public.audit_events),
   1::bigint,
   'Owner sees only audit events in their tenant'
 );

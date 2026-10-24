@@ -24,6 +24,13 @@ VALUES
   ('31000000-0000-4000-8000-000000000002', '21000000-0000-4000-8000-000000000002', '11000000-0000-4000-8000-000000000002', 'owner', 'active', now()),
   ('31000000-0000-4000-8000-000000000003', '21000000-0000-4000-8000-000000000001', '11000000-0000-4000-8000-000000000003', 'technician', 'active', now());
 
+INSERT INTO public.staff_availability (
+  tenant_id, membership_id, day_of_week, is_available, starts_at, ends_at
+) VALUES (
+  '21000000-0000-4000-8000-000000000001',
+  '31000000-0000-4000-8000-000000000003', 2, true, '00:00', '23:59'
+);
+
 INSERT INTO public.customers (id, tenant_id, first_name, last_name, postal_code)
 VALUES
   ('51000000-0000-4000-8000-000000000001', '21000000-0000-4000-8000-000000000001', 'Jobs', 'Alpha', '78701'),
@@ -44,6 +51,10 @@ VALUES
   ('61000000-0000-4000-8000-000000000005', '21000000-0000-4000-8000-000000000001', '51000000-0000-4000-8000-000000000004', NULL, 'Outside service-area job', NULL, NULL),
   ('61000000-0000-4000-8000-000000000006', '21000000-0000-4000-8000-000000000001', '51000000-0000-4000-8000-000000000005', NULL, 'Missing ZIP job', NULL, NULL);
 
+UPDATE public.staff_profiles
+SET service_area_postal_codes = ARRAY['78701']
+WHERE membership_id = '31000000-0000-4000-8000-000000000003';
+
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims', '{"sub":"11000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
 
@@ -58,10 +69,6 @@ SELECT throws_ok(
   'new row violates row-level security policy for table "jobs"',
   'Owner cannot create a job in another tenant'
 );
-
-UPDATE public.staff_profiles
-SET service_area_postal_codes = ARRAY['78701']
-WHERE membership_id = '31000000-0000-4000-8000-000000000003';
 
 SELECT lives_ok(
   $$UPDATE public.jobs SET assigned_membership_id = '31000000-0000-4000-8000-000000000003' WHERE id = '61000000-0000-4000-8000-000000000004'$$,
@@ -86,17 +93,12 @@ SELECT set_config('request.jwt.claims', '{"sub":"11000000-0000-4000-8000-0000000
 
 SELECT is((SELECT count(*) FROM public.jobs), 2::bigint, 'Technician sees only their assigned jobs');
 SELECT is((SELECT count(*) FROM public.customers), 2::bigint, 'Technician sees only customers for assigned jobs');
+UPDATE public.jobs
+SET title = 'Blocked technician edit'
+WHERE id = '61000000-0000-4000-8000-000000000001';
 SELECT is(
-  (
-    WITH updated_job AS (
-      UPDATE public.jobs
-      SET title = 'Blocked technician edit'
-      WHERE id = '61000000-0000-4000-8000-000000000001'
-      RETURNING id
-    )
-    SELECT count(*) FROM updated_job
-  ),
-  0::bigint,
+  (SELECT title FROM public.jobs WHERE id = '61000000-0000-4000-8000-000000000001'),
+  'Assigned job',
   'Technician cannot update an assigned job'
 );
 SELECT throws_ok(
