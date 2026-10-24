@@ -1,6 +1,6 @@
 # Phase 5 progress: SaaS subscription billing
 
-Updated: 2026-10-22
+Updated: 2026-10-24
 
 Phase 5 has started with a provider-safe entitlement foundation. CrewFlow does
 not have a live billing provider, live prices, or any client-side authority to
@@ -45,10 +45,16 @@ grant access.
   fresh, temporary Paddle-hosted customer portal link. Stub tenants do not see
   an active portal button, and portal URLs are restricted to Paddle's exact
   sandbox host.
-- The linked sandbox subscription has passed activation, past-due/grace,
-  recovery/full-access, and cancellation/read-only webhook simulations. A
-  final activation replay restored the staging workspace to full access after
-  the cancellation test.
+- The linked sandbox subscription has passed activation, renewal-period,
+  past-due/grace, recovery/full-access, cancellation/read-only,
+  pause/read-only, and resume/full-access webhook simulations. Every corrected
+  replay returned HTTP 200 with `processed`, and the final resume replay left
+  staging on full access with the renewed period intact.
+- A PostgreSQL-backed pgTAP suite now covers Phase 5 provider events,
+  idempotent and changed-payload replays, stale ordering, entitlement mapping,
+  read-only write enforcement, recovery, data preservation, role boundaries,
+  and unknown-tenant failure handling. CI starts an isolated local Supabase
+  stack and runs the complete database suite on every pull request.
 
 ## Hosted sandbox verification
 
@@ -64,9 +70,11 @@ signature`, confirming the signing secret is loaded
 - Hosted customer portal: owner session opened successfully for the linked
   CrewFlow Starter subscription and displayed the configured USD 29 monthly
   trial and next-payment summary
-- Lifecycle simulations: `past_due` produced grace access, `activated`
-  restored full access, and `canceled` produced data-preserving read-only
-  access; every corrected webhook returned HTTP 200 with `processed`
+- Lifecycle simulations: renewal advanced the stored period to November 5
+  through December 5, 2026; `past_due` produced grace access; activation and
+  recovery restored full access; cancellation and pause produced
+  data-preserving read-only access; and resume restored full access. Every
+  corrected webhook returned HTTP 200 with `processed`.
 - Sandbox API key rotation deadline: January 19, 2027
 
 ## Remaining Phase 5 work
@@ -76,11 +84,11 @@ signature`, confirming the signing secret is loaded
 - Paddle seller approval and verified Pakistan payout/identity eligibility
 - Owner approval of the final production catalog and checkout wording; the
   sandbox Starter plan and USD 29 monthly trial are configured and tested
-- Database integration tests on a PostgreSQL-enabled runner, including signed,
-  unsigned, duplicate, changed-payload, and out-of-order scenarios
-- Remaining end-to-end sandbox lifecycle coverage for renewal and pause; trial
-  activation, failed-payment/grace, recovery, cancellation/read-only, hourly
-  reconciliation, and the hosted portal are verified
+- First CI execution of the new PostgreSQL-backed Phase 5 suite; local
+  execution remains unavailable on this Windows host until Docker is installed
+- Edge Function HTTP tests for signed and unsigned requests; database-level
+  duplicate, changed-payload, out-of-order, lifecycle, and access-mode coverage
+  is now present, while hosted signature rejection is already verified
 - Explicit production migration enabling a live provider only after all legal,
   commercial, and security gates pass
 

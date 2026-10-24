@@ -27,6 +27,13 @@ const simulationEventIdMigration = readFileSync(
   ),
   'utf8',
 );
+const unknownTenantEventMigration = readFileSync(
+  new URL(
+    '../../../supabase/migrations/202610240001_preserve_unknown_billing_webhook_events.sql',
+    import.meta.url,
+  ),
+  'utf8',
+);
 
 describe('phase 5 subscription billing foundation', () => {
   it('keeps plans configuration-driven and live billing unavailable', () => {
@@ -101,6 +108,22 @@ describe('phase 5 subscription billing foundation', () => {
     );
     expect(simulationEventIdMigration).toContain(
       "target_provider_price_id !~ '^pri_[a-z0-9]{26}$'",
+    );
+  });
+
+  it('records unknown-tenant webhook attempts without dangling references', () => {
+    expect(unknownTenantEventMigration).toContain(
+      'CREATE FUNCTION public.normalize_billing_webhook_event_tenant()',
+    );
+    expect(unknownTenantEventMigration).toContain(
+      'billing_webhook_events_normalize_unknown_tenant',
+    );
+    expect(unknownTenantEventMigration).toContain('NEW.tenant_id := NULL');
+    expect(unknownTenantEventMigration).toContain(
+      'REVOKE ALL ON FUNCTION public.normalize_billing_webhook_event_tenant()',
+    );
+    expect(unknownTenantEventMigration).not.toContain(
+      'DROP CONSTRAINT billing_webhook_events_tenant_id_fkey',
     );
   });
 

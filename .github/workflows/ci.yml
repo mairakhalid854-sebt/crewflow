@@ -54,6 +54,34 @@ jobs:
       - name: Run quality gate
         run: npm run check
 
+  database-integration:
+    name: Supabase database integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Start local Supabase
+        run: npm run supabase:start
+
+      - name: Run pgTAP database tests
+        run: npm run supabase:test
+
+      - name: Stop local Supabase
+        if: always()
+        run: npm run supabase:stop
+
   secret-scan:
     name: Secret scan
     runs-on: ubuntu-latest
