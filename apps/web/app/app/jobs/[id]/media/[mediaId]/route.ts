@@ -12,7 +12,7 @@ export async function GET(
   const supabase = await createClient();
   const { data: media, error } = await supabase
     .from('job_media')
-    .select('content_type, media_kind, storage_path, uploaded_at')
+    .select('storage_path')
     .eq('id', mediaId)
     .eq('job_id', id)
     .eq('tenant_id', context.tenantId)
@@ -22,17 +22,18 @@ export async function GET(
   if (error) throw new Error('Job photo could not be loaded.');
   if (!media) return new Response(null, { status: 404 });
 
-  const { data: photo, error: downloadError } = await supabase.storage
+  const { data: signedPhoto, error: signedUrlError } = await supabase.storage
     .from('job-media')
-    .download(media.storage_path);
-  if (downloadError || !photo) return new Response(null, { status: 404 });
+    .createSignedUrl(media.storage_path, 60);
+  if (signedUrlError || !signedPhoto)
+    return new Response(null, { status: 404 });
 
-  return new Response(await photo.arrayBuffer(), {
+  return new Response(null, {
     headers: {
       'Cache-Control': 'private, no-store',
-      'Content-Disposition': `inline; filename="${media.media_kind}-${mediaId}.jpg"`,
-      'Content-Type': media.content_type,
-      'X-Content-Type-Options': 'nosniff',
+      Location: signedPhoto.signedUrl,
+      'Referrer-Policy': 'no-referrer',
     },
+    status: 307,
   });
 }

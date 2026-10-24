@@ -1,5 +1,12 @@
 export const MOBILE_RECOVERY_REDIRECT_URL = 'crewflow://auth/reset';
 
+export function passwordRecoveryRedirectUrl(webAppUrl?: string): string {
+  const normalizedWebUrl = webAppUrl?.trim().replace(/\/$/, '');
+  return normalizedWebUrl
+    ? `${normalizedWebUrl}/auth/confirm?next=/update-password`
+    : MOBILE_RECOVERY_REDIRECT_URL;
+}
+
 export type RecoveryCredentials =
   | {
       readonly accessToken: string;

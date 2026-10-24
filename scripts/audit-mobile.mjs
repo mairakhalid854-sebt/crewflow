@@ -12,15 +12,6 @@ const reviewedAdvisories = new Map([
     },
   ],
   [
-    'https://github.com/advisories/GHSA-w5hq-g745-h8pq',
-    {
-      packageName: 'uuid',
-      reviewBy: '2026-10-27',
-      severity: 'moderate',
-      source: 1119441,
-    },
-  ],
-  [
     'https://github.com/advisories/GHSA-mrhx-c7xc-m3w5',
     {
       packageName: 'zod',

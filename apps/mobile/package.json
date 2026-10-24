@@ -4,14 +4,15 @@
   "private": true,
   "main": "expo/AppEntry",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --go",
+    "start:dev-client": "expo start --dev-client",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@crewflow/database": "*",
     "@supabase/supabase-js": "^2.117.3",
-    "expo": "~57.0.30",
+    "expo": "~57.0.31",
     "expo-constants": "~57.0.22",
     "expo-crypto": "~57.0.4",
     "expo-dev-client": "~57.0.20",
@@ -20,7 +21,7 @@
     "expo-image-manipulator": "~57.0.21",
     "expo-image-picker": "~57.0.20",
     "expo-linking": "~57.0.13",
-    "expo-notifications": "~57.0.23",
+    "expo-notifications": "~57.0.24",
     "expo-secure-store": "~57.0.4",
     "expo-splash-screen": "~57.0.10",
     "react": "19.2.3",

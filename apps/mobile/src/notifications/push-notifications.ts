@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import { randomUUID } from 'expo-crypto';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
+import type * as ExpoNotifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
@@ -14,6 +14,12 @@ import {
 
 const DEVICE_ID_KEY = 'crewflow.mobile.push.device-id.v1';
 const NOTIFICATION_CHANNEL_ID = 'crewflow-operations';
+
+type NotificationResponse = ExpoNotifications.NotificationResponse;
+type NotificationSubscription = { remove: () => void };
+type NotificationsModule = typeof ExpoNotifications;
+
+let notificationsModulePromise: Promise<NotificationsModule> | undefined;
 
 export type MobileNotificationPreferences = {
   readonly approvalsEnabled: boolean;
@@ -42,18 +48,13 @@ function projectIdFromExtra(extra: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
-Notifications.setNotificationHandler({
-  handleNotification: () =>
-    Promise.resolve({
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-});
-
 function projectId(): string | undefined {
-  const environmentProjectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim();
+  const configuredEnvironmentProjectId = process.env
+    .EXPO_PUBLIC_EAS_PROJECT_ID as unknown;
+  const environmentProjectId =
+    typeof configuredEnvironmentProjectId === 'string'
+      ? configuredEnvironmentProjectId.trim()
+      : undefined;
   if (environmentProjectId) return environmentProjectId;
 
   const configuredProjectId = projectIdFromExtra(Constants.expoConfig?.extra);
@@ -73,6 +74,46 @@ function isExpoGo(): boolean {
     'appOwnership' in constants &&
     constants.appOwnership === 'expo'
   );
+}
+
+function loadNotificationsModule(): Promise<NotificationsModule> {
+  notificationsModulePromise ??= import('expo-notifications').then(
+    (notifications) => {
+      notifications.setNotificationHandler({
+        handleNotification: () =>
+          Promise.resolve({
+            shouldPlaySound: false,
+            shouldSetBadge: false,
+            shouldShowBanner: true,
+            shouldShowList: true,
+          }),
+      });
+      return notifications;
+    },
+  );
+  return notificationsModulePromise;
+}
+
+function deferredNotificationSubscription(
+  subscribe: (notifications: NotificationsModule) => NotificationSubscription,
+): NotificationSubscription {
+  let active = true;
+  let subscription: NotificationSubscription | undefined;
+
+  if (!isExpoGo()) {
+    void loadNotificationsModule()
+      .then((notifications) => {
+        if (active) subscription = subscribe(notifications);
+      })
+      .catch(() => undefined);
+  }
+
+  return {
+    remove() {
+      active = false;
+      subscription?.remove();
+    },
+  };
 }
 
 async function installationId(): Promise<string> {
@@ -132,6 +173,17 @@ export async function synchronizeMobilePushToken(
     return {
       message: 'The CrewFlow EAS project ID is not configured in this build.',
       status: 'configuration_required',
+    };
+  }
+
+  let Notifications: NotificationsModule;
+  try {
+    Notifications = await loadNotificationsModule();
+  } catch {
+    return {
+      message:
+        'Push registration is temporarily unavailable. Check the connection and try again.',
+      status: 'unavailable',
     };
   }
 
@@ -215,14 +267,16 @@ export async function saveMobileNotificationPreferences(
 
 export function addPushTokenRotationListener(
   client: SupabaseClient<Database>,
-): Notifications.EventSubscription {
-  return Notifications.addPushTokenListener(() => {
-    void synchronizeMobilePushToken(client).catch(() => undefined);
-  });
+): NotificationSubscription {
+  return deferredNotificationSubscription((Notifications) =>
+    Notifications.addPushTokenListener(() => {
+      void synchronizeMobilePushToken(client).catch(() => undefined);
+    }),
+  );
 }
 
 function deepLinkFromResponse(
-  response: Notifications.NotificationResponse | null,
+  response: NotificationResponse | null,
 ): CrewFlowDeepLink | undefined {
   return notificationDeepLinkFromData(
     response?.notification.request.content.data,
@@ -231,16 +285,20 @@ function deepLinkFromResponse(
 
 export function addNotificationResponseListener(
   listener: (deepLink: CrewFlowDeepLink) => void,
-): Notifications.EventSubscription {
-  return Notifications.addNotificationResponseReceivedListener((response) => {
-    const deepLink = deepLinkFromResponse(response);
-    if (deepLink) listener(deepLink);
-  });
+): NotificationSubscription {
+  return deferredNotificationSubscription((Notifications) =>
+    Notifications.addNotificationResponseReceivedListener((response) => {
+      const deepLink = deepLinkFromResponse(response);
+      if (deepLink) listener(deepLink);
+    }),
+  );
 }
 
 export async function getInitialNotificationDeepLink(): Promise<
   CrewFlowDeepLink | undefined
 > {
+  if (isExpoGo()) return undefined;
+  const Notifications = await loadNotificationsModule();
   const response = await Notifications.getLastNotificationResponseAsync();
   await Notifications.clearLastNotificationResponseAsync();
   return deepLinkFromResponse(response);
