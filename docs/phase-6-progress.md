@@ -39,6 +39,14 @@ enabled by this slice.
 - Intake transcripts are immutable, unavailable directly to anonymous clients,
   and limited to 1,000 bounded messages. Owner/office human takeover stops
   automation and writes a tenant audit event.
+- A public Intake Edge Function now creates cryptographically random sessions,
+  verifies token digests in constant time, bounds request/message sizes, and
+  exposes no catalog prices or privileged credentials.
+- Database triggers serialize and cap conversation/message bursts. Rejected
+  validation turns remain in the immutable transcript without advancing state.
+- A responsive public chat page resumes within the same browser tab, supports
+  explicit human takeover, and clearly states that chat does not confirm a
+  booking or price. The tenant widget remains disabled by default.
 
 ## Validation
 
@@ -51,11 +59,14 @@ enabled by this slice.
   grounding, ambiguity, prompt injection, cross-tenant requests, and escalation.
 - Intake persistence tests cover hashed tokens, catalog snapshots, wrong-token
   denial, immutable messages, role-scoped takeover, and takeover auditing.
+- Edge/API parity tests run the same valid, rejected, and adversarial inputs
+  through both deterministic policy implementations. Static boundary tests
+  cover credential handling, token entropy, response minimization, and limits.
 
 ## Next Phase 6 slices
 
-1. Connect the Intake policy and persistence boundary to a rate-limited public
-   API endpoint and embeddable web chat, then add the owner inbox/takeover UI.
+1. Add the owner Intake inbox/takeover UI and controlled widget enable/copy-link
+   setting, then run the first complete staging conversation.
 2. Add tenant knowledge-document quarantine, parsing, versioning, citations,
    size/type limits, and malware-scan status before retrieval is enabled.
 3. Add the web AI-runs and approval-queue screens.
