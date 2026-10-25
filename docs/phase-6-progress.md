@@ -168,8 +168,21 @@ enabled by this slice.
   provider-confirmed settlement and require explicit marketing-email opt-in.
 - Every proposed message has a stable invoice/milestone dedupe key, identifies
   manual versus provider-confirmed payment state, and requires human approval.
-  This policy slice cannot queue or send email; scheduler orchestration,
-  delivery persistence, and guarded execution remain pending.
+  The policy itself remains side-effect free.
+- A daily database scheduler now evaluates eligible invoices in each company's
+  time zone, applies AI enablement/budget and full-subscription checks, and
+  persists one provider-neutral message plus governed run, trace, and exact
+  approval per unique invoice milestone. Customer-level suppression blocks
+  both reminder and review proposals.
+- Approved Follow-Up messages pass through an idempotent guarded executor. It
+  revalidates the office actor, subscription, invoice/payment state, customer
+  contact and preferences, suppression, exact approved content, state hash,
+  and milestone before moving the message from awaiting approval to ready.
+  Ready messages are not marked delivered and no provider call is made.
+- Actual email delivery remains intentionally disabled until a production
+  sender/domain is supplied. The durable queue already includes bounded retry,
+  provider-reference, ready, delivered, failed, and cancelled state fields for
+  that later worker.
 
 ## Validation
 
@@ -217,6 +230,11 @@ enabled by this slice.
   milestone and review deduplication, transactional suppression, marketing
   opt-in, settlement-source disclosure, cross-tenant denial, malformed data,
   and prompt-like customer names.
+- Follow-Up orchestration tests cover scheduled proposals, AI/subscription
+  boundaries, persisted dedupe, paid/void/suppressed stops, exact approvals,
+  tenant isolation, pending-approval denial, guarded ready-state execution,
+  idempotency, no false delivery claim, changed-suppression rejection, traces,
+  and audit evidence.
 
 ## Next Phase 6 slices
 
@@ -248,8 +266,10 @@ enabled by this slice.
   human-controlled workflows.
 - FR-063: Deterministic reminder/review policy, contact checks, local-day
   milestones, dedupe keys, payment-source disclosure, and mandatory approval
-  are delivered. Daily orchestration, persisted delivery queue, and guarded
-  email execution remain pending.
+  are delivered. Daily orchestration, persisted provider-neutral delivery
+  queue, customer suppression, exact approvals, and guarded ready-state
+  execution are delivered. Actual provider delivery remains pending production
+  email configuration.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.
 - FR-065: Foundation delivered for inspectable, expiring, role-controlled,

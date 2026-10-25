@@ -483,6 +483,8 @@ export type Database = {
           city: string | null;
           created_at: string;
           email: string | null;
+          email_suppressed_at: string | null;
+          email_suppression_reason: string | null;
           first_name: string;
           id: string;
           last_name: string;
@@ -502,6 +504,8 @@ export type Database = {
           city?: string | null;
           created_at?: string;
           email?: string | null;
+          email_suppressed_at?: string | null;
+          email_suppression_reason?: string | null;
           first_name: string;
           id?: string;
           last_name: string;
@@ -521,6 +525,8 @@ export type Database = {
           city?: string | null;
           created_at?: string;
           email?: string | null;
+          email_suppressed_at?: string | null;
+          email_suppression_reason?: string | null;
           first_name?: string;
           id?: string;
           last_name?: string;
@@ -537,6 +543,116 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'customers_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      follow_up_messages: {
+        Row: {
+          approval_id: string | null;
+          attempt_count: number;
+          body: string;
+          category: Database['public']['Enums']['follow_up_message_category'];
+          created_at: string;
+          customer_id: string;
+          dedupe_key: string;
+          delivered_at: string | null;
+          id: string;
+          invoice_id: string;
+          kind: Database['public']['Enums']['follow_up_message_kind'];
+          last_error_code: string | null;
+          milestone_day: number | null;
+          next_attempt_at: string | null;
+          payment_state_source: Database['public']['Enums']['payment_source'];
+          provider_message_id: string | null;
+          ready_at: string | null;
+          settled_at: string | null;
+          status: Database['public']['Enums']['follow_up_delivery_status'];
+          subject: string;
+          target_state_version: string;
+          tenant_id: string;
+          to_email: string;
+          updated_at: string;
+        };
+        Insert: {
+          approval_id?: string | null;
+          attempt_count?: number;
+          body: string;
+          category: Database['public']['Enums']['follow_up_message_category'];
+          created_at?: string;
+          customer_id: string;
+          dedupe_key: string;
+          delivered_at?: string | null;
+          id?: string;
+          invoice_id: string;
+          kind: Database['public']['Enums']['follow_up_message_kind'];
+          last_error_code?: string | null;
+          milestone_day?: number | null;
+          next_attempt_at?: string | null;
+          payment_state_source: Database['public']['Enums']['payment_source'];
+          provider_message_id?: string | null;
+          ready_at?: string | null;
+          settled_at?: string | null;
+          status?: Database['public']['Enums']['follow_up_delivery_status'];
+          subject: string;
+          target_state_version: string;
+          tenant_id: string;
+          to_email: string;
+          updated_at?: string;
+        };
+        Update: {
+          approval_id?: string | null;
+          attempt_count?: number;
+          body?: string;
+          category?: Database['public']['Enums']['follow_up_message_category'];
+          created_at?: string;
+          customer_id?: string;
+          dedupe_key?: string;
+          delivered_at?: string | null;
+          id?: string;
+          invoice_id?: string;
+          kind?: Database['public']['Enums']['follow_up_message_kind'];
+          last_error_code?: string | null;
+          milestone_day?: number | null;
+          next_attempt_at?: string | null;
+          payment_state_source?: Database['public']['Enums']['payment_source'];
+          provider_message_id?: string | null;
+          ready_at?: string | null;
+          settled_at?: string | null;
+          status?: Database['public']['Enums']['follow_up_delivery_status'];
+          subject?: string;
+          target_state_version?: string;
+          tenant_id?: string;
+          to_email?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'follow_up_messages_approval_id_fkey';
+            columns: ['approval_id'];
+            isOneToOne: false;
+            referencedRelation: 'ai_approval_requests';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'follow_up_messages_customer_tenant_fk';
+            columns: ['customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'follow_up_messages_invoice_tenant_fk';
+            columns: ['invoice_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'invoices';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'follow_up_messages_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
@@ -2497,6 +2613,14 @@ export type Database = {
           technician_membership_id: string;
         }[];
       };
+      execute_approved_follow_up_message: {
+        Args: { target_approval_id: string };
+        Returns: {
+          execution_result: string;
+          message_id: string;
+          result_message: string;
+        }[];
+      };
       execute_approved_report_draft: {
         Args: { target_approval_id: string };
         Returns: {
@@ -2702,6 +2826,13 @@ export type Database = {
         };
         Returns: string;
       };
+      run_follow_up_scheduler: {
+        Args: { target_now?: string };
+        Returns: {
+          proposed_count: number;
+          skipped_count: number;
+        }[];
+      };
       register_mobile_push_token: {
         Args: {
           target_device_id: string;
@@ -2881,6 +3012,16 @@ export type Database = {
       billing_provider: 'stub' | 'paddle_sandbox';
       billing_reconciliation_status:
         'running' | 'succeeded' | 'partial' | 'failed';
+      follow_up_delivery_status:
+        | 'awaiting_approval'
+        | 'ready'
+        | 'processing'
+        | 'delivered'
+        | 'failed'
+        | 'cancelled';
+      follow_up_message_category: 'transactional' | 'marketing';
+      follow_up_message_kind:
+        'overdue_3_day' | 'overdue_7_day' | 'overdue_14_day' | 'review_request';
       intake_conversation_stage:
         | 'name'
         | 'contact'
@@ -3085,6 +3226,21 @@ export const Constants = {
         'succeeded',
         'partial',
         'failed',
+      ],
+      follow_up_delivery_status: [
+        'awaiting_approval',
+        'ready',
+        'processing',
+        'delivered',
+        'failed',
+        'cancelled',
+      ],
+      follow_up_message_category: ['transactional', 'marketing'],
+      follow_up_message_kind: [
+        'overdue_3_day',
+        'overdue_7_day',
+        'overdue_14_day',
+        'review_request',
       ],
       intake_conversation_stage: [
         'name',

@@ -112,6 +112,34 @@ async function executeReportInvoiceApproval(
   };
 }
 
+async function executeFollowUpApproval(
+  approvalId: string,
+): Promise<ApprovalDecisionState> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc(
+    'execute_approved_follow_up_message',
+    { target_approval_id: approvalId },
+  );
+
+  revalidatePath('/app/ai');
+  revalidatePath('/app/invoices');
+
+  if (error) {
+    return {
+      message:
+        'Guarded Follow-Up queueing could not finish. The approval is retained; refresh and retry execution.',
+      status: 'error',
+    };
+  }
+
+  return {
+    message:
+      data?.[0]?.result_message ??
+      'Approval was recorded and guarded Follow-Up queueing completed.',
+    status: 'success',
+  };
+}
+
 export async function decideApprovalAction(
   _previousState: ApprovalDecisionState,
   formData: FormData,
@@ -177,6 +205,13 @@ export async function decideApprovalAction(
     approval.action_kind === 'report.save_invoice_draft'
   ) {
     return executeReportInvoiceApproval(parsed.data.approvalId);
+  }
+
+  if (
+    data === 'approved' &&
+    approval.action_kind === 'follow_up.queue_message'
+  ) {
+    return executeFollowUpApproval(parsed.data.approvalId);
   }
 
   revalidatePath('/app/ai');
@@ -294,4 +329,39 @@ export async function retryReportInvoiceExecutionAction(
   }
 
   return executeReportInvoiceApproval(parsed.data.approvalId);
+}
+
+export async function retryFollowUpExecutionAction(
+  _previousState: ApprovalDecisionState,
+  formData: FormData,
+): Promise<ApprovalDecisionState> {
+  const context = await requireTenantContext(['owner', 'office']);
+  const parsed = executionSchema.safeParse({
+    approvalId: formData.get('approvalId'),
+  });
+  if (!parsed.success) {
+    return { message: 'Approval could not be identified.', status: 'error' };
+  }
+
+  const supabase = await createClient();
+  const { data: approval, error } = await supabase
+    .from('ai_approval_requests')
+    .select('action_kind,status,execution_status')
+    .eq('id', parsed.data.approvalId)
+    .eq('tenant_id', context.tenantId)
+    .single();
+
+  if (
+    error ||
+    !approval ||
+    approval.action_kind !== 'follow_up.queue_message' ||
+    approval.status !== 'approved'
+  ) {
+    return {
+      message: 'This Follow-Up approval is not available for execution.',
+      status: 'error',
+    };
+  }
+
+  return executeFollowUpApproval(parsed.data.approvalId);
 }
