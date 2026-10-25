@@ -103,6 +103,16 @@ enabled by this slice.
 - Changed job state or technician eligibility is retained as a stale/policy
   rejection with an immutable trace and audit event. Approval never guarantees
   execution, and rejected execution leaves the assignment unchanged.
+- The first Report Agent policy is deterministic and side-effect free. It only
+  accepts completed or closed jobs, orders valid technician notes as recorded,
+  counts finalized before/after media without interpreting image contents, and
+  recognizes only a valid tenant-bound signature record.
+- Parts used and technician recommendations remain explicitly unknown because
+  the current field workflow has no structured source for those facts. Missing
+  notes, oversized evidence, unfinished work, or cross-tenant evidence escalate
+  instead of producing a report. Every proposed draft includes an exact diff and
+  requires office approval; this policy slice cannot save, publish, invoice, or
+  contact a customer.
 
 ## Validation
 
@@ -126,6 +136,10 @@ enabled by this slice.
   authoritative matching data, budget enforcement, deterministic selection,
   immutable run/trace evidence, exact approval diffs, idempotency, escalation,
   auditing, and proof that proposal requests do not mutate jobs.
+- Report policy tests cover evidence ordering, unknown facts, finalized media
+  counts, invalid signatures, cross-tenant rejection, unfinished and oversized
+  evidence escalation, prompt-like note handling, exact diffs, determinism, and
+  the mandatory human-approval boundary.
 
 ## Next Phase 6 slices
 
@@ -149,7 +163,10 @@ enabled by this slice.
 - FR-061: Deterministic proposal policy, authorized data loading, governed
   persistence, UI invocation, human approval, and guarded execution are
   delivered.
-- FR-062-063: Not yet delivered; governance records exist for both agent kinds.
+- FR-062: Deterministic, evidence-bounded report drafting policy is delivered.
+  Authorized orchestration, governed persistence, guarded report saving, and
+  invoice drafting remain pending.
+- FR-063: Not yet delivered; governance records exist for the Follow-Up Agent.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.
 - FR-065: Foundation delivered for inspectable, expiring, role-controlled,
