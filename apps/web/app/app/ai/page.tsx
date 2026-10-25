@@ -8,6 +8,7 @@ import { createClient } from '../../../lib/supabase/server';
 import styles from './ai.module.css';
 import { humanize, proposedChangeLines } from './ai-presenters';
 import { ApprovalDecisionForm } from './approval-decision-form';
+import { DispatcherExecutionForm } from './dispatcher-execution-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -181,15 +182,30 @@ export default async function AiOperationsPage() {
                   {approval.status === 'pending' ? (
                     <ApprovalDecisionForm approvalId={approval.id} />
                   ) : (
-                    <p className={styles.decisionRecord}>
-                      Decision recorded{' '}
-                      {approval.decided_at
-                        ? formatDate(approval.decided_at, context.timeZone)
-                        : 'by automatic expiry'}
-                      {approval.decision_reason
-                        ? ` — ${approval.decision_reason}`
-                        : ''}
-                    </p>
+                    <div className={styles.decisionRecord}>
+                      <p>
+                        Decision recorded{' '}
+                        {approval.decided_at
+                          ? formatDate(approval.decided_at, context.timeZone)
+                          : 'by automatic expiry'}
+                        {approval.decision_reason
+                          ? ` — ${approval.decision_reason}`
+                          : ''}
+                      </p>
+                      {approval.execution_status ? (
+                        <p>
+                          Execution: {humanize(approval.execution_status)}
+                          {approval.execution_message
+                            ? ` — ${approval.execution_message}`
+                            : ''}
+                        </p>
+                      ) : null}
+                      {approval.status === 'approved' &&
+                      approval.action_kind === 'dispatcher.assign_technician' &&
+                      !approval.execution_status ? (
+                        <DispatcherExecutionForm approvalId={approval.id} />
+                      ) : null}
+                    </div>
                   )}
                 </article>
               );

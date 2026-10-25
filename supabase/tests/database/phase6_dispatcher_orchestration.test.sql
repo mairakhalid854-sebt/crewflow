@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(17);
+SELECT plan(35);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -111,6 +111,20 @@ INSERT INTO public.jobs (
     '5a000000-0000-4000-8000-000000000002',
     '4a000000-0000-4000-8000-000000000001',
     'Outside service area', '2026-10-26T16:00:00Z', '2026-10-26T17:00:00Z'
+  ),
+  (
+    '6a000000-0000-4000-8000-000000000003',
+    '2a000000-0000-4000-8000-000000000001',
+    '5a000000-0000-4000-8000-000000000001',
+    '4a000000-0000-4000-8000-000000000001',
+    'Stale proposal job', '2026-10-26T18:00:00Z', '2026-10-26T19:00:00Z'
+  ),
+  (
+    '6a000000-0000-4000-8000-000000000004',
+    '2a000000-0000-4000-8000-000000000001',
+    '5a000000-0000-4000-8000-000000000001',
+    '4a000000-0000-4000-8000-000000000001',
+    'Policy change job', '2026-10-26T20:00:00Z', '2026-10-26T21:00:00Z'
   );
 
 UPDATE public.jobs SET status = 'quoted';
@@ -213,6 +227,74 @@ SELECT is(
   NULL::uuid,
   'Dispatcher proposal never mutates the job assignment'
 );
+SELECT throws_ok(
+  format(
+    'SELECT public.execute_approved_dispatcher_assignment(%L)',
+    (current_setting('crewflow.dispatcher_result')::jsonb ->> 'approval_id')::uuid
+  ),
+  'P0001',
+  'Dispatcher assignment requires an approved request',
+  'Pending approval cannot execute'
+);
+SELECT is(
+  public.decide_ai_approval(
+    (current_setting('crewflow.dispatcher_result')::jsonb ->> 'approval_id')::uuid,
+    'approved',
+    'Verified assignment policy and schedule.'
+  )::text,
+  'approved',
+  'Owner can explicitly approve the exact assignment'
+);
+SELECT lives_ok(
+  format(
+    $query$SELECT set_config(
+      'crewflow.dispatcher_execution', row_to_json(result)::text, true
+    ) FROM public.execute_approved_dispatcher_assignment(%L) AS result$query$,
+    (current_setting('crewflow.dispatcher_result')::jsonb ->> 'approval_id')::uuid
+  ),
+  'Approved assignment passes guarded execution'
+);
+SELECT is(
+  current_setting('crewflow.dispatcher_execution')::jsonb ->> 'execution_result',
+  'succeeded',
+  'Guarded execution reports success'
+);
+SELECT is(
+  (
+    SELECT assigned_membership_id FROM public.jobs
+    WHERE id = '6a000000-0000-4000-8000-000000000001'
+  ),
+  '3a000000-0000-4000-8000-000000000002'::uuid,
+  'Guarded execution applies the approved technician'
+);
+SELECT is(
+  (
+    SELECT execution_status FROM public.ai_approval_requests
+    WHERE id = (
+      current_setting('crewflow.dispatcher_result')::jsonb ->> 'approval_id'
+    )::uuid
+  ),
+  'succeeded',
+  'Approval retains execution outcome'
+);
+SELECT is(
+  (
+    SELECT count(*) FROM public.ai_run_steps
+    WHERE run_id = (current_setting('crewflow.dispatcher_result')::jsonb ->> 'run_id')::uuid
+  ),
+  3::bigint,
+  'Successful execution appends one immutable guarded trace step'
+);
+SELECT is(
+  (
+    SELECT execution_result
+    FROM public.execute_approved_dispatcher_assignment(
+      (current_setting('crewflow.dispatcher_result')::jsonb ->> 'approval_id')::uuid
+    )
+  ),
+  'succeeded',
+  'Repeated execution is idempotent'
+);
 SELECT lives_ok(
   $$SELECT set_config(
     'crewflow.dispatcher_repeat', row_to_json(result)::text, true
@@ -258,6 +340,115 @@ SELECT is(
   ),
   2::bigint,
   'Proposal and escalation are both audited'
+);
+
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.dispatcher_stale', row_to_json(result)::text, true
+  ) FROM public.request_dispatcher_proposal(
+    '6a000000-0000-4000-8000-000000000003',
+    '7a000000-0000-4000-8000-000000000006'
+  ) AS result$$,
+  'A second eligible job can produce a proposal'
+);
+SELECT is(
+  public.decide_ai_approval(
+    (current_setting('crewflow.dispatcher_stale')::jsonb ->> 'approval_id')::uuid,
+    'approved',
+    'Approved before the job changed.'
+  )::text,
+  'approved',
+  'Stale-case proposal can be approved before mutation'
+);
+UPDATE public.jobs
+SET description = 'Changed after proposal creation.'
+WHERE id = '6a000000-0000-4000-8000-000000000003';
+-- now() is transaction-stable in pgTAP, so force the captured version to an
+-- older value to model the separate web requests used in production.
+RESET ROLE;
+UPDATE public.ai_approval_requests
+SET target_state_version = 'stale-fixture-version'
+WHERE id = (
+  current_setting('crewflow.dispatcher_stale')::jsonb ->> 'approval_id'
+)::uuid;
+SET LOCAL ROLE authenticated;
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"1a000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+SELECT lives_ok(
+  format(
+    $query$SELECT set_config(
+      'crewflow.dispatcher_stale_execution', row_to_json(result)::text, true
+    ) FROM public.execute_approved_dispatcher_assignment(%L) AS result$query$,
+    (current_setting('crewflow.dispatcher_stale')::jsonb ->> 'approval_id')::uuid
+  ),
+  'Stale execution is safely recorded'
+);
+SELECT is(
+  current_setting('crewflow.dispatcher_stale_execution')::jsonb ->> 'execution_result',
+  'rejected_stale',
+  'Changed job state invalidates the approved proposal'
+);
+SELECT is(
+  (
+    SELECT assigned_membership_id FROM public.jobs
+    WHERE id = '6a000000-0000-4000-8000-000000000003'
+  ),
+  NULL::uuid,
+  'Stale proposal never assigns the technician'
+);
+
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.dispatcher_policy', row_to_json(result)::text, true
+  ) FROM public.request_dispatcher_proposal(
+    '6a000000-0000-4000-8000-000000000004',
+    '7a000000-0000-4000-8000-000000000007'
+  ) AS result$$,
+  'Policy-change job can produce a proposal'
+);
+SELECT is(
+  public.decide_ai_approval(
+    (current_setting('crewflow.dispatcher_policy')::jsonb ->> 'approval_id')::uuid,
+    'approved',
+    'Approved before technician eligibility changed.'
+  )::text,
+  'approved',
+  'Policy-change proposal can be approved before eligibility mutation'
+);
+RESET ROLE;
+UPDATE public.staff_profiles
+SET service_area_postal_codes = ARRAY['10001']
+WHERE membership_id = '3a000000-0000-4000-8000-000000000002';
+SET LOCAL ROLE authenticated;
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"1a000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+SELECT lives_ok(
+  format(
+    $query$SELECT set_config(
+      'crewflow.dispatcher_policy_execution', row_to_json(result)::text, true
+    ) FROM public.execute_approved_dispatcher_assignment(%L) AS result$query$,
+    (current_setting('crewflow.dispatcher_policy')::jsonb ->> 'approval_id')::uuid
+  ),
+  'Changed eligibility is safely recorded'
+);
+SELECT is(
+  current_setting('crewflow.dispatcher_policy_execution')::jsonb ->> 'execution_result',
+  'rejected_policy',
+  'Changed service area invalidates the approved proposal'
+);
+SELECT is(
+  (
+    SELECT assigned_membership_id FROM public.jobs
+    WHERE id = '6a000000-0000-4000-8000-000000000004'
+  ),
+  NULL::uuid,
+  'Policy-rejected proposal never assigns the technician'
 );
 
 UPDATE public.tenant_settings

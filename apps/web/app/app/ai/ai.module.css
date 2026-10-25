@@ -261,6 +261,37 @@
   border-radius: 10px;
 }
 
+.decisionRecord p {
+  margin: 0;
+}
+
+.decisionRecord p + p {
+  margin-top: 7px;
+}
+
+.executionForm {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.executionForm button {
+  width: fit-content;
+  padding: 9px 12px;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  background: #176fe5;
+  border: 0;
+  border-radius: 9px;
+}
+
+.executionForm button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .runCard {
   overflow: hidden;
   box-shadow: none;
