@@ -74,28 +74,39 @@ SET email_suppressed_at = '2026-10-20T15:00:00Z',
 WHERE id = '44000000-0000-4000-8000-000000000003';
 
 INSERT INTO public.jobs (
-  id, tenant_id, customer_id, title, status
+  id, tenant_id, customer_id, title
 ) VALUES
   (
     '55000000-0000-4000-8000-000000000001',
     '22000000-0000-4000-8000-000000000001',
-    '44000000-0000-4000-8000-000000000001', 'Reminder job', 'completed'
+    '44000000-0000-4000-8000-000000000001', 'Reminder job'
   ),
   (
     '55000000-0000-4000-8000-000000000002',
     '22000000-0000-4000-8000-000000000001',
-    '44000000-0000-4000-8000-000000000002', 'Review job', 'completed'
+    '44000000-0000-4000-8000-000000000002', 'Review job'
   ),
   (
     '55000000-0000-4000-8000-000000000003',
     '22000000-0000-4000-8000-000000000001',
-    '44000000-0000-4000-8000-000000000003', 'Suppressed job', 'completed'
+    '44000000-0000-4000-8000-000000000003', 'Suppressed job'
   ),
   (
     '55000000-0000-4000-8000-000000000004',
     '22000000-0000-4000-8000-000000000001',
-    '44000000-0000-4000-8000-000000000001', 'Void job', 'completed'
+    '44000000-0000-4000-8000-000000000001', 'Void job'
   );
+
+UPDATE public.jobs SET status = 'quoted'
+WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
+UPDATE public.jobs SET status = 'accepted'
+WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
+UPDATE public.jobs SET status = 'scheduled'
+WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
+UPDATE public.jobs SET status = 'in_progress'
+WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
+UPDATE public.jobs SET status = 'completed'
+WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
 
 INSERT INTO public.invoices (
   id, tenant_id, job_id, customer_id, invoice_number, status,
