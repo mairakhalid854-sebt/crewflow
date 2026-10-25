@@ -49,6 +49,37 @@ async function executeDispatcherApproval(
   };
 }
 
+async function executeReportApproval(
+  approvalId: string,
+): Promise<ApprovalDecisionState> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('execute_approved_report_draft', {
+    target_approval_id: approvalId,
+  });
+
+  revalidatePath('/app/ai');
+  revalidatePath('/app/jobs');
+  if (data?.[0]?.job_id) {
+    revalidatePath(`/app/jobs/${data[0].job_id}`);
+    revalidatePath(`/app/jobs/${data[0].job_id}/report`);
+  }
+
+  if (error) {
+    return {
+      message:
+        'Guarded report save could not finish. The approval is retained; refresh and retry execution.',
+      status: 'error',
+    };
+  }
+
+  return {
+    message:
+      data?.[0]?.result_message ??
+      'Approval was recorded and guarded report saving completed.',
+    status: 'success',
+  };
+}
+
 export async function decideApprovalAction(
   _previousState: ApprovalDecisionState,
   formData: FormData,
@@ -105,6 +136,10 @@ export async function decideApprovalAction(
     return executeDispatcherApproval(parsed.data.approvalId);
   }
 
+  if (data === 'approved' && approval.action_kind === 'report.save_draft') {
+    return executeReportApproval(parsed.data.approvalId);
+  }
+
   revalidatePath('/app/ai');
   return {
     message:
@@ -150,4 +185,39 @@ export async function retryDispatcherExecutionAction(
   }
 
   return executeDispatcherApproval(parsed.data.approvalId);
+}
+
+export async function retryReportExecutionAction(
+  _previousState: ApprovalDecisionState,
+  formData: FormData,
+): Promise<ApprovalDecisionState> {
+  const context = await requireTenantContext(['owner', 'office']);
+  const parsed = executionSchema.safeParse({
+    approvalId: formData.get('approvalId'),
+  });
+  if (!parsed.success) {
+    return { message: 'Approval could not be identified.', status: 'error' };
+  }
+
+  const supabase = await createClient();
+  const { data: approval, error } = await supabase
+    .from('ai_approval_requests')
+    .select('action_kind,status,execution_status')
+    .eq('id', parsed.data.approvalId)
+    .eq('tenant_id', context.tenantId)
+    .single();
+
+  if (
+    error ||
+    !approval ||
+    approval.action_kind !== 'report.save_draft' ||
+    approval.status !== 'approved'
+  ) {
+    return {
+      message: 'This Report approval is not available for execution.',
+      status: 'error',
+    };
+  }
+
+  return executeReportApproval(parsed.data.approvalId);
 }
