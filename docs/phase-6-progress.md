@@ -158,6 +158,18 @@ enabled by this slice.
   state, or lost subscription access is retained as an audited guarded
   rejection. The AI Operations screen executes after approval and supports a
   safe retry after an interrupted request.
+- The first Follow-Up Agent policy is deterministic and side-effect free. It
+  proposes progressively firmer but respectful transactional reminders only on
+  the business-local 3, 7, and 14-day overdue milestones for sent or partially
+  paid invoices with a remaining balance.
+- Paid, fully recorded, void, draft, duplicate-milestone, suppressed, invalid,
+  and contact-disallowed cases produce no reminder. Optional review requests
+  are proposed exactly two business-local calendar days after recorded or
+  provider-confirmed settlement and require explicit marketing-email opt-in.
+- Every proposed message has a stable invoice/milestone dedupe key, identifies
+  manual versus provider-confirmed payment state, and requires human approval.
+  This policy slice cannot queue or send email; scheduler orchestration,
+  delivery persistence, and guarded execution remain pending.
 
 ## Validation
 
@@ -200,6 +212,11 @@ enabled by this slice.
 - Report invoice guarded-execution tests cover pending-approval denial, exact
   quote-line and total persistence, unsent/no-payment-link state, idempotency,
   audit evidence, and stale catalog-price rejection without invoice mutation.
+- Follow-Up policy tests cover all three reminder tones and milestones,
+  business-time-zone calendar handling, paid/void/full-balance stops,
+  milestone and review deduplication, transactional suppression, marketing
+  opt-in, settlement-source disclosure, cross-tenant denial, malformed data,
+  and prompt-like customer names.
 
 ## Next Phase 6 slices
 
@@ -229,7 +246,10 @@ enabled by this slice.
   delivered with trusted invoice orchestration, exact approval persistence,
   and guarded editable-draft saving. Sending and payment remain separate
   human-controlled workflows.
-- FR-063: Not yet delivered; governance records exist for the Follow-Up Agent.
+- FR-063: Deterministic reminder/review policy, contact checks, local-day
+  milestones, dedupe keys, payment-source disclosure, and mandatory approval
+  are delivered. Daily orchestration, persisted delivery queue, and guarded
+  email execution remain pending.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.
 - FR-065: Foundation delivered for inspectable, expiring, role-controlled,
