@@ -77,6 +77,16 @@ enabled by this slice.
 - Run inspection shows only redacted summaries plus policy/model identifiers,
   token and estimated-cost metadata, duration, correlation ID, and ordered
   immutable trace steps. Raw prompts and unrestricted tool payloads are absent.
+- The first Dispatcher policy is deterministic and side-effect free. It filters
+  technicians by active status, exact normalized skills, US ZIP service area,
+  availability containment, and schedule conflicts, then ranks eligible workers
+  by the bounded workload supplied by the authorized caller.
+- Dispatcher input fails closed if any technician or assignment belongs to a
+  different tenant. Invalid job intervals or ZIP codes and no-candidate outcomes
+  escalate instead of guessing. Reassignment of in-progress work is always
+  marked as requiring explicit human approval.
+- Dispatcher currently returns a proposal, rationale, exact assignment diff, and
+  candidate rejection codes only. It cannot write a job assignment yet.
 
 ## Validation
 
@@ -106,16 +116,21 @@ enabled by this slice.
    stages complete successfully.
 3. Connect approved requests to typed guarded executors that revalidate current
    role, target state, policy, and idempotency before any side effect.
-4. Add adversarial evaluation fixtures for price grounding, cross-tenant
+4. Connect the Dispatcher policy to an authorized tenant-scoped snapshot,
+   governed run/trace records, and approval creation before enabling its UI.
+5. Add adversarial evaluation fixtures for price grounding, cross-tenant
    leakage, prompt injection, tool authorization, escalation, and budget limits.
-5. Select a live provider/model, retention window, document limits, and cost
+6. Select a live provider/model, retention window, document limits, and cost
    caps only after owner approval; add it through a separate explicit migration
    and server adapter.
 
 ## Requirement status
 
-- FR-060–063: Not yet delivered; governance records exist for all four agent
-  kinds, with Intake scheduled first.
+- FR-060: Intake collection and office takeover are partially delivered; quote
+  drafting and verified slot offers remain pending.
+- FR-061: Deterministic proposal policy delivered and tested; authorized data
+  loading, governed persistence, UI invocation, and guarded execution remain.
+- FR-062–063: Not yet delivered; governance records exist for both agent kinds.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.
 - FR-065: Foundation delivered for inspectable, expiring, role-controlled,
