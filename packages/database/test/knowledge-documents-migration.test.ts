@@ -27,7 +27,7 @@ describe('phase 6 knowledge-document foundation', () => {
     expect(migration).toContain("document.status = 'ready'");
     expect(migration).toContain("document.scan_status = 'clean'");
     expect(migration).toContain("document.parse_status = 'succeeded'");
-    expect(migration).toContain("'knowledge-documents',\n  false,");
+    expect(migration).toMatch(/'knowledge-documents',\s*false,/);
     expect(migration).not.toContain('knowledge_document_objects_read');
   });
 
