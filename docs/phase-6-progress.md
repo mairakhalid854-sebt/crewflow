@@ -139,6 +139,16 @@ enabled by this slice.
   trusted pricing escalate. Technician notes, photos, parts, recommendations,
   and prompt-like text are never converted into charges. This policy is
   side-effect free; orchestration and guarded invoice saving remain pending.
+- Owner and office actors can now request an authoritative invoice evaluation.
+  The database prefers the latest tenant-bound accepted quote snapshot and
+  otherwise uses one enabled, non-archived catalog service. It reads the current
+  tenant tax rate, computes bounded totals and a 14-day due date, and binds the
+  exact proposal to a SHA-256 pricing-state version.
+- An active non-void invoice produces an audited unchanged result. Missing or
+  invalid trusted pricing escalates. Successful evaluations create governed
+  run/trace evidence and an exact office approval only; the request path cannot
+  write invoice tables, publish/email a link, create a payment URL, or record a
+  payment. Guarded invoice saving remains pending.
 
 ## Validation
 
@@ -174,6 +184,10 @@ enabled by this slice.
   taxable/non-taxable totals, deterministic due dates, duplicate prevention,
   cross-tenant rejection, invalid values, prompt-like catalog text, exact diffs,
   and the no-field-evidence/no-payment-link boundaries.
+- Report invoice orchestration tests cover office/tenant authorization,
+  accepted-quote precedence, enabled catalog fallback, duplicate prevention,
+  budget enforcement, pricing-state binding, idempotency, escalation, exact
+  approvals, and absence of invoice/payment/customer side effects.
 
 ## Next Phase 6 slices
 
@@ -200,7 +214,8 @@ enabled by this slice.
 - FR-062: Deterministic, evidence-bounded report drafting policy, authorized
   orchestration, governed persistence, exact office approvals, and guarded
   editable-draft saving are delivered. Deterministic invoice policy is
-  delivered; trusted orchestration and guarded invoice saving remain pending.
+  delivered with trusted invoice orchestration and exact approval persistence;
+  guarded invoice saving remains pending.
 - FR-063: Not yet delivered; governance records exist for the Follow-Up Agent.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.
