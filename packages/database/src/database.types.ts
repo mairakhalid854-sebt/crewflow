@@ -2506,6 +2506,15 @@ export type Database = {
           result_message: string;
         }[];
       };
+      execute_approved_report_invoice_draft: {
+        Args: { target_approval_id: string };
+        Returns: {
+          execution_result: string;
+          invoice_id: string | null;
+          job_id: string;
+          result_message: string;
+        }[];
+      };
       fail_knowledge_document_parse: {
         Args: { target_document_id: string; target_failure_code: string };
         Returns: string;

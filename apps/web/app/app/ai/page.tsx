@@ -10,6 +10,7 @@ import { humanize, proposedChangeLines } from './ai-presenters';
 import { ApprovalDecisionForm } from './approval-decision-form';
 import { DispatcherExecutionForm } from './dispatcher-execution-form';
 import { ReportExecutionForm } from './report-execution-form';
+import { ReportInvoiceExecutionForm } from './report-invoice-execution-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -210,6 +211,11 @@ export default async function AiOperationsPage() {
                       approval.action_kind === 'report.save_draft' &&
                       !approval.execution_status ? (
                         <ReportExecutionForm approvalId={approval.id} />
+                      ) : null}
+                      {approval.status === 'approved' &&
+                      approval.action_kind === 'report.save_invoice_draft' &&
+                      !approval.execution_status ? (
+                        <ReportInvoiceExecutionForm approvalId={approval.id} />
                       ) : null}
                     </div>
                   )}
