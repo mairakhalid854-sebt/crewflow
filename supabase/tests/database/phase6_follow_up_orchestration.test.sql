@@ -101,7 +101,10 @@ UPDATE public.jobs SET status = 'quoted'
 WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
 UPDATE public.jobs SET status = 'accepted'
 WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
-UPDATE public.jobs SET status = 'scheduled'
+UPDATE public.jobs
+SET status = 'scheduled',
+    scheduled_start_at = '2026-10-20T14:00:00Z',
+    scheduled_end_at = '2026-10-20T15:00:00Z'
 WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
 UPDATE public.jobs SET status = 'in_progress'
 WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
