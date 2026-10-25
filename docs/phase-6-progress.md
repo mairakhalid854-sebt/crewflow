@@ -121,6 +121,15 @@ enabled by this slice.
   exact before/after fields. Repeated correlation IDs are idempotent and an
   unchanged evidence state reuses its current approval. The request path cannot
   write a work report or invoice, publish anything, or contact a customer.
+- Approved Report drafts now pass through an idempotent guarded executor. It
+  revalidates the active office role, full subscription access, completed job,
+  current notes/media/signature evidence hash, current editable draft, exact
+  prior values, and bounded proposed fields immediately before the only report
+  write. Changed evidence or draft state is retained as a guarded rejection.
+- Successful execution saves only an editable draft. Publishing, invoice
+  creation, customer delivery, and email remain separate human-controlled
+  workflows. The AI Operations screen automatically attempts execution after
+  approval and exposes a retry control for interrupted requests.
 
 ## Validation
 
@@ -176,8 +185,8 @@ enabled by this slice.
   persistence, UI invocation, human approval, and guarded execution are
   delivered.
 - FR-062: Deterministic, evidence-bounded report drafting policy, authorized
-  orchestration, governed persistence, and exact office approvals are delivered.
-  Guarded report saving and invoice drafting remain pending.
+  orchestration, governed persistence, exact office approvals, and guarded
+  editable-draft saving are delivered. Invoice drafting remains pending.
 - FR-063: Not yet delivered; governance records exist for the Follow-Up Agent.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.

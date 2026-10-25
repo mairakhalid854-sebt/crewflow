@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(22);
+SELECT plan(40);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -101,6 +101,14 @@ INSERT INTO public.jobs (
     '4b000000-0000-4000-8000-000000000001',
     '3b000000-0000-4000-8000-000000000002',
     'No notes job', '2026-10-25T16:00:00Z', '2026-10-25T17:00:00Z'
+  ),
+  (
+    '6b000000-0000-4000-8000-000000000003',
+    '2b000000-0000-4000-8000-000000000001',
+    '5b000000-0000-4000-8000-000000000001',
+    '4b000000-0000-4000-8000-000000000001',
+    '3b000000-0000-4000-8000-000000000002',
+    'Stale report evidence', '2026-10-25T18:00:00Z', '2026-10-25T19:00:00Z'
   );
 
 UPDATE public.jobs SET status = 'quoted'
@@ -128,6 +136,12 @@ INSERT INTO public.job_work_notes (
     '6b000000-0000-4000-8000-000000000001',
     '3b000000-0000-4000-8000-000000000002',
     'Tested drainage after repair.', '2026-10-25T14:55:00Z'
+  ),
+  (
+    '2b000000-0000-4000-8000-000000000001',
+    '6b000000-0000-4000-8000-000000000003',
+    '3b000000-0000-4000-8000-000000000002',
+    'Initial completion note.', '2026-10-25T18:55:00Z'
   );
 
 INSERT INTO public.job_media (
@@ -319,6 +333,139 @@ SELECT is(
 SELECT is(
   (SELECT count(*) FROM public.ai_approval_requests WHERE status = 'pending'),
   1::bigint, 'Only the grounded draft awaits human approval'
+);
+
+SELECT throws_ok(
+  format(
+    'SELECT public.execute_approved_report_draft(%L)',
+    (current_setting('crewflow.report_result')::jsonb ->> 'approval_id')::uuid
+  ),
+  'P0001',
+  'Report draft save requires an approved request',
+  'Pending Report approval cannot execute'
+);
+SELECT is(
+  public.decide_ai_approval(
+    (current_setting('crewflow.report_result')::jsonb ->> 'approval_id')::uuid,
+    'approved',
+    'Reviewed the evidence-bounded report draft.'
+  )::text,
+  'approved', 'Owner can explicitly approve the Report draft'
+);
+SELECT lives_ok(
+  format(
+    $query$SELECT set_config(
+      'crewflow.report_execution', row_to_json(result)::text, true
+    ) FROM public.execute_approved_report_draft(%L) AS result$query$,
+    (current_setting('crewflow.report_result')::jsonb ->> 'approval_id')::uuid
+  ),
+  'Approved Report draft passes guarded execution'
+);
+SELECT is(
+  current_setting('crewflow.report_execution')::jsonb ->> 'execution_result',
+  'succeeded', 'Guarded Report execution reports success'
+);
+SELECT is(
+  (SELECT summary FROM public.work_reports WHERE job_id = '6b000000-0000-4000-8000-000000000001'),
+  'Drain Cleaning work for "Kitchen drain repair" was recorded as completed.',
+  'Guarded execution applies the exact approved summary'
+);
+SELECT is(
+  (SELECT work_performed FROM public.work_reports WHERE job_id = '6b000000-0000-4000-8000-000000000001'),
+  E'1. Cleared the drain blockage.\n2. Tested drainage after repair.',
+  'Guarded execution applies ordered technician evidence'
+);
+SELECT is(
+  (SELECT status::text FROM public.work_reports WHERE job_id = '6b000000-0000-4000-8000-000000000001'),
+  'draft', 'Guarded execution leaves the report editable and unpublished'
+);
+SELECT is(
+  (
+    SELECT execution_status FROM public.ai_approval_requests
+    WHERE id = (current_setting('crewflow.report_result')::jsonb ->> 'approval_id')::uuid
+  ),
+  'succeeded', 'Approval retains successful execution outcome'
+);
+SELECT is(
+  (
+    SELECT count(*) FROM public.ai_run_steps
+    WHERE run_id = (current_setting('crewflow.report_result')::jsonb ->> 'run_id')::uuid
+  ),
+  3::bigint, 'Successful Report save appends one guarded trace step'
+);
+SELECT is(
+  (
+    SELECT execution_result
+    FROM public.execute_approved_report_draft(
+      (current_setting('crewflow.report_result')::jsonb ->> 'approval_id')::uuid
+    )
+  ),
+  'succeeded', 'Repeated Report execution is idempotent'
+);
+SELECT is(
+  (SELECT count(*) FROM public.work_reports WHERE job_id = '6b000000-0000-4000-8000-000000000001'),
+  1::bigint, 'Idempotent execution does not duplicate the draft'
+);
+
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.report_stale', row_to_json(result)::text, true
+  ) FROM public.request_report_proposal(
+    '6b000000-0000-4000-8000-000000000003',
+    '7b000000-0000-4000-8000-000000000005'
+  ) AS result$$,
+  'Another completed job can create a Report proposal'
+);
+SELECT is(
+  public.decide_ai_approval(
+    (current_setting('crewflow.report_stale')::jsonb ->> 'approval_id')::uuid,
+    'approved',
+    'Approved before new field evidence arrived.'
+  )::text,
+  'approved', 'Stale-case Report proposal can be approved'
+);
+RESET ROLE;
+INSERT INTO public.job_work_notes (
+  tenant_id, job_id, author_membership_id, body, created_at
+) VALUES (
+  '2b000000-0000-4000-8000-000000000001',
+  '6b000000-0000-4000-8000-000000000003',
+  '3b000000-0000-4000-8000-000000000002',
+  'Late evidence added after approval.', '2026-10-25T18:58:00Z'
+);
+SET LOCAL ROLE authenticated;
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"1b000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+SELECT lives_ok(
+  format(
+    $query$SELECT set_config(
+      'crewflow.report_stale_execution', row_to_json(result)::text, true
+    ) FROM public.execute_approved_report_draft(%L) AS result$query$,
+    (current_setting('crewflow.report_stale')::jsonb ->> 'approval_id')::uuid
+  ),
+  'Changed Report evidence is safely recorded'
+);
+SELECT is(
+  current_setting('crewflow.report_stale_execution')::jsonb ->> 'execution_result',
+  'rejected_stale', 'New technician evidence invalidates the approved proposal'
+);
+SELECT is(
+  (SELECT count(*) FROM public.work_reports WHERE job_id = '6b000000-0000-4000-8000-000000000003'),
+  0::bigint, 'Stale Report proposal never creates a draft'
+);
+SELECT is(
+  (
+    SELECT execution_status FROM public.ai_approval_requests
+    WHERE id = (current_setting('crewflow.report_stale')::jsonb ->> 'approval_id')::uuid
+  ),
+  'rejected_stale', 'Stale approval retains its guarded rejection outcome'
+);
+SELECT is(
+  (SELECT count(*) FROM public.invoices),
+  0::bigint, 'Guarded Report execution still never creates an invoice'
 );
 
 ROLLBACK;

@@ -2497,6 +2497,15 @@ export type Database = {
           technician_membership_id: string;
         }[];
       };
+      execute_approved_report_draft: {
+        Args: { target_approval_id: string };
+        Returns: {
+          execution_result: string;
+          job_id: string;
+          report_id: string;
+          result_message: string;
+        }[];
+      };
       fail_knowledge_document_parse: {
         Args: { target_document_id: string; target_failure_code: string };
         Returns: string;
