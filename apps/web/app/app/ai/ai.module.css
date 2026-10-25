@@ -344,6 +344,101 @@
   color: #65798c;
 }
 
+.dispatcherLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 16px;
+  color: #fff;
+  font-weight: 900;
+  text-decoration: none;
+  background: #176fe5;
+  border-radius: 10px;
+}
+
+.dispatcherNotice {
+  padding: 15px 17px;
+  color: #4d6479;
+  background: #eef6ff;
+  border: 1px solid #c7def7;
+  border-radius: 12px;
+}
+
+.dispatcherNotice a {
+  color: #145ea9;
+  font-weight: 800;
+}
+
+.dispatcherGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dispatcherJob {
+  display: grid;
+  gap: 14px;
+  padding: 19px;
+  background: #fff;
+  border: 1px solid #dbe4ed;
+  border-radius: 16px;
+}
+
+.dispatcherJob h2,
+.dispatcherJob p {
+  margin: 0;
+}
+
+.dispatcherJob p {
+  color: #5d7286;
+}
+
+.dispatcherFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 0;
+}
+
+.dispatcherFacts div {
+  padding: 10px;
+  background: #f5f8fb;
+  border-radius: 9px;
+}
+
+.dispatcherFacts dt {
+  color: #718397;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.dispatcherFacts dd {
+  margin: 4px 0 0;
+  color: #183b5b;
+}
+
+.dispatcherForm {
+  display: grid;
+  gap: 8px;
+}
+
+.dispatcherForm button {
+  padding: 10px 14px;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  background: #176fe5;
+  border: 1px solid #176fe5;
+  border-radius: 10px;
+}
+
+.dispatcherForm button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 @media (max-width: 760px) {
   .summary,
   .explanationGrid,
@@ -374,5 +469,10 @@
 
   .actions {
     flex-direction: column;
+  }
+
+  .dispatcherGrid,
+  .dispatcherFacts {
+    grid-template-columns: 1fr;
   }
 }
