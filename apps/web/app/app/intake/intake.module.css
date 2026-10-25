@@ -1,0 +1,277 @@
+.widgetCard,
+.conversation,
+.summary {
+  background: #fff;
+  border: 1px solid #dbe4ed;
+  border-radius: 20px;
+  box-shadow: 0 14px 34px rgb(23 45 72 / 7%);
+}
+
+.widgetCard {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 24px;
+  padding: 24px;
+}
+
+.widgetCard h2 {
+  margin: 4px 0 6px;
+}
+
+.widgetCard p {
+  margin: 0;
+  color: #5b7086;
+}
+
+.kicker {
+  color: #176fe5 !important;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.linkRow {
+  display: flex;
+  gap: 10px;
+}
+
+.linkRow input {
+  min-width: 0;
+  flex: 1;
+  padding: 12px 14px;
+  color: #284761;
+  font: inherit;
+  background: #f5f8fb;
+  border: 1px solid #cbd8e5;
+  border-radius: 10px;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.takeoverForm button {
+  padding: 11px 16px;
+  font: inherit;
+  font-weight: 800;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.primaryButton,
+.takeoverForm button {
+  color: #fff;
+  background: #176fe5;
+  border: 1px solid #176fe5;
+}
+
+.secondaryButton {
+  color: #173c60;
+  background: #fff;
+  border: 1px solid #b7c8d9;
+}
+
+.dangerButton {
+  color: #8a2b22;
+  background: #fff5f3;
+  border: 1px solid #efbdb7;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.summary div {
+  display: grid;
+  gap: 6px;
+  padding: 20px 24px;
+  border-right: 1px solid #e5ebf1;
+}
+
+.summary div:last-child {
+  border-right: 0;
+}
+
+.summary span,
+.details dt {
+  color: #6d7f91;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.summary strong {
+  color: #102f4d;
+  font-size: 1.9rem;
+}
+
+.inbox {
+  display: grid;
+  gap: 18px;
+}
+
+.conversation {
+  padding: 22px;
+}
+
+.conversationHeader {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.conversationHeader h2 {
+  margin: 9px 0 4px;
+}
+
+.conversationHeader p {
+  margin: 0;
+  color: #6a7e91;
+  font-size: 0.86rem;
+}
+
+.status {
+  display: inline-block;
+  padding: 5px 9px;
+  color: #294a67;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #edf2f7;
+  border-radius: 999px;
+}
+
+.status[data-status='human_takeover'],
+.status[data-status='ready_for_human_review'] {
+  color: #844112;
+  background: #fff0d9;
+}
+
+.status[data-status='closed'] {
+  color: #286144;
+  background: #e8f6ee;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 22px 0;
+}
+
+.details div {
+  min-width: 0;
+  padding: 13px;
+  background: #f7f9fb;
+  border-radius: 11px;
+}
+
+.details dd {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+  color: #173c5d;
+}
+
+.escalation {
+  padding: 13px 15px;
+  color: #753b18;
+  background: #fff4e5;
+  border-radius: 11px;
+}
+
+.transcript {
+  border-top: 1px solid #e2e9f0;
+}
+
+.transcript summary {
+  padding-top: 16px;
+  color: #24567f;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.transcript > div {
+  display: grid;
+  gap: 9px;
+  padding-top: 14px;
+}
+
+.transcriptMessage {
+  padding: 11px 13px;
+  background: #f6f8fb;
+  border-radius: 10px;
+}
+
+.transcriptMessage span {
+  color: #37709e;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.transcriptMessage p {
+  margin: 4px 0;
+  white-space: pre-wrap;
+}
+
+.transcriptMessage time {
+  color: #77899a;
+  font-size: 0.72rem;
+}
+
+.takeoverForm {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.takeoverForm span {
+  max-width: 220px;
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.error {
+  color: #a3261c !important;
+}
+
+.success {
+  color: #217348 !important;
+}
+
+@media (max-width: 700px) {
+  .linkRow,
+  .conversationHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .summary,
+  .details {
+    grid-template-columns: 1fr;
+  }
+
+  .summary div {
+    border-right: 0;
+    border-bottom: 1px solid #e5ebf1;
+  }
+
+  .summary div:last-child {
+    border-bottom: 0;
+  }
+
+  .takeoverForm {
+    justify-items: stretch;
+  }
+
+  .takeoverForm span {
+    max-width: none;
+    text-align: left;
+  }
+}

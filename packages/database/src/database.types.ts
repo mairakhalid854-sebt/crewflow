@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -39,6 +39,206 @@ export type Database = {
   };
   public: {
     Tables: {
+      ai_agent_runs: {
+        Row: {
+          actor_user_id: string | null;
+          agent_kind: Database['public']['Enums']['ai_agent_kind'];
+          completed_at: string | null;
+          correlation_id: string;
+          created_at: string;
+          duration_ms: number | null;
+          error_code: string | null;
+          estimated_cost_cents: number;
+          id: string;
+          input_tokens: number;
+          model: string;
+          output_tokens: number;
+          policy_version: string;
+          provider: string;
+          redacted_input_summary: string;
+          started_at: string | null;
+          status: Database['public']['Enums']['ai_run_status'];
+          tenant_id: string;
+        };
+        Insert: {
+          actor_user_id?: string | null;
+          agent_kind: Database['public']['Enums']['ai_agent_kind'];
+          completed_at?: string | null;
+          correlation_id: string;
+          created_at?: string;
+          duration_ms?: number | null;
+          error_code?: string | null;
+          estimated_cost_cents?: number;
+          id?: string;
+          input_tokens?: number;
+          model?: string;
+          output_tokens?: number;
+          policy_version: string;
+          provider?: string;
+          redacted_input_summary: string;
+          started_at?: string | null;
+          status?: Database['public']['Enums']['ai_run_status'];
+          tenant_id: string;
+        };
+        Update: {
+          actor_user_id?: string | null;
+          agent_kind?: Database['public']['Enums']['ai_agent_kind'];
+          completed_at?: string | null;
+          correlation_id?: string;
+          created_at?: string;
+          duration_ms?: number | null;
+          error_code?: string | null;
+          estimated_cost_cents?: number;
+          id?: string;
+          input_tokens?: number;
+          model?: string;
+          output_tokens?: number;
+          policy_version?: string;
+          provider?: string;
+          redacted_input_summary?: string;
+          started_at?: string | null;
+          status?: Database['public']['Enums']['ai_run_status'];
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_agent_runs_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ai_approval_requests: {
+        Row: {
+          action_kind: string;
+          consequences: string;
+          created_at: string;
+          decided_at: string | null;
+          decided_by_user_id: string | null;
+          decision_reason: string | null;
+          expires_at: string;
+          id: string;
+          proposed_changes: Json;
+          rationale: string;
+          requested_by_user_id: string | null;
+          run_id: string;
+          status: Database['public']['Enums']['ai_approval_status'];
+          target_entity_id: string | null;
+          target_entity_type: string | null;
+          target_state_version: string | null;
+          tenant_id: string;
+        };
+        Insert: {
+          action_kind: string;
+          consequences: string;
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by_user_id?: string | null;
+          decision_reason?: string | null;
+          expires_at?: string;
+          id?: string;
+          proposed_changes: Json;
+          rationale: string;
+          requested_by_user_id?: string | null;
+          run_id: string;
+          status?: Database['public']['Enums']['ai_approval_status'];
+          target_entity_id?: string | null;
+          target_entity_type?: string | null;
+          target_state_version?: string | null;
+          tenant_id: string;
+        };
+        Update: {
+          action_kind?: string;
+          consequences?: string;
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by_user_id?: string | null;
+          decision_reason?: string | null;
+          expires_at?: string;
+          id?: string;
+          proposed_changes?: Json;
+          rationale?: string;
+          requested_by_user_id?: string | null;
+          run_id?: string;
+          status?: Database['public']['Enums']['ai_approval_status'];
+          target_entity_id?: string | null;
+          target_entity_type?: string | null;
+          target_state_version?: string | null;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_approval_requests_run_tenant_fk';
+            columns: ['run_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'ai_agent_runs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'ai_approval_requests_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ai_run_steps: {
+        Row: {
+          created_at: string;
+          duration_ms: number;
+          id: string;
+          outcome: string;
+          redacted_summary: string;
+          run_id: string;
+          sequence_number: number;
+          step_kind: string;
+          tenant_id: string;
+          tool_name: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          duration_ms?: number;
+          id?: string;
+          outcome: string;
+          redacted_summary: string;
+          run_id: string;
+          sequence_number: number;
+          step_kind: string;
+          tenant_id: string;
+          tool_name?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          duration_ms?: number;
+          id?: string;
+          outcome?: string;
+          redacted_summary?: string;
+          run_id?: string;
+          sequence_number?: number;
+          step_kind?: string;
+          tenant_id?: string;
+          tool_name?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_run_steps_run_tenant_fk';
+            columns: ['run_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'ai_agent_runs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'ai_run_steps_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       audit_events: {
         Row: {
           action: string;
@@ -325,6 +525,116 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'customers_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      intake_conversations: {
+        Row: {
+          catalog_snapshot: Json;
+          collected_values: Json;
+          created_at: string;
+          escalation_reason: string | null;
+          expires_at: string;
+          id: string;
+          last_message_at: string;
+          selected_service_id: string | null;
+          session_token_hash: string;
+          stage: Database['public']['Enums']['intake_conversation_stage'];
+          status: Database['public']['Enums']['intake_conversation_status'];
+          taken_over_at: string | null;
+          taken_over_by_user_id: string | null;
+          tenant_id: string;
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          catalog_snapshot: Json;
+          collected_values?: Json;
+          created_at?: string;
+          escalation_reason?: string | null;
+          expires_at?: string;
+          id?: string;
+          last_message_at?: string;
+          selected_service_id?: string | null;
+          session_token_hash: string;
+          stage?: Database['public']['Enums']['intake_conversation_stage'];
+          status?: Database['public']['Enums']['intake_conversation_status'];
+          taken_over_at?: string | null;
+          taken_over_by_user_id?: string | null;
+          tenant_id: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          catalog_snapshot?: Json;
+          collected_values?: Json;
+          created_at?: string;
+          escalation_reason?: string | null;
+          expires_at?: string;
+          id?: string;
+          last_message_at?: string;
+          selected_service_id?: string | null;
+          session_token_hash?: string;
+          stage?: Database['public']['Enums']['intake_conversation_stage'];
+          status?: Database['public']['Enums']['intake_conversation_status'];
+          taken_over_at?: string | null;
+          taken_over_by_user_id?: string | null;
+          tenant_id?: string;
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'intake_conversations_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      intake_messages: {
+        Row: {
+          body: string;
+          conversation_id: string;
+          created_at: string;
+          id: string;
+          sender: Database['public']['Enums']['intake_message_sender'];
+          sequence_number: number;
+          tenant_id: string;
+        };
+        Insert: {
+          body: string;
+          conversation_id: string;
+          created_at?: string;
+          id?: string;
+          sender: Database['public']['Enums']['intake_message_sender'];
+          sequence_number: number;
+          tenant_id: string;
+        };
+        Update: {
+          body?: string;
+          conversation_id?: string;
+          created_at?: string;
+          id?: string;
+          sender?: Database['public']['Enums']['intake_message_sender'];
+          sequence_number?: number;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'intake_messages_conversation_tenant_fk';
+            columns: ['conversation_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'intake_conversations';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'intake_messages_tenant_id_fkey';
             columns: ['tenant_id'];
             isOneToOne: false;
             referencedRelation: 'tenants';
@@ -1536,6 +1846,8 @@ export type Database = {
           ai_operations_enabled: boolean;
           created_at: string;
           id: string;
+          intake_widget_enabled: boolean;
+          intake_widget_key: string;
           notifications_enabled: boolean;
           tenant_id: string;
           updated_at: string;
@@ -1545,6 +1857,8 @@ export type Database = {
           ai_operations_enabled?: boolean;
           created_at?: string;
           id?: string;
+          intake_widget_enabled?: boolean;
+          intake_widget_key?: string;
           notifications_enabled?: boolean;
           tenant_id: string;
           updated_at?: string;
@@ -1554,6 +1868,8 @@ export type Database = {
           ai_operations_enabled?: boolean;
           created_at?: string;
           id?: string;
+          intake_widget_enabled?: boolean;
+          intake_widget_key?: string;
           notifications_enabled?: boolean;
           tenant_id?: string;
           updated_at?: string;
@@ -1787,28 +2103,11 @@ export type Database = {
         };
         Returns: Database['public']['Enums']['job_status'];
       };
-      apply_paddle_sandbox_subscription_event: {
-        Args: {
-          target_cancel_at_period_end: boolean;
-          target_event_id: string;
-          target_event_type: string;
-          target_occurred_at: string;
-          target_payload_sha256: string;
-          target_period_ends_at: string | null;
-          target_period_starts_at: string | null;
-          target_provider_customer_id: string;
-          target_provider_price_id: string;
-          target_provider_subscription_id: string;
-          target_status: Database['public']['Enums']['subscription_status'];
-          target_tenant_id: string;
-        };
-        Returns: string;
-      };
       apply_paddle_sandbox_reconciliation_snapshot: {
         Args: {
           target_cancel_at_period_end: boolean;
-          target_period_ends_at: string | null;
-          target_period_starts_at: string | null;
+          target_period_ends_at: string;
+          target_period_starts_at: string;
           target_provider_customer_id: string;
           target_provider_price_id: string;
           target_provider_subscription_id: string;
@@ -1818,9 +2117,65 @@ export type Database = {
         };
         Returns: string;
       };
-      begin_paddle_sandbox_reconciliation: {
-        Args: Record<PropertyKey, never>;
+      apply_paddle_sandbox_subscription_event: {
+        Args: {
+          target_cancel_at_period_end: boolean;
+          target_event_id: string;
+          target_event_type: string;
+          target_occurred_at: string;
+          target_payload_sha256: string;
+          target_period_ends_at: string;
+          target_period_starts_at: string;
+          target_provider_customer_id: string;
+          target_provider_price_id: string;
+          target_provider_subscription_id: string;
+          target_status: Database['public']['Enums']['subscription_status'];
+          target_tenant_id: string;
+        };
         Returns: string;
+      };
+      begin_paddle_sandbox_reconciliation: { Args: never; Returns: string };
+      begin_stub_ai_run: {
+        Args: {
+          target_actor_user_id: string;
+          target_agent_kind: Database['public']['Enums']['ai_agent_kind'];
+          target_correlation_id: string;
+          target_policy_version: string;
+          target_redacted_input_summary: string;
+          target_tenant_id: string;
+        };
+        Returns: string;
+      };
+      claim_expired_job_media_cleanup: {
+        Args: { batch_size?: number };
+        Returns: {
+          media_id: string;
+          storage_path: string;
+        }[];
+      };
+      claim_push_notification_deliveries: {
+        Args: { batch_size?: number };
+        Returns: {
+          body: string;
+          deep_link: string;
+          delivery_id: string;
+          expo_push_token: string;
+          notification_kind: Database['public']['Enums']['push_notification_kind'];
+          title: string;
+        }[];
+      };
+      complete_expired_job_media_cleanup: {
+        Args: { target_media_ids: string[] };
+        Returns: number;
+      };
+      complete_push_notification_deliveries: {
+        Args: { target_delivery_ids: string[] };
+        Returns: number;
+      };
+      configure_paddle_reconciliation_cron: { Args: never; Returns: number };
+      configure_push_notification_cron: {
+        Args: { target_project_url: string; target_service_key: string };
+        Returns: number;
       };
       create_team_invitation: {
         Args: {
@@ -1857,43 +2212,21 @@ export type Database = {
         };
         Returns: boolean;
       };
-      claim_expired_job_media_cleanup: {
-        Args: { batch_size?: number };
-        Returns: {
-          media_id: string;
-          storage_path: string;
-        }[];
-      };
-      complete_expired_job_media_cleanup: {
-        Args: { target_media_ids: string[] };
-        Returns: number;
-      };
-      claim_push_notification_deliveries: {
-        Args: { batch_size?: number };
-        Returns: {
-          body: string;
-          deep_link: string;
-          delivery_id: string;
-          expo_push_token: string;
-          notification_kind: Database['public']['Enums']['push_notification_kind'];
-          title: string;
-        }[];
-      };
-      complete_push_notification_deliveries: {
-        Args: { target_delivery_ids: string[] };
-        Returns: number;
-      };
-      configure_paddle_reconciliation_cron: {
-        Args: Record<PropertyKey, never>;
-        Returns: number;
-      };
-      configure_push_notification_cron: {
-        Args: { target_project_url: string; target_service_key: string };
-        Returns: number;
-      };
       deactivate_team_member: {
         Args: { target_membership_id: string };
         Returns: undefined;
+      };
+      decide_ai_approval: {
+        Args: {
+          target_approval_id: string;
+          target_decision: Database['public']['Enums']['ai_approval_status'];
+          target_reason: string;
+        };
+        Returns: Database['public']['Enums']['ai_approval_status'];
+      };
+      decide_public_quote: {
+        Args: { quote_decision: string; quote_token: string };
+        Returns: string;
       };
       disable_invalid_mobile_push_tokens: {
         Args: { invalid_expo_push_tokens: string[] };
@@ -1903,9 +2236,20 @@ export type Database = {
         Args: { target_device_id: string };
         Returns: undefined;
       };
-      decide_public_quote: {
-        Args: { quote_decision: string; quote_token: string };
-        Returns: string;
+      enqueue_push_notification_event: {
+        Args: {
+          target_body: string;
+          target_dedupe_key: string;
+          target_deep_link: string;
+          target_entity_id: string;
+          target_entity_type: string;
+          target_job_id: string;
+          target_kind: Database['public']['Enums']['push_notification_kind'];
+          target_membership_id: string;
+          target_tenant_id: string;
+          target_title: string;
+        };
+        Returns: undefined;
       };
       finalize_assigned_job_media: {
         Args: { target_media_id: string };
@@ -1914,7 +2258,7 @@ export type Database = {
       finish_paddle_sandbox_reconciliation: {
         Args: {
           target_checked_count: number;
-          target_error_code?: string | null;
+          target_error_code?: string;
           target_failure_count: number;
           target_run_id: string;
           target_status: Database['public']['Enums']['billing_reconciliation_status'];
@@ -1922,15 +2266,12 @@ export type Database = {
         };
         Returns: undefined;
       };
-      get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
-      get_public_quote: { Args: { quote_token: string }; Returns: Json };
-      get_public_work_report: { Args: { report_token: string }; Returns: Json };
       get_current_tenant_access_mode: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: Database['public']['Enums']['billing_access_mode'];
       };
       get_mobile_notification_preferences: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           approvals_enabled: boolean;
           cancellations_enabled: boolean;
@@ -1938,29 +2279,63 @@ export type Database = {
           schedule_changes_enabled: boolean;
         }[];
       };
+      get_owner_billing_portal_context: {
+        Args: { target_user_id: string };
+        Returns: {
+          provider: Database['public']['Enums']['billing_provider'];
+          provider_customer_id: string;
+          provider_subscription_id: string;
+        }[];
+      };
       get_owner_billing_summary: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           access_mode: Database['public']['Enums']['billing_access_mode'];
-          ai_monthly_budget_cents: number | null;
-          amount_cents: number | null;
-          billing_interval:
-            Database['public']['Enums']['billing_interval'] | null;
+          ai_monthly_budget_cents: number;
+          amount_cents: number;
+          billing_interval: Database['public']['Enums']['billing_interval'];
           cancel_at_period_end: boolean;
           currency_code: string;
-          current_period_ends_at: string | null;
-          current_period_starts_at: string | null;
+          current_period_ends_at: string;
+          current_period_starts_at: string;
           is_development_only: boolean;
           plan_code: string;
           plan_name: string;
           provider: Database['public']['Enums']['billing_provider'];
-          seat_limit: number | null;
+          seat_limit: number;
           subscription_status: Database['public']['Enums']['subscription_status'];
           trial_days: number;
         }[];
       };
+      get_paddle_reconciliation_cron_status: {
+        Args: never;
+        Returns: {
+          active: boolean;
+          job_id: number;
+          last_run_at: string;
+          last_status: string;
+          schedule: string;
+        }[];
+      };
+      get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
+      get_public_quote: { Args: { quote_token: string }; Returns: Json };
+      get_public_work_report: { Args: { report_token: string }; Returns: Json };
+      get_push_notification_cron_status: {
+        Args: never;
+        Returns: {
+          active: boolean;
+          job_id: number;
+          last_run_at: string;
+          last_status: string;
+          schedule: string;
+        }[];
+      };
+      is_allowed_external_payment_url: {
+        Args: { candidate: string };
+        Returns: boolean;
+      };
       list_owner_paddle_sandbox_plans: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: {
           amount_cents: number;
           billing_interval: Database['public']['Enums']['billing_interval'];
@@ -1968,41 +2343,9 @@ export type Database = {
           currency_code: string;
           display_name: string;
           provider_price_id: string;
-          seat_limit: number | null;
+          seat_limit: number;
           trial_days: number;
         }[];
-      };
-      get_owner_billing_portal_context: {
-        Args: { target_user_id: string };
-        Returns: {
-          provider: Database['public']['Enums']['billing_provider'];
-          provider_customer_id: string | null;
-          provider_subscription_id: string | null;
-        }[];
-      };
-      get_paddle_reconciliation_cron_status: {
-        Args: Record<PropertyKey, never>;
-        Returns: {
-          active: boolean;
-          job_id: number;
-          last_run_at: string | null;
-          last_status: string | null;
-          schedule: string;
-        }[];
-      };
-      get_push_notification_cron_status: {
-        Args: Record<PropertyKey, never>;
-        Returns: {
-          active: boolean;
-          job_id: number;
-          last_run_at: string | null;
-          last_status: string | null;
-          schedule: string;
-        }[];
-      };
-      is_allowed_external_payment_url: {
-        Args: { candidate: string };
-        Returns: boolean;
       };
       list_paddle_sandbox_subscriptions_for_reconciliation: {
         Args: { batch_size?: number };
@@ -2012,6 +2355,10 @@ export type Database = {
           tenant_id: string;
         }[];
       };
+      open_intake_conversation: {
+        Args: { session_token: string; target_widget_key: string };
+        Returns: string;
+      };
       publish_job_invoice: {
         Args: { target_invoice_id: string };
         Returns: string;
@@ -2020,6 +2367,42 @@ export type Database = {
       publish_job_work_report: {
         Args: { target_report_id: string };
         Returns: string;
+      };
+      record_assigned_job_signature: {
+        Args: {
+          accepted_consent_text: string;
+          customer_signer_name: string;
+          signature_strokes: Json;
+          target_job_id: string;
+        };
+        Returns: {
+          integrity_hash: string;
+          signature_id: string;
+          signed_at: string;
+        }[];
+      };
+      record_intake_turn: {
+        Args: {
+          assistant_message: string;
+          customer_message: string;
+          next_collected_values: Json;
+          next_stage: Database['public']['Enums']['intake_conversation_stage'];
+          next_status: Database['public']['Enums']['intake_conversation_status'];
+          session_token: string;
+          target_conversation_id: string;
+          target_escalation_reason?: string;
+          target_selected_service_id?: string;
+        };
+        Returns: number;
+      };
+      record_intake_validation_error: {
+        Args: {
+          assistant_message: string;
+          customer_message: string;
+          session_token: string;
+          target_conversation_id: string;
+        };
+        Returns: number;
       };
       record_invoice_adjustment: {
         Args: {
@@ -2039,19 +2422,6 @@ export type Database = {
           target_invoice_id: string;
         };
         Returns: string;
-      };
-      record_assigned_job_signature: {
-        Args: {
-          accepted_consent_text: string;
-          customer_signer_name: string;
-          signature_strokes: Json;
-          target_job_id: string;
-        };
-        Returns: {
-          integrity_hash: string;
-          signature_id: string;
-          signed_at: string;
-        }[];
       };
       register_mobile_push_token: {
         Args: {
@@ -2073,13 +2443,13 @@ export type Database = {
           storage_path: string;
         }[];
       };
-      revoke_team_invitation: {
-        Args: { target_invitation_id: string };
-        Returns: undefined;
-      };
       retry_push_notification_deliveries: {
         Args: { error_code: string; target_delivery_ids: string[] };
         Returns: number;
+      };
+      revoke_team_invitation: {
+        Args: { target_invitation_id: string };
+        Returns: undefined;
       };
       save_job_invoice: {
         Args: {
@@ -2116,6 +2486,10 @@ export type Database = {
           target_tenant_id: string;
         };
         Returns: Database['public']['Enums']['billing_access_mode'];
+      };
+      take_over_intake_conversation: {
+        Args: { takeover_reason: string; target_conversation_id: string };
+        Returns: number;
       };
       update_company_settings: {
         Args: {
@@ -2170,12 +2544,35 @@ export type Database = {
       };
     };
     Enums: {
+      ai_agent_kind: 'intake' | 'dispatcher' | 'report' | 'follow_up';
+      ai_approval_status: 'pending' | 'approved' | 'rejected' | 'expired';
+      ai_run_status:
+        | 'queued'
+        | 'running'
+        | 'succeeded'
+        | 'failed'
+        | 'escalated'
+        | 'budget_blocked';
       billing_access_mode: 'full' | 'grace' | 'read_only';
       billing_event_status: 'processed' | 'ignored' | 'failed';
       billing_interval: 'month' | 'year';
       billing_provider: 'stub' | 'paddle_sandbox';
       billing_reconciliation_status:
         'running' | 'succeeded' | 'partial' | 'failed';
+      intake_conversation_stage:
+        | 'name'
+        | 'contact'
+        | 'address'
+        | 'problem'
+        | 'service_confirmation'
+        | 'complete';
+      intake_conversation_status:
+        | 'collecting'
+        | 'ready_for_human_review'
+        | 'human_takeover'
+        | 'closed'
+        | 'expired';
+      intake_message_sender: 'customer' | 'assistant' | 'office' | 'system';
       invoice_status: 'draft' | 'sent' | 'partially_paid' | 'paid' | 'void';
       job_media_kind: 'before' | 'after';
       job_priority: 'low' | 'normal' | 'high' | 'urgent';
@@ -2194,8 +2591,6 @@ export type Database = {
       payment_method: 'cash' | 'check' | 'external_transfer' | 'other';
       payment_record_type: 'payment' | 'adjustment';
       payment_source: 'manual' | 'provider_confirmed';
-      quote_status:
-        'draft' | 'sent' | 'accepted' | 'declined' | 'expired' | 'void';
       push_delivery_status: 'pending' | 'processing' | 'sent' | 'dead';
       push_event_status: 'pending' | 'sent';
       push_notification_kind:
@@ -2203,6 +2598,8 @@ export type Database = {
         | 'job_rescheduled'
         | 'job_cancelled'
         | 'approval_requested';
+      quote_status:
+        'draft' | 'sent' | 'accepted' | 'declined' | 'expired' | 'void';
       subscription_status:
         'trialing' | 'active' | 'past_due' | 'paused' | 'canceled';
       tax_behavior: 'exclusive' | 'inclusive' | 'non_taxable';
@@ -2337,6 +2734,16 @@ export const Constants = {
   },
   public: {
     Enums: {
+      ai_agent_kind: ['intake', 'dispatcher', 'report', 'follow_up'],
+      ai_approval_status: ['pending', 'approved', 'rejected', 'expired'],
+      ai_run_status: [
+        'queued',
+        'running',
+        'succeeded',
+        'failed',
+        'escalated',
+        'budget_blocked',
+      ],
       billing_access_mode: ['full', 'grace', 'read_only'],
       billing_event_status: ['processed', 'ignored', 'failed'],
       billing_interval: ['month', 'year'],
@@ -2347,7 +2754,24 @@ export const Constants = {
         'partial',
         'failed',
       ],
+      intake_conversation_stage: [
+        'name',
+        'contact',
+        'address',
+        'problem',
+        'service_confirmation',
+        'complete',
+      ],
+      intake_conversation_status: [
+        'collecting',
+        'ready_for_human_review',
+        'human_takeover',
+        'closed',
+        'expired',
+      ],
+      intake_message_sender: ['customer', 'assistant', 'office', 'system'],
       invoice_status: ['draft', 'sent', 'partially_paid', 'paid', 'void'],
+      job_media_kind: ['before', 'after'],
       job_priority: ['low', 'normal', 'high', 'urgent'],
       job_status: [
         'new',
@@ -2361,9 +2785,18 @@ export const Constants = {
       ],
       membership_role: ['owner', 'office', 'technician'],
       membership_status: ['invited', 'active', 'deactivated'],
+      mobile_platform: ['android', 'ios'],
       payment_method: ['cash', 'check', 'external_transfer', 'other'],
       payment_record_type: ['payment', 'adjustment'],
       payment_source: ['manual', 'provider_confirmed'],
+      push_delivery_status: ['pending', 'processing', 'sent', 'dead'],
+      push_event_status: ['pending', 'sent'],
+      push_notification_kind: [
+        'job_assigned',
+        'job_rescheduled',
+        'job_cancelled',
+        'approval_requested',
+      ],
       quote_status: [
         'draft',
         'sent',

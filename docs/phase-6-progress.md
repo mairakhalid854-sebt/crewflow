@@ -47,6 +47,11 @@ enabled by this slice.
 - A responsive public chat page resumes within the same browser tab, supports
   explicit human takeover, and clearly states that chat does not confirm a
   booking or price. The tenant widget remains disabled by default.
+- Owners now control Intake enablement and can copy the public request link.
+  Owner and office users have a tenant-scoped inbox with attention counts,
+  collected customer details, immutable transcripts, and audited takeover.
+- Widget enable/disable and key-change events are written to the tenant audit
+  trail. Generated database types are synchronized with the deployed schema.
 
 ## Validation
 
@@ -65,8 +70,8 @@ enabled by this slice.
 
 ## Next Phase 6 slices
 
-1. Add the owner Intake inbox/takeover UI and controlled widget enable/copy-link
-   setting, then run the first complete staging conversation.
+1. Run the first controlled staging Intake conversation through public chat,
+   office inbox, explicit takeover, and audit verification.
 2. Add tenant knowledge-document quarantine, parsing, versioning, citations,
    size/type limits, and malware-scan status before retrieval is enabled.
 3. Add the web AI-runs and approval-queue screens.
