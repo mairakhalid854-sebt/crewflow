@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import type { Database } from '@crewflow/database';
 
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
@@ -95,6 +97,9 @@ export default async function AiOperationsPage() {
             or reject sensitive proposed actions.
           </p>
         </div>
+        <Link className={styles.dispatcherLink} href="/app/ai/dispatcher">
+          Open Dispatcher suggestions
+        </Link>
       </header>
 
       <section className={styles.summary} aria-label="AI operations summary">

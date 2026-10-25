@@ -2697,6 +2697,16 @@ export type Database = {
           storage_path: string;
         }[];
       };
+      request_dispatcher_proposal: {
+        Args: { target_correlation_id: string; target_job_id: string };
+        Returns: {
+          approval_id: string;
+          proposal_result: string;
+          result_message: string;
+          run_id: string;
+          technician_membership_id: string;
+        }[];
+      };
       retry_push_notification_deliveries: {
         Args: { error_code: string; target_delivery_ids: string[] };
         Returns: number;

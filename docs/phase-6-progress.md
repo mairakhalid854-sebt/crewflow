@@ -87,6 +87,15 @@ enabled by this slice.
   marked as requiring explicit human approval.
 - Dispatcher currently returns a proposal, rationale, exact assignment diff, and
   candidate rejection codes only. It cannot write a job assignment yet.
+- Owner and office users can now request a Dispatcher evaluation from a
+  tenant-scoped UI. The database re-reads the trusted job, customer, service,
+  staff, availability, time-off, conflict, and workload records before ranking.
+- Every evaluation creates a redacted governed run and trace. A changed
+  assignment creates an expiring human approval with the exact before/after
+  membership IDs; no job row is changed by the request path.
+- Correlation IDs make retried requests idempotent. Missing candidates create
+  an audited escalation rather than a fabricated assignment, and disabled or
+  exhausted AI budgets fail closed.
 
 ## Validation
 
@@ -106,6 +115,10 @@ enabled by this slice.
   owner-only reservation, service-only scanning/parsing, tenant isolation,
   immutable citations, versioning, hashed retrieval evidence, and exclusion of
   archived versions.
+- Dispatcher orchestration tests cover role and tenant authorization,
+  authoritative matching data, budget enforcement, deterministic selection,
+  immutable run/trace evidence, exact approval diffs, idempotency, escalation,
+  auditing, and proof that proposal requests do not mutate jobs.
 
 ## Next Phase 6 slices
 
@@ -116,11 +129,9 @@ enabled by this slice.
    stages complete successfully.
 3. Connect approved requests to typed guarded executors that revalidate current
    role, target state, policy, and idempotency before any side effect.
-4. Connect the Dispatcher policy to an authorized tenant-scoped snapshot,
-   governed run/trace records, and approval creation before enabling its UI.
-5. Add adversarial evaluation fixtures for price grounding, cross-tenant
+4. Add adversarial evaluation fixtures for price grounding, cross-tenant
    leakage, prompt injection, tool authorization, escalation, and budget limits.
-6. Select a live provider/model, retention window, document limits, and cost
+5. Select a live provider/model, retention window, document limits, and cost
    caps only after owner approval; add it through a separate explicit migration
    and server adapter.
 
@@ -128,9 +139,9 @@ enabled by this slice.
 
 - FR-060: Intake collection and office takeover are partially delivered; quote
   drafting and verified slot offers remain pending.
-- FR-061: Deterministic proposal policy delivered and tested; authorized data
-  loading, governed persistence, UI invocation, and guarded execution remain.
-- FR-062–063: Not yet delivered; governance records exist for both agent kinds.
+- FR-061: Deterministic proposal policy, authorized data loading, governed
+  persistence, and UI invocation are delivered; guarded execution remains.
+- FR-062-063: Not yet delivered; governance records exist for both agent kinds.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.
 - FR-065: Foundation delivered for inspectable, expiring, role-controlled,
