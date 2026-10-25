@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(52);
+SELECT plan(70);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -600,6 +600,142 @@ SELECT lives_ok(
 SELECT is(
   current_setting('crewflow.invoice_duplicate')::jsonb ->> 'proposal_result',
   'unchanged', 'Existing active invoice blocks duplicate drafting'
+);
+
+SELECT throws_ok(
+  format(
+    'SELECT public.execute_approved_report_invoice_draft(%L)',
+    (current_setting('crewflow.invoice_proposal')::jsonb ->> 'approval_id')::uuid
+  ),
+  'P0001',
+  'Report invoice draft save requires an approved request',
+  'Pending invoice approval cannot execute'
+);
+SELECT is(
+  public.decide_ai_approval(
+    (current_setting('crewflow.invoice_proposal')::jsonb ->> 'approval_id')::uuid,
+    'approved',
+    'Reviewed the quote-grounded invoice draft.'
+  )::text,
+  'approved', 'Owner can explicitly approve the invoice draft'
+);
+SELECT lives_ok(
+  format(
+    $query$SELECT set_config(
+      'crewflow.invoice_execution', row_to_json(result)::text, true
+    ) FROM public.execute_approved_report_invoice_draft(%L) AS result$query$,
+    (current_setting('crewflow.invoice_proposal')::jsonb ->> 'approval_id')::uuid
+  ),
+  'Approved invoice draft passes guarded execution'
+);
+SELECT is(
+  current_setting('crewflow.invoice_execution')::jsonb ->> 'execution_result',
+  'succeeded', 'Guarded invoice execution reports success'
+);
+SELECT is(
+  (SELECT status::text FROM public.invoices WHERE job_id = '6b000000-0000-4000-8000-000000000003'),
+  'draft', 'Guarded execution leaves the invoice editable and unsent'
+);
+SELECT is(
+  (SELECT total_cents FROM public.invoices WHERE job_id = '6b000000-0000-4000-8000-000000000003'),
+  20140::bigint, 'Guarded execution saves the exact approved total'
+);
+SELECT is(
+  (
+    SELECT count(*) FROM public.invoice_line_items AS line
+    JOIN public.invoices AS invoice ON invoice.id = line.invoice_id
+    WHERE invoice.job_id = '6b000000-0000-4000-8000-000000000003'
+  ),
+  2::bigint, 'Guarded execution saves the accepted quote line snapshot'
+);
+SELECT ok(
+  (SELECT payment_url IS NULL FROM public.invoices WHERE job_id = '6b000000-0000-4000-8000-000000000003'),
+  'Guarded execution does not create a payment link'
+);
+SELECT ok(
+  (SELECT sent_at IS NULL FROM public.invoices WHERE job_id = '6b000000-0000-4000-8000-000000000003'),
+  'Guarded execution does not send the invoice'
+);
+SELECT is(
+  (
+    SELECT execution_status FROM public.ai_approval_requests
+    WHERE id = (current_setting('crewflow.invoice_proposal')::jsonb ->> 'approval_id')::uuid
+  ),
+  'succeeded', 'Invoice approval retains its successful execution outcome'
+);
+SELECT is(
+  (
+    SELECT execution_result
+    FROM public.execute_approved_report_invoice_draft(
+      (current_setting('crewflow.invoice_proposal')::jsonb ->> 'approval_id')::uuid
+    )
+  ),
+  'succeeded', 'Repeated invoice execution is idempotent'
+);
+SELECT is(
+  (SELECT count(*) FROM public.invoices WHERE job_id = '6b000000-0000-4000-8000-000000000003'),
+  1::bigint, 'Idempotent execution does not duplicate the invoice draft'
+);
+SELECT is(
+  (
+    SELECT count(*) FROM public.audit_events
+    WHERE action = 'ai.report_invoice_executed'
+      AND entity_id = (current_setting('crewflow.invoice_execution')::jsonb ->> 'invoice_id')::uuid
+  ),
+  1::bigint, 'Successful invoice execution leaves dedicated audit evidence'
+);
+
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.invoice_stale', row_to_json(result)::text, true
+  ) FROM public.request_report_invoice_proposal(
+    '6b000000-0000-4000-8000-000000000002',
+    '9b000000-0000-4000-8000-000000000003'
+  ) AS result$$,
+  'Catalog pricing can create a second invoice proposal'
+);
+SELECT is(
+  public.decide_ai_approval(
+    (current_setting('crewflow.invoice_stale')::jsonb ->> 'approval_id')::uuid,
+    'approved',
+    'Approved before the catalog price changed.'
+  )::text,
+  'approved', 'Stale-case invoice proposal can be approved'
+);
+RESET ROLE;
+UPDATE public.services
+SET unit_price_cents = unit_price_cents + 1000,
+    updated_at = now() + interval '1 second'
+WHERE id = '4b000000-0000-4000-8000-000000000001';
+SET LOCAL ROLE authenticated;
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"1b000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+SELECT lives_ok(
+  format(
+    $query$SELECT set_config(
+      'crewflow.invoice_stale_execution', row_to_json(result)::text, true
+    ) FROM public.execute_approved_report_invoice_draft(%L) AS result$query$,
+    (current_setting('crewflow.invoice_stale')::jsonb ->> 'approval_id')::uuid
+  ),
+  'Changed catalog pricing is safely recorded'
+);
+SELECT is(
+  current_setting('crewflow.invoice_stale_execution')::jsonb ->> 'execution_result',
+  'rejected_stale', 'Changed trusted pricing invalidates the approved proposal'
+);
+SELECT is(
+  (SELECT count(*) FROM public.invoices WHERE job_id = '6b000000-0000-4000-8000-000000000002'),
+  0::bigint, 'Stale invoice execution never creates a draft'
+);
+SELECT is(
+  (
+    SELECT execution_status FROM public.ai_approval_requests
+    WHERE id = (current_setting('crewflow.invoice_stale')::jsonb ->> 'approval_id')::uuid
+  ),
+  'rejected_stale', 'Stale invoice approval retains its guarded rejection outcome'
 );
 
 ROLLBACK;

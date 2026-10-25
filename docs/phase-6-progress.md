@@ -148,7 +148,16 @@ enabled by this slice.
   invalid trusted pricing escalates. Successful evaluations create governed
   run/trace evidence and an exact office approval only; the request path cannot
   write invoice tables, publish/email a link, create a payment URL, or record a
-  payment. Guarded invoice saving remains pending.
+  payment.
+- Approved invoice proposals now pass through an idempotent guarded executor.
+  It revalidates the active office role, full subscription access, completed
+  job, absence of another active invoice, accepted-quote or catalog pricing,
+  current tax, exact approved amounts, and due date immediately before saving.
+- Successful execution creates one editable draft with no payment URL and does
+  not send it or record payment. Stale pricing, duplicate state, changed job
+  state, or lost subscription access is retained as an audited guarded
+  rejection. The AI Operations screen executes after approval and supports a
+  safe retry after an interrupted request.
 
 ## Validation
 
@@ -188,6 +197,9 @@ enabled by this slice.
   accepted-quote precedence, enabled catalog fallback, duplicate prevention,
   budget enforcement, pricing-state binding, idempotency, escalation, exact
   approvals, and absence of invoice/payment/customer side effects.
+- Report invoice guarded-execution tests cover pending-approval denial, exact
+  quote-line and total persistence, unsent/no-payment-link state, idempotency,
+  audit evidence, and stale catalog-price rejection without invoice mutation.
 
 ## Next Phase 6 slices
 
@@ -214,8 +226,9 @@ enabled by this slice.
 - FR-062: Deterministic, evidence-bounded report drafting policy, authorized
   orchestration, governed persistence, exact office approvals, and guarded
   editable-draft saving are delivered. Deterministic invoice policy is
-  delivered with trusted invoice orchestration and exact approval persistence;
-  guarded invoice saving remains pending.
+  delivered with trusted invoice orchestration, exact approval persistence,
+  and guarded editable-draft saving. Sending and payment remain separate
+  human-controlled workflows.
 - FR-063: Not yet delivered; governance records exist for the Follow-Up Agent.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.
