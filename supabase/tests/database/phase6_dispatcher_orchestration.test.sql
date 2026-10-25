@@ -418,9 +418,16 @@ SELECT is(
   'approved',
   'Policy-change proposal can be approved before eligibility mutation'
 );
+RESET ROLE;
 UPDATE public.staff_profiles
 SET service_area_postal_codes = ARRAY['10001']
 WHERE membership_id = '3a000000-0000-4000-8000-000000000002';
+SET LOCAL ROLE authenticated;
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"1a000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
 SELECT lives_ok(
   format(
     $query$SELECT set_config(
