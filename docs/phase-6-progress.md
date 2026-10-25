@@ -68,6 +68,15 @@ enabled by this slice.
 - This slice establishes the security and data contract only. No malware vendor,
   parser worker, owner upload screen, or live AI model is enabled yet, so owners
   cannot put documents into the ready state from the product UI.
+- Owners and office staff now have an AI Operations workspace showing pending
+  approvals and recent governed runs. Each approval exposes its rationale,
+  consequences, exact bounded change set, target-state version, and expiry.
+- Approve/reject requires a written reason plus an explicit acknowledgement.
+  Recording approval does not bypass the guarded executor's later permission,
+  current-state, policy, and idempotency checks.
+- Run inspection shows only redacted summaries plus policy/model identifiers,
+  token and estimated-cost metadata, duration, correlation ID, and ordered
+  immutable trace steps. Raw prompts and unrestricted tool payloads are absent.
 
 ## Validation
 
@@ -95,7 +104,8 @@ enabled by this slice.
 2. Connect a malware-scanner and safe-parser worker, then add the owner knowledge
    upload/version/archive screen. Retrieval must stay unavailable until both
    stages complete successfully.
-3. Add the web AI-runs and approval-queue screens.
+3. Connect approved requests to typed guarded executors that revalidate current
+   role, target state, policy, and idempotency before any side effect.
 4. Add adversarial evaluation fixtures for price grounding, cross-tenant
    leakage, prompt injection, tool authorization, escalation, and budget limits.
 5. Select a live provider/model, retention window, document limits, and cost
@@ -109,11 +119,12 @@ enabled by this slice.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.
 - FR-065: Foundation delivered for inspectable, expiring, role-controlled,
-  single-use approvals. Action execution and UI remain pending.
+  single-use approvals. The human decision UI is delivered; guarded action
+  execution remains pending.
 - FR-066: Database security foundation delivered for quarantine, scan/parse
   states, private storage, bounded citations, versioning, tenant-scoped retrieval,
   and immutable evidence. Scanner/parser workers and owner UI remain pending.
-- FR-067: Foundation delivered for immutable redacted run/step traces; replay UI
-  and provider execution remain pending.
+- FR-067: Immutable redacted run/step traces and inspection UI are delivered;
+  replay controls and provider execution remain pending.
 - FR-068: Initial governance fixtures delivered; agent-specific adversarial
   evaluations remain pending.
