@@ -96,6 +96,13 @@ enabled by this slice.
 - Correlation IDs make retried requests idempotent. Missing candidates create
   an audited escalation rather than a fabricated assignment, and disabled or
   exhausted AI budgets fail closed.
+- Approved Dispatcher assignments now pass through an idempotent guarded
+  executor. It revalidates the acting role, exact job version, subscription
+  access, technician status, skills, service ZIP, availability, time off, and
+  schedule conflicts immediately before the only job mutation.
+- Changed job state or technician eligibility is retained as a stale/policy
+  rejection with an immutable trace and audit event. Approval never guarantees
+  execution, and rejected execution leaves the assignment unchanged.
 
 ## Validation
 
@@ -140,7 +147,8 @@ enabled by this slice.
 - FR-060: Intake collection and office takeover are partially delivered; quote
   drafting and verified slot offers remain pending.
 - FR-061: Deterministic proposal policy, authorized data loading, governed
-  persistence, and UI invocation are delivered; guarded execution remains.
+  persistence, UI invocation, human approval, and guarded execution are
+  delivered.
 - FR-062-063: Not yet delivered; governance records exist for both agent kinds.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.

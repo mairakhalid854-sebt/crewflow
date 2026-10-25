@@ -119,6 +119,10 @@ export type Database = {
           decided_by_user_id: string | null;
           decision_reason: string | null;
           expires_at: string;
+          executed_at: string | null;
+          executed_by_user_id: string | null;
+          execution_message: string | null;
+          execution_status: string | null;
           id: string;
           proposed_changes: Json;
           rationale: string;
@@ -138,6 +142,10 @@ export type Database = {
           decided_by_user_id?: string | null;
           decision_reason?: string | null;
           expires_at?: string;
+          executed_at?: string | null;
+          executed_by_user_id?: string | null;
+          execution_message?: string | null;
+          execution_status?: string | null;
           id?: string;
           proposed_changes: Json;
           rationale: string;
@@ -157,6 +165,10 @@ export type Database = {
           decided_by_user_id?: string | null;
           decision_reason?: string | null;
           expires_at?: string;
+          executed_at?: string | null;
+          executed_by_user_id?: string | null;
+          execution_message?: string | null;
+          execution_status?: string | null;
           id?: string;
           proposed_changes?: Json;
           rationale?: string;
@@ -2475,6 +2487,15 @@ export type Database = {
       finalize_assigned_job_media: {
         Args: { target_media_id: string };
         Returns: string;
+      };
+      execute_approved_dispatcher_assignment: {
+        Args: { target_approval_id: string };
+        Returns: {
+          execution_result: string;
+          job_id: string;
+          result_message: string;
+          technician_membership_id: string;
+        }[];
       };
       fail_knowledge_document_parse: {
         Args: { target_document_id: string; target_failure_code: string };
