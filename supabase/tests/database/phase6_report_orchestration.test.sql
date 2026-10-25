@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(40);
+SELECT plan(52);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -24,15 +24,18 @@ INSERT INTO auth.users (
   );
 
 INSERT INTO public.tenants (
-  id, legal_name, display_name, business_email, time_zone, service_categories
+  id, legal_name, display_name, business_email, time_zone, service_categories,
+  tax_rate_bps
 ) VALUES
   (
     '2b000000-0000-4000-8000-000000000001', 'Report Tenant LLC',
-    'Report Tenant', 'report@crewflow.test', 'America/New_York', ARRAY['Plumbing']
+    'Report Tenant', 'report@crewflow.test', 'America/New_York', ARRAY['Plumbing'],
+    800
   ),
   (
     '2b000000-0000-4000-8000-000000000002', 'Other Report LLC',
-    'Other Report', 'other-report@crewflow.test', 'America/Chicago', ARRAY['HVAC']
+    'Other Report', 'other-report@crewflow.test', 'America/Chicago', ARRAY['HVAC'],
+    0
   );
 
 INSERT INTO public.tenant_settings (tenant_id)
@@ -182,6 +185,35 @@ INSERT INTO public.work_reports (
   'Old summary', 'Old work', 'Old parts', 'Old recommendations',
   '1b000000-0000-4000-8000-000000000001'
 );
+
+INSERT INTO public.quotes (
+  id, tenant_id, job_id, customer_id, status, subtotal_cents,
+  discount_cents, tax_rate_bps, tax_cents, total_cents, expires_at,
+  accepted_at, created_by_user_id
+) VALUES (
+  '8b000000-0000-4000-8000-000000000001',
+  '2b000000-0000-4000-8000-000000000001',
+  '6b000000-0000-4000-8000-000000000003',
+  '5b000000-0000-4000-8000-000000000001',
+  'accepted', 20000, 1000, 800, 1140, 20140,
+  now() + interval '7 days', now(),
+  '1b000000-0000-4000-8000-000000000001'
+);
+
+INSERT INTO public.quote_line_items (
+  tenant_id, quote_id, position, description, quantity,
+  unit_price_cents, taxable, line_total_cents
+) VALUES
+  (
+    '2b000000-0000-4000-8000-000000000001',
+    '8b000000-0000-4000-8000-000000000001', 1,
+    'Drain cleaning', 1, 15000, true, 15000
+  ),
+  (
+    '2b000000-0000-4000-8000-000000000001',
+    '8b000000-0000-4000-8000-000000000001', 2,
+    'Inspection', 1, 5000, false, 5000
+  );
 
 UPDATE public.tenant_settings
 SET ai_operations_enabled = true, ai_monthly_budget_cents = 1000
@@ -466,6 +498,89 @@ SELECT is(
 SELECT is(
   (SELECT count(*) FROM public.invoices),
   0::bigint, 'Guarded Report execution still never creates an invoice'
+);
+
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.invoice_proposal', row_to_json(result)::text, true
+  ) FROM public.request_report_invoice_proposal(
+    '6b000000-0000-4000-8000-000000000003',
+    '9b000000-0000-4000-8000-000000000001'
+  ) AS result$$,
+  'Owner can request an authoritative Report invoice proposal'
+);
+SELECT is(
+  current_setting('crewflow.invoice_proposal')::jsonb ->> 'proposal_result',
+  'proposed', 'Accepted quote pricing produces an invoice proposal'
+);
+SELECT is(
+  (
+    SELECT action_kind FROM public.ai_approval_requests
+    WHERE id = (current_setting('crewflow.invoice_proposal')::jsonb ->> 'approval_id')::uuid
+  ),
+  'report.save_invoice_draft', 'Invoice proposal creates the typed approval'
+);
+SELECT is(
+  (
+    SELECT proposed_changes #>> '{lineItems,to,0,description}'
+    FROM public.ai_approval_requests
+    WHERE id = (current_setting('crewflow.invoice_proposal')::jsonb ->> 'approval_id')::uuid
+  ),
+  'Drain cleaning', 'Approval uses the accepted quote line snapshot'
+);
+SELECT is(
+  (
+    SELECT (proposed_changes #>> '{discountCents,to}')::bigint
+    FROM public.ai_approval_requests
+    WHERE id = (current_setting('crewflow.invoice_proposal')::jsonb ->> 'approval_id')::uuid
+  ),
+  1000::bigint, 'Approval preserves the accepted quote discount'
+);
+SELECT is(
+  (
+    SELECT (proposed_changes #>> '{taxCents,to}')::bigint
+    FROM public.ai_approval_requests
+    WHERE id = (current_setting('crewflow.invoice_proposal')::jsonb ->> 'approval_id')::uuid
+  ),
+  1140::bigint, 'Approval recomputes tax from trusted taxable lines and tenant rate'
+);
+SELECT is(
+  (SELECT count(*) FROM public.invoices WHERE job_id = '6b000000-0000-4000-8000-000000000003'),
+  0::bigint, 'Invoice proposal does not create an invoice row'
+);
+SELECT is(
+  (
+    SELECT count(*) FROM public.ai_run_steps
+    WHERE run_id = (current_setting('crewflow.invoice_proposal')::jsonb ->> 'run_id')::uuid
+  ),
+  2::bigint, 'Invoice proposal records pricing and approval trace steps'
+);
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.invoice_retry', row_to_json(result)::text, true
+  ) FROM public.request_report_invoice_proposal(
+    '6b000000-0000-4000-8000-000000000003',
+    '9b000000-0000-4000-8000-000000000001'
+  ) AS result$$,
+  'Invoice proposal retry is idempotent'
+);
+SELECT is(
+  current_setting('crewflow.invoice_retry')::jsonb ->> 'run_id',
+  current_setting('crewflow.invoice_proposal')::jsonb ->> 'run_id',
+  'Idempotent invoice retry returns the original run'
+);
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.invoice_duplicate', row_to_json(result)::text, true
+  ) FROM public.request_report_invoice_proposal(
+    '6b000000-0000-4000-8000-000000000001',
+    '9b000000-0000-4000-8000-000000000002'
+  ) AS result$$,
+  'Job with an active invoice completes without a duplicate proposal'
+);
+SELECT is(
+  current_setting('crewflow.invoice_duplicate')::jsonb ->> 'proposal_result',
+  'unchanged', 'Existing active invoice blocks duplicate drafting'
 );
 
 ROLLBACK;
