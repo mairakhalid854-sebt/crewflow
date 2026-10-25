@@ -25,7 +25,7 @@ describe('public Intake edge boundary', () => {
     expect(edgeFunction).toContain(
       'crypto.getRandomValues(new Uint8Array(32))',
     );
-    expect(edgeFunction).toContain("crypto.subtle.digest(\n    'SHA-256'");
+    expect(edgeFunction).toMatch(/crypto\.subtle\.digest\(\s*'SHA-256'/);
     expect(edgeFunction).toContain('constantTimeEqual');
   });
 

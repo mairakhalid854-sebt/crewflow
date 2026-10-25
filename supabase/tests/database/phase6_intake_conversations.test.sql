@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(17);
+SELECT plan(19);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -202,6 +202,31 @@ SELECT is(
   ),
   1,
   'Human takeover is written to the tenant audit trail'
+);
+
+UPDATE public.tenant_settings
+SET intake_widget_enabled = false
+WHERE tenant_id = '2c000000-0000-4000-8000-000000000001';
+
+SELECT is(
+  (
+    SELECT count(*)::integer
+    FROM public.audit_events
+    WHERE action = 'ai.intake_widget_disabled'
+  ),
+  1,
+  'Owner widget disablement is audited'
+);
+
+SELECT is(
+  (
+    SELECT (metadata->>'key_changed')::boolean
+    FROM public.audit_events
+    WHERE action = 'ai.intake_widget_disabled'
+    LIMIT 1
+  ),
+  false,
+  'Widget setting audit distinguishes enablement from key rotation'
 );
 
 SELECT * FROM finish();
