@@ -1,0 +1,378 @@
+.summary,
+.section,
+.approvalCard,
+.runCard,
+.emptyPanel {
+  background: #fff;
+  border: 1px solid #dbe4ed;
+  border-radius: 20px;
+  box-shadow: 0 14px 34px rgb(23 45 72 / 7%);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.summary > div {
+  display: grid;
+  gap: 6px;
+  padding: 20px 24px;
+  border-right: 1px solid #e5ebf1;
+}
+
+.summary > div:last-child {
+  border-right: 0;
+}
+
+.summary span,
+.kicker,
+.runFacts dt,
+.changePanel dt {
+  color: #6d7f91;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.summary strong {
+  color: #102f4d;
+  font-size: 1.8rem;
+}
+
+.section {
+  display: grid;
+  gap: 20px;
+  margin-bottom: 24px;
+  padding: 24px;
+}
+
+.sectionHeading,
+.cardHeader {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.sectionHeading h2,
+.cardHeader h3 {
+  margin: 5px 0 0;
+}
+
+.sectionHeading > p,
+.cardHeader p {
+  max-width: 470px;
+  margin: 0;
+  color: #65798c;
+  font-size: 0.86rem;
+}
+
+.kicker {
+  margin: 0;
+  color: #176fe5;
+}
+
+.cardList,
+.runList {
+  display: grid;
+  gap: 16px;
+}
+
+.approvalCard {
+  padding: 20px;
+  box-shadow: none;
+}
+
+.status,
+.policyTag {
+  display: inline-block;
+  padding: 5px 9px;
+  color: #294a67;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #edf2f7;
+  border-radius: 999px;
+}
+
+.status[data-status='pending'],
+.status[data-status='escalated'] {
+  color: #844112;
+  background: #fff0d9;
+}
+
+.status[data-status='approved'],
+.status[data-status='succeeded'] {
+  color: #216344;
+  background: #e4f5eb;
+}
+
+.status[data-status='rejected'],
+.status[data-status='failed'],
+.status[data-status='budget_blocked'] {
+  color: #942d25;
+  background: #fde9e7;
+}
+
+.explanationGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0 14px;
+}
+
+.explanationGrid > div,
+.changePanel {
+  padding: 14px;
+  background: #f6f8fb;
+  border-radius: 12px;
+}
+
+.explanationGrid h4,
+.changePanel h4,
+.trace h4 {
+  margin: 0 0 7px;
+}
+
+.explanationGrid p {
+  margin: 0;
+  color: #3f566d;
+  white-space: pre-wrap;
+}
+
+.changePanel dl,
+.runFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 0;
+}
+
+.changePanel dl > div,
+.runFacts > div {
+  min-width: 0;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #e3eaf1;
+  border-radius: 9px;
+}
+
+.changePanel dd,
+.runFacts dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: #173c5d;
+  white-space: pre-wrap;
+}
+
+.decisionForm {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e9f0;
+}
+
+.decisionForm > label:not(.confirmation) {
+  display: grid;
+  gap: 7px;
+  color: #173c5d;
+  font-weight: 800;
+}
+
+.decisionForm textarea {
+  width: 100%;
+  padding: 11px 13px;
+  color: #163a5c;
+  font: inherit;
+  resize: vertical;
+  border: 1px solid #bfcedc;
+  border-radius: 10px;
+}
+
+.confirmation {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  color: #4f6579;
+  font-size: 0.84rem;
+}
+
+.confirmation input {
+  margin-top: 3px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.actions button {
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.approveButton {
+  color: #fff;
+  background: #147548;
+  border: 1px solid #147548;
+}
+
+.rejectButton {
+  color: #8a2b22;
+  background: #fff5f3;
+  border: 1px solid #efbdb7;
+}
+
+.actions button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.error,
+.success,
+.decisionRecord {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.error {
+  color: #a3261c;
+}
+
+.success {
+  color: #217348;
+}
+
+.decisionRecord {
+  margin-top: 14px;
+  padding: 12px;
+  color: #4a6075;
+  background: #f4f7fa;
+  border-radius: 10px;
+}
+
+.runCard {
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.runCard summary {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 17px 19px;
+  cursor: pointer;
+}
+
+.runCard summary > span {
+  display: grid;
+  gap: 6px;
+}
+
+.runCard summary > span:last-child {
+  justify-items: end;
+}
+
+.runCard small {
+  color: #6b7f92;
+}
+
+.runBody {
+  display: grid;
+  gap: 18px;
+  padding: 0 19px 19px;
+  border-top: 1px solid #e6ecf2;
+}
+
+.runFacts {
+  margin-top: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+}
+
+.trace ol {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 25px;
+}
+
+.trace li {
+  padding: 11px 13px;
+  background: #f6f8fb;
+  border-radius: 10px;
+}
+
+.trace li > div {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.trace li p {
+  margin: 5px 0;
+  white-space: pre-wrap;
+}
+
+.emptyPanel {
+  padding: 22px;
+  text-align: center;
+  box-shadow: none;
+}
+
+.emptyPanel h3 {
+  margin: 0 0 5px;
+}
+
+.emptyPanel p {
+  margin: 0;
+  color: #65798c;
+}
+
+@media (max-width: 760px) {
+  .summary,
+  .explanationGrid,
+  .changePanel dl,
+  .runFacts {
+    grid-template-columns: 1fr;
+  }
+
+  .summary > div {
+    border-right: 0;
+    border-bottom: 1px solid #e5ebf1;
+  }
+
+  .summary > div:last-child {
+    border-bottom: 0;
+  }
+
+  .sectionHeading,
+  .cardHeader,
+  .runCard summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .runCard summary > span:last-child {
+    justify-items: start;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+}

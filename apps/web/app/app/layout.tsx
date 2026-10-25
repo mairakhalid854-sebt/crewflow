@@ -48,6 +48,11 @@ const navItems: readonly {
     label: 'Intake',
     roles: ['owner', 'office'],
   },
+  {
+    href: '/app/ai',
+    label: 'AI operations',
+    roles: ['owner', 'office'],
+  },
   { href: '/app/profile', label: 'My profile' },
   {
     href: '/app/settings',
