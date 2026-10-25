@@ -35,6 +35,11 @@ INSERT INTO public.tenants (
     'Other Dispatcher', 'other-dispatcher@crewflow.test', 'America/Chicago', ARRAY['HVAC']
   );
 
+INSERT INTO public.tenant_settings (tenant_id)
+VALUES
+  ('2a000000-0000-4000-8000-000000000001'),
+  ('2a000000-0000-4000-8000-000000000002');
+
 INSERT INTO public.memberships (id, tenant_id, user_id, role, status, joined_at)
 VALUES
   (
@@ -58,12 +63,13 @@ SET skills = ARRAY['Gutter Cleaning'],
     service_area_postal_codes = ARRAY['10901']
 WHERE membership_id = '3a000000-0000-4000-8000-000000000002';
 
-UPDATE public.staff_availability
-SET is_available = true,
-    starts_at = '08:00',
-    ends_at = '18:00'
-WHERE membership_id = '3a000000-0000-4000-8000-000000000002'
-  AND day_of_week = 1;
+INSERT INTO public.staff_availability (
+  tenant_id, membership_id, day_of_week, is_available, starts_at, ends_at
+) VALUES (
+  '2a000000-0000-4000-8000-000000000001',
+  '3a000000-0000-4000-8000-000000000002',
+  1, true, '08:00', '18:00'
+);
 
 INSERT INTO public.services (
   id, tenant_id, name, unit_price_cents, default_duration_minutes,
