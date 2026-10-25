@@ -1,6 +1,6 @@
 # Phase 6 progress: governed AI platform
 
-Updated: 2026-10-24
+Updated: 2026-10-25
 
 Phase 6 has started with a provider-neutral governance boundary. No paid AI
 provider, model API key, autonomous customer action, or production AI feature is
@@ -52,6 +52,22 @@ enabled by this slice.
   collected customer details, immutable transcripts, and audited takeover.
 - Widget enable/disable and key-change events are written to the tenant audit
   trail. Generated database types are synchronized with the deployed schema.
+- A tenant knowledge-document boundary now accepts only PDF, DOCX, and TXT
+  uploads through short-lived owner reservations. Files are private, capped at
+  a provisional 10 MB each and remain quarantined after upload.
+- Browser users cannot mark files safe. Only the service-role scanner may record
+  a bounded scanner identity, verified content hash, and clean/infected/failed
+  result; only clean files advance to parsing.
+- The safe-parser boundary accepts at most 500 bounded chunks with page or
+  character locations and source labels. Chunks are immutable, version-bound,
+  tenant-bound, and unavailable directly to browser clients.
+- Full-text retrieval returns only ready, clean, successfully parsed versions.
+  Every retrieval records an immutable SHA-256 query hash and selected citation
+  IDs without retaining the raw query. Archived versions remain retained but
+  are excluded from retrieval.
+- This slice establishes the security and data contract only. No malware vendor,
+  parser worker, owner upload screen, or live AI model is enabled yet, so owners
+  cannot put documents into the ready state from the product UI.
 
 ## Validation
 
@@ -67,13 +83,18 @@ enabled by this slice.
 - Edge/API parity tests run the same valid, rejected, and adversarial inputs
   through both deterministic policy implementations. Static boundary tests
   cover credential handling, token entropy, response minimization, and limits.
+- Knowledge-document policy tests cover allowed types and size, private storage,
+  owner-only reservation, service-only scanning/parsing, tenant isolation,
+  immutable citations, versioning, hashed retrieval evidence, and exclusion of
+  archived versions.
 
 ## Next Phase 6 slices
 
 1. Run the first controlled staging Intake conversation through public chat,
    office inbox, explicit takeover, and audit verification.
-2. Add tenant knowledge-document quarantine, parsing, versioning, citations,
-   size/type limits, and malware-scan status before retrieval is enabled.
+2. Connect a malware-scanner and safe-parser worker, then add the owner knowledge
+   upload/version/archive screen. Retrieval must stay unavailable until both
+   stages complete successfully.
 3. Add the web AI-runs and approval-queue screens.
 4. Add adversarial evaluation fixtures for price grounding, cross-tenant
    leakage, prompt injection, tool authorization, escalation, and budget limits.
@@ -89,7 +110,9 @@ enabled by this slice.
   usage metadata; live provider cost accounting remains pending.
 - FR-065: Foundation delivered for inspectable, expiring, role-controlled,
   single-use approvals. Action execution and UI remain pending.
-- FR-066: Pending.
+- FR-066: Database security foundation delivered for quarantine, scan/parse
+  states, private storage, bounded citations, versioning, tenant-scoped retrieval,
+  and immutable evidence. Scanner/parser workers and owner UI remain pending.
 - FR-067: Foundation delivered for immutable redacted run/step traces; replay UI
   and provider execution remain pending.
 - FR-068: Initial governance fixtures delivered; agent-specific adversarial
