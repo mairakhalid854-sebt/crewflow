@@ -113,6 +113,14 @@ enabled by this slice.
   instead of producing a report. Every proposed draft includes an exact diff and
   requires office approval; this policy slice cannot save, publish, invoice, or
   contact a customer.
+- Owner and office users can now request an authoritative Report evaluation for
+  completed or closed work. The database loads tenant-bound job/service facts,
+  chronological technician notes, finalized photo counts, signature presence,
+  and the current editable draft before creating a governed run and approval.
+- Each Report approval is bound to a SHA-256 evidence-state version and contains
+  exact before/after fields. Repeated correlation IDs are idempotent and an
+  unchanged evidence state reuses its current approval. The request path cannot
+  write a work report or invoice, publish anything, or contact a customer.
 
 ## Validation
 
@@ -140,6 +148,10 @@ enabled by this slice.
   counts, invalid signatures, cross-tenant rejection, unfinished and oversized
   evidence escalation, prompt-like note handling, exact diffs, determinism, and
   the mandatory human-approval boundary.
+- Report orchestration tests cover tenant/role authorization, authoritative
+  evidence loading, media-count-only grounding, exact diffs, evidence-state
+  binding, idempotency, governed escalation, auditing, and proof that proposal
+  requests do not mutate reports or create invoices.
 
 ## Next Phase 6 slices
 
@@ -163,9 +175,9 @@ enabled by this slice.
 - FR-061: Deterministic proposal policy, authorized data loading, governed
   persistence, UI invocation, human approval, and guarded execution are
   delivered.
-- FR-062: Deterministic, evidence-bounded report drafting policy is delivered.
-  Authorized orchestration, governed persistence, guarded report saving, and
-  invoice drafting remain pending.
+- FR-062: Deterministic, evidence-bounded report drafting policy, authorized
+  orchestration, governed persistence, and exact office approvals are delivered.
+  Guarded report saving and invoice drafting remain pending.
 - FR-063: Not yet delivered; governance records exist for the Follow-Up Agent.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.
