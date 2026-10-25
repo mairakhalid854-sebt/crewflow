@@ -569,6 +569,25 @@ SELECT is(
   current_setting('crewflow.invoice_proposal')::jsonb ->> 'run_id',
   'Idempotent invoice retry returns the original run'
 );
+RESET ROLE;
+INSERT INTO public.invoices (
+  tenant_id, job_id, customer_id, invoice_number, status,
+  subtotal_cents, discount_cents, tax_rate_bps, tax_cents, total_cents,
+  due_at, created_by_user_id
+) VALUES (
+  '2b000000-0000-4000-8000-000000000001',
+  '6b000000-0000-4000-8000-000000000001',
+  '5b000000-0000-4000-8000-000000000001',
+  1, 'draft', 15000, 0, 800, 1200, 16200,
+  now() + interval '14 days',
+  '1b000000-0000-4000-8000-000000000001'
+);
+SET LOCAL ROLE authenticated;
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"1b000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
 SELECT lives_ok(
   $$SELECT set_config(
     'crewflow.invoice_duplicate', row_to_json(result)::text, true
