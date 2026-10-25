@@ -1076,6 +1076,219 @@ export type Database = {
           },
         ];
       };
+      knowledge_document_chunks: {
+        Row: {
+          character_end: number | null;
+          character_start: number | null;
+          chunk_index: number;
+          citation_label: string;
+          content: string;
+          content_sha256: string;
+          created_at: string;
+          document_id: string;
+          id: string;
+          page_number: number | null;
+          search_vector: unknown;
+          tenant_id: string;
+        };
+        Insert: {
+          character_end?: number | null;
+          character_start?: number | null;
+          chunk_index: number;
+          citation_label: string;
+          content: string;
+          content_sha256: string;
+          created_at?: string;
+          document_id: string;
+          id?: string;
+          page_number?: number | null;
+          search_vector?: unknown;
+          tenant_id: string;
+        };
+        Update: {
+          character_end?: number | null;
+          character_start?: number | null;
+          chunk_index?: number;
+          citation_label?: string;
+          content?: string;
+          content_sha256?: string;
+          created_at?: string;
+          document_id?: string;
+          id?: string;
+          page_number?: number | null;
+          search_vector?: unknown;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'knowledge_document_chunks_document_tenant_fk';
+            columns: ['document_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'knowledge_documents';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'knowledge_document_chunks_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      knowledge_documents: {
+        Row: {
+          activated_at: string | null;
+          archived_at: string | null;
+          byte_size: number;
+          content_sha256: string | null;
+          created_at: string;
+          created_by_user_id: string;
+          id: string;
+          logical_document_id: string;
+          media_type: string;
+          original_file_name: string;
+          parse_failure_code: string | null;
+          parse_status: Database['public']['Enums']['knowledge_parse_status'];
+          parsed_at: string | null;
+          replaces_document_id: string | null;
+          scan_failure_code: string | null;
+          scan_status: Database['public']['Enums']['knowledge_scan_status'];
+          scanned_at: string | null;
+          scanner_name: string | null;
+          scanner_version: string | null;
+          status: Database['public']['Enums']['knowledge_document_status'];
+          storage_path: string;
+          tenant_id: string;
+          title: string;
+          updated_at: string;
+          upload_sha256_claim: string | null;
+          uploaded_at: string | null;
+          version: number;
+        };
+        Insert: {
+          activated_at?: string | null;
+          archived_at?: string | null;
+          byte_size: number;
+          content_sha256?: string | null;
+          created_at?: string;
+          created_by_user_id: string;
+          id?: string;
+          logical_document_id: string;
+          media_type: string;
+          original_file_name: string;
+          parse_failure_code?: string | null;
+          parse_status?: Database['public']['Enums']['knowledge_parse_status'];
+          parsed_at?: string | null;
+          replaces_document_id?: string | null;
+          scan_failure_code?: string | null;
+          scan_status?: Database['public']['Enums']['knowledge_scan_status'];
+          scanned_at?: string | null;
+          scanner_name?: string | null;
+          scanner_version?: string | null;
+          status?: Database['public']['Enums']['knowledge_document_status'];
+          storage_path: string;
+          tenant_id: string;
+          title: string;
+          updated_at?: string;
+          upload_sha256_claim?: string | null;
+          uploaded_at?: string | null;
+          version: number;
+        };
+        Update: {
+          activated_at?: string | null;
+          archived_at?: string | null;
+          byte_size?: number;
+          content_sha256?: string | null;
+          created_at?: string;
+          created_by_user_id?: string;
+          id?: string;
+          logical_document_id?: string;
+          media_type?: string;
+          original_file_name?: string;
+          parse_failure_code?: string | null;
+          parse_status?: Database['public']['Enums']['knowledge_parse_status'];
+          parsed_at?: string | null;
+          replaces_document_id?: string | null;
+          scan_failure_code?: string | null;
+          scan_status?: Database['public']['Enums']['knowledge_scan_status'];
+          scanned_at?: string | null;
+          scanner_name?: string | null;
+          scanner_version?: string | null;
+          status?: Database['public']['Enums']['knowledge_document_status'];
+          storage_path?: string;
+          tenant_id?: string;
+          title?: string;
+          updated_at?: string;
+          upload_sha256_claim?: string | null;
+          uploaded_at?: string | null;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'knowledge_documents_replacement_tenant_fk';
+            columns: ['replaces_document_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'knowledge_documents';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'knowledge_documents_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      knowledge_retrieval_events: {
+        Row: {
+          created_at: string;
+          id: string;
+          policy_version: string;
+          query_sha256: string;
+          result_count: number;
+          run_id: string | null;
+          selected_chunk_ids: string[];
+          tenant_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          policy_version: string;
+          query_sha256: string;
+          result_count: number;
+          run_id?: string | null;
+          selected_chunk_ids?: string[];
+          tenant_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          policy_version?: string;
+          query_sha256?: string;
+          result_count?: number;
+          run_id?: string | null;
+          selected_chunk_ids?: string[];
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'knowledge_retrieval_events_run_tenant_fk';
+            columns: ['run_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'ai_agent_runs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'knowledge_retrieval_events_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       memberships: {
         Row: {
           created_at: string;
@@ -2103,6 +2316,10 @@ export type Database = {
         };
         Returns: Database['public']['Enums']['job_status'];
       };
+      archive_knowledge_document: {
+        Args: { target_document_id: string };
+        Returns: string;
+      };
       apply_paddle_sandbox_reconciliation_snapshot: {
         Args: {
           target_cancel_at_period_end: boolean;
@@ -2167,6 +2384,10 @@ export type Database = {
       complete_expired_job_media_cleanup: {
         Args: { target_media_ids: string[] };
         Returns: number;
+      };
+      complete_knowledge_document_parse: {
+        Args: { target_chunks: Json; target_document_id: string };
+        Returns: string;
       };
       complete_push_notification_deliveries: {
         Args: { target_delivery_ids: string[] };
@@ -2253,6 +2474,14 @@ export type Database = {
       };
       finalize_assigned_job_media: {
         Args: { target_media_id: string };
+        Returns: string;
+      };
+      fail_knowledge_document_parse: {
+        Args: { target_document_id: string; target_failure_code: string };
+        Returns: string;
+      };
+      finalize_knowledge_document_upload: {
+        Args: { target_document_id: string; target_upload_sha256: string };
         Returns: string;
       };
       finish_paddle_sandbox_reconciliation: {
@@ -2404,6 +2633,17 @@ export type Database = {
         };
         Returns: number;
       };
+      record_knowledge_scan_result: {
+        Args: {
+          target_content_sha256: string;
+          target_document_id: string;
+          target_failure_code?: string;
+          target_result: Database['public']['Enums']['knowledge_scan_status'];
+          target_scanner_name: string;
+          target_scanner_version: string;
+        };
+        Returns: string;
+      };
       record_invoice_adjustment: {
         Args: {
           adjustment_amount_cents: number;
@@ -2443,6 +2683,20 @@ export type Database = {
           storage_path: string;
         }[];
       };
+      reserve_knowledge_document: {
+        Args: {
+          target_byte_size: number;
+          target_file_name: string;
+          target_media_type: string;
+          target_replaces_document_id?: string;
+          target_title: string;
+        };
+        Returns: {
+          document_id: string;
+          document_version: number;
+          storage_path: string;
+        }[];
+      };
       retry_push_notification_deliveries: {
         Args: { error_code: string; target_delivery_ids: string[] };
         Returns: number;
@@ -2479,6 +2733,25 @@ export type Database = {
           target_job_id: string;
         };
         Returns: string;
+      };
+      search_ready_knowledge_chunks: {
+        Args: {
+          target_limit?: number;
+          target_policy_version: string;
+          target_query: string;
+          target_run_id: string;
+          target_tenant_id: string;
+        };
+        Returns: {
+          chunk_id: string;
+          citation_label: string;
+          content: string;
+          document_id: string;
+          document_title: string;
+          document_version: number;
+          page_number: number;
+          relevance: number;
+        }[];
       };
       set_stub_subscription_state: {
         Args: {
@@ -2585,6 +2858,16 @@ export type Database = {
         | 'completed'
         | 'closed'
         | 'cancelled';
+      knowledge_document_status:
+        | 'quarantined'
+        | 'scan_pending'
+        | 'scan_failed'
+        | 'parse_pending'
+        | 'parse_failed'
+        | 'ready'
+        | 'archived';
+      knowledge_parse_status: 'pending' | 'succeeded' | 'failed';
+      knowledge_scan_status: 'pending' | 'clean' | 'infected' | 'failed';
       membership_role: 'owner' | 'office' | 'technician';
       membership_status: 'invited' | 'active' | 'deactivated';
       mobile_platform: 'android' | 'ios';
@@ -2783,6 +3066,17 @@ export const Constants = {
         'closed',
         'cancelled',
       ],
+      knowledge_document_status: [
+        'quarantined',
+        'scan_pending',
+        'scan_failed',
+        'parse_pending',
+        'parse_failed',
+        'ready',
+        'archived',
+      ],
+      knowledge_parse_status: ['pending', 'succeeded', 'failed'],
+      knowledge_scan_status: ['pending', 'clean', 'infected', 'failed'],
       membership_role: ['owner', 'office', 'technician'],
       membership_status: ['invited', 'active', 'deactivated'],
       mobile_platform: ['android', 'ios'],
