@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(15);
+SELECT plan(17);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -133,6 +133,22 @@ SELECT is(
   'A valid turn appends customer and assistant messages atomically'
 );
 
+SELECT is(
+  public.record_intake_validation_error(
+    (SELECT id FROM public.intake_conversations LIMIT 1),
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    'not-an-email', 'Enter a valid email address.'
+  ),
+  3,
+  'A rejected turn advances only the optimistic version'
+);
+
+SELECT is(
+  (SELECT stage::text FROM public.intake_conversations LIMIT 1),
+  'contact',
+  'A rejected turn does not advance deterministic state'
+);
+
 SELECT throws_ok(
   $$UPDATE public.intake_messages SET body = 'rewritten'$$,
   '42501',
@@ -168,7 +184,7 @@ SELECT is(
     (SELECT id FROM public.intake_conversations LIMIT 1),
     'Owner accepted the escalation'
   ),
-  3,
+  4,
   'An owner can take over the conversation'
 );
 
