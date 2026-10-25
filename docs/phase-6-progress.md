@@ -130,6 +130,15 @@ enabled by this slice.
   creation, customer delivery, and email remain separate human-controlled
   workflows. The AI Operations screen automatically attempts execution after
   approval and exposes a retry control for interrupted requests.
+- The first governed invoice-drafting policy prefers the latest accepted quote
+  snapshot and otherwise permits one current catalog-service line. It computes
+  bounded subtotal, proportional taxable discount, tax, total, and a
+  deterministic 14-day due date while leaving the payment URL empty.
+- Existing active invoices produce no duplicate proposal. Unfinished jobs,
+  cross-tenant or invalid pricing evidence, non-accepted quote data, and absent
+  trusted pricing escalate. Technician notes, photos, parts, recommendations,
+  and prompt-like text are never converted into charges. This policy is
+  side-effect free; orchestration and guarded invoice saving remain pending.
 
 ## Validation
 
@@ -161,6 +170,10 @@ enabled by this slice.
   evidence loading, media-count-only grounding, exact diffs, evidence-state
   binding, idempotency, governed escalation, auditing, and proof that proposal
   requests do not mutate reports or create invoices.
+- Report invoice policy tests cover accepted-quote precedence, catalog fallback,
+  taxable/non-taxable totals, deterministic due dates, duplicate prevention,
+  cross-tenant rejection, invalid values, prompt-like catalog text, exact diffs,
+  and the no-field-evidence/no-payment-link boundaries.
 
 ## Next Phase 6 slices
 
@@ -186,7 +199,8 @@ enabled by this slice.
   delivered.
 - FR-062: Deterministic, evidence-bounded report drafting policy, authorized
   orchestration, governed persistence, exact office approvals, and guarded
-  editable-draft saving are delivered. Invoice drafting remains pending.
+  editable-draft saving are delivered. Deterministic invoice policy is
+  delivered; trusted orchestration and guarded invoice saving remain pending.
 - FR-063: Not yet delivered; governance records exist for the Follow-Up Agent.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.
