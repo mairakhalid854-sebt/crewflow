@@ -190,6 +190,12 @@ enabled by this slice.
   logical document, inspect retained pipeline state, and archive a version;
   office staff have read-only visibility. Uploaded content remains unavailable
   to retrieval until a service-role scanner and safe parser succeed.
+- A reusable FR-068 adversarial evaluation matrix now covers all four agent
+  kinds across price grounding, cross-tenant isolation, prompt injection, tool
+  authorization, hallucination resistance, and mandatory human escalation.
+  Stable fixture IDs are replayed to prove deterministic outcomes. Separate
+  database checks retain AI enablement/budget gates and pending-approval denial
+  coverage for every side-effecting agent.
 
 ## Validation
 
@@ -252,8 +258,8 @@ enabled by this slice.
    retrieval must stay unavailable until both service stages complete.
 3. Connect approved requests to typed guarded executors that revalidate current
    role, target state, policy, and idempotency before any side effect.
-4. Add adversarial evaluation fixtures for price grounding, cross-tenant
-   leakage, prompt injection, tool authorization, escalation, and budget limits.
+4. Extend the delivered deterministic adversarial fixtures with provider/model
+   quality and cost thresholds when a live provider is explicitly approved.
 5. Select a live provider/model, retention window, document limits, and cost
    caps only after owner approval; add it through a separate explicit migration
    and server adapter.
@@ -287,5 +293,7 @@ enabled by this slice.
   and immutable evidence. Scanner/parser workers and owner UI remain pending.
 - FR-067: Immutable redacted run/step traces and inspection UI are delivered;
   replay controls and provider execution remain pending.
-- FR-068: Initial governance fixtures delivered; agent-specific adversarial
-  evaluations remain pending.
+- FR-068: Deterministic agent-specific adversarial fixtures are delivered for
+  price grounding, tenant isolation, prompt injection, tool authorization,
+  hallucination resistance, escalation, replay stability, and budget gates.
+  Live-provider quality/cost evaluation remains pending provider selection.
