@@ -196,6 +196,13 @@ enabled by this slice.
   Stable fixture IDs are replayed to prove deterministic outcomes. Separate
   database checks retain AI enablement/budget gates and pending-approval denial
   coverage for every side-effecting agent.
+- The Intake Agent now has a deterministic quote-and-slot proposal policy. It
+  validates completed contact/address/problem/service fields, uses only the
+  confirmed enabled tenant catalog price, and reuses Dispatcher eligibility
+  checks to return the earliest two future slots with an eligible technician.
+  Foreign records, invalid pricing, unsafe duration, or fewer than two verified
+  slots escalate. Output is an exact approval-required proposal only; it cannot
+  create a customer, job, quote, assignment, or booking.
 
 ## Validation
 
@@ -266,8 +273,10 @@ enabled by this slice.
 
 ## Requirement status
 
-- FR-060: Intake collection and office takeover are partially delivered; quote
-  drafting and verified slot offers remain pending.
+- FR-060: Intake collection, office takeover, deterministic trusted-price quote
+  drafting, and two-slot availability policy are delivered. Authoritative
+  database orchestration, approval persistence/execution, and public slot
+  acceptance remain pending.
 - FR-061: Deterministic proposal policy, authorized data loading, governed
   persistence, UI invocation, human approval, and guarded execution are
   delivered.
