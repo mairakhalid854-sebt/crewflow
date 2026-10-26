@@ -39,6 +39,7 @@
     "supabase:stop": "supabase stop",
     "supabase:test": "supabase test db",
     "test:a11y": "playwright test --config=apps/web/playwright.a11y.config.ts",
+    "test:performance": "playwright test --config=apps/web/playwright.performance.config.ts",
     "test": "npm run test --workspaces --if-present && node --test scripts/web-smoke.test.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },

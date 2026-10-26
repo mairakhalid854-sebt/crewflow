@@ -35,6 +35,18 @@ production.
   checks are a regression gate, not a replacement for the pending screen-reader
   and representative authenticated-journey acceptance sessions.
 
+## Public web performance baseline
+
+- Playwright measures warm-navigation time to first byte, DOM readiness,
+  largest contentful paint, cumulative layout shift, decoded resource bytes,
+  and resource count for login and privacy routes in Chromium.
+- CI rejects regressions beyond explicit lab budgets: 800 ms TTFB, 2.5 s DOM
+  readiness/LCP, 0.1 CLS, 2.5 MB decoded resources, and 60 resources per page.
+- `npm run test:performance` runs the same deterministic lab gate locally.
+  Production field Core Web Vitals and representative authenticated journeys
+  remain release gates because synthetic local measurements cannot replace
+  real-user data.
+
 ## Remaining Phase 7 gates
 
 - Separate production Supabase, Vercel environment, credentials, storage,
