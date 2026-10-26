@@ -725,6 +725,85 @@ export type Database = {
           },
         ];
       };
+      intake_draft_conversions: {
+        Row: {
+          approval_id: string;
+          conversation_id: string;
+          created_at: string;
+          created_by_user_id: string;
+          customer_id: string;
+          id: string;
+          job_id: string;
+          quote_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          approval_id: string;
+          conversation_id: string;
+          created_at?: string;
+          created_by_user_id: string;
+          customer_id: string;
+          id?: string;
+          job_id: string;
+          quote_id: string;
+          tenant_id: string;
+        };
+        Update: {
+          approval_id?: string;
+          conversation_id?: string;
+          created_at?: string;
+          created_by_user_id?: string;
+          customer_id?: string;
+          id?: string;
+          job_id?: string;
+          quote_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'intake_draft_conversions_approval_id_fkey';
+            columns: ['approval_id'];
+            isOneToOne: true;
+            referencedRelation: 'ai_approval_requests';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'intake_draft_conversions_conversation_id_fkey';
+            columns: ['conversation_id'];
+            isOneToOne: true;
+            referencedRelation: 'intake_conversations';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'intake_draft_conversions_customer_id_fkey';
+            columns: ['customer_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'intake_draft_conversions_job_id_fkey';
+            columns: ['job_id'];
+            isOneToOne: true;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'intake_draft_conversions_quote_id_fkey';
+            columns: ['quote_id'];
+            isOneToOne: true;
+            referencedRelation: 'quotes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'intake_draft_conversions_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       intake_messages: {
         Row: {
           body: string;
@@ -2621,6 +2700,16 @@ export type Database = {
           result_message: string;
         }[];
       };
+      execute_approved_intake_draft_records: {
+        Args: { target_approval_id: string };
+        Returns: {
+          customer_id: string | null;
+          execution_result: string;
+          job_id: string | null;
+          quote_id: string | null;
+          result_message: string;
+        }[];
+      };
       execute_approved_report_draft: {
         Args: { target_approval_id: string };
         Returns: {
@@ -2875,6 +2964,18 @@ export type Database = {
           result_message: string;
           run_id: string;
           technician_membership_id: string;
+        }[];
+      };
+      request_intake_quote_slot_proposal: {
+        Args: {
+          target_conversation_id: string;
+          target_correlation_id: string;
+        };
+        Returns: {
+          approval_id: string | null;
+          proposal_result: string;
+          result_message: string;
+          run_id: string;
         }[];
       };
       retry_push_notification_deliveries: {

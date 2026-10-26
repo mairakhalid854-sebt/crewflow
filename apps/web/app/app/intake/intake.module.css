@@ -231,6 +231,12 @@
   gap: 6px;
 }
 
+.conversationActions {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
 .takeoverForm span {
   max-width: 220px;
   font-size: 0.75rem;
@@ -267,6 +273,10 @@
   }
 
   .takeoverForm {
+    justify-items: stretch;
+  }
+
+  .conversationActions {
     justify-items: stretch;
   }
 

@@ -12,6 +12,12 @@ function source(relativePath: string): string {
 
 const orchestrators = [
   {
+    agent: 'intake',
+    migration: source(
+      '../../../supabase/migrations/202610260001_phase6_intake_quote_slot_orchestration.sql',
+    ),
+  },
+  {
     agent: 'dispatcher',
     migration: source(
       '../../../supabase/migrations/202610250004_phase6_dispatcher_orchestration.sql',
@@ -65,6 +71,10 @@ describe('FR-068 AI budget evaluation coverage', () => {
     const followUp = source(
       '../../../supabase/tests/database/phase6_follow_up_orchestration.test.sql',
     );
+    const intake = source(
+      '../../../supabase/tests/database/phase6_intake_orchestration.test.sql',
+    );
+    expect(intake).toContain('Pending Intake approval cannot execute');
     expect(dispatcher).toContain('Pending approval cannot execute');
     expect(report).toContain('Pending Report approval cannot execute');
     expect(report).toContain('Pending invoice approval cannot execute');

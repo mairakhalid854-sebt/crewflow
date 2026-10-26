@@ -203,6 +203,19 @@ enabled by this slice.
   Foreign records, invalid pricing, unsafe duration, or fewer than two verified
   slots escalate. Output is an exact approval-required proposal only; it cannot
   create a customer, job, quote, assignment, or booking.
+- Owner and office users can now request the Intake proposal from a completed
+  inbox conversation. The authoritative database path re-reads the conversation,
+  enabled service, current catalog price and tax, active technicians, normalized
+  skills, exact ZIP coverage, weekly availability, time off, and job conflicts.
+- Eligible evaluations persist a governed run, redacted trace, exact quote and
+  two non-reserved slot options, SHA-256 state binding, and mandatory office
+  approval. Missing coverage or fewer than two verified slots escalate without
+  creating business records.
+- Approved Intake proposals now pass through an idempotent guarded executor.
+  It revalidates the actor, full subscription access, conversation, service,
+  pricing, tax, exact approved payload, and both slots before creating exactly
+  one customer, one unscheduled new job, and one editable draft quote. It never
+  assigns a technician, reserves a slot, sends a quote, or confirms a booking.
 
 ## Validation
 
@@ -255,16 +268,21 @@ enabled by this slice.
   tenant isolation, pending-approval denial, guarded ready-state execution,
   idempotency, no false delivery claim, changed-suppression rejection, traces,
   and audit evidence.
+- Intake orchestration tests cover office-role enforcement, authoritative
+  pricing and tax, exactly two eligible slots, proposal-only behavior, pending
+  approval denial, guarded draft creation, no assignment/reservation/send, and
+  idempotent conversion evidence.
 
 ## Next Phase 6 slices
 
-1. Run the first controlled staging Intake conversation through public chat,
-   office inbox, explicit takeover, and audit verification.
+1. Run the controlled staging Intake acceptance path through public chat,
+   authoritative proposal, office approval, guarded draft creation, and audit
+   verification.
 2. Connect a malware-scanner and safe-parser worker. The owner upload,
    version-history, pipeline-state, and archive screen is now delivered;
    retrieval must stay unavailable until both service stages complete.
-3. Connect approved requests to typed guarded executors that revalidate current
-   role, target state, policy, and idempotency before any side effect.
+3. Add explicit customer slot acceptance and office booking confirmation on top
+   of the delivered non-reserved Intake suggestions.
 4. Extend the delivered deterministic adversarial fixtures with provider/model
    quality and cost thresholds when a live provider is explicitly approved.
 5. Select a live provider/model, retention window, document limits, and cost
@@ -274,9 +292,9 @@ enabled by this slice.
 ## Requirement status
 
 - FR-060: Intake collection, office takeover, deterministic trusted-price quote
-  drafting, and two-slot availability policy are delivered. Authoritative
-  database orchestration, approval persistence/execution, and public slot
-  acceptance remain pending.
+  drafting, two-slot availability policy, authoritative database orchestration,
+  approval persistence, and guarded draft execution are delivered. Public slot
+  acceptance and final office booking confirmation remain pending.
 - FR-061: Deterministic proposal policy, authorized data loading, governed
   persistence, UI invocation, human approval, and guarded execution are
   delivered.
@@ -294,12 +312,13 @@ enabled by this slice.
   email configuration.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
   usage metadata; live provider cost accounting remains pending.
-- FR-065: Foundation delivered for inspectable, expiring, role-controlled,
-  single-use approvals. The human decision UI is delivered; guarded action
-  execution remains pending.
-- FR-066: Database security foundation delivered for quarantine, scan/parse
-  states, private storage, bounded citations, versioning, tenant-scoped retrieval,
-  and immutable evidence. Scanner/parser workers and owner UI remain pending.
+- FR-065: Inspectable, expiring, role-controlled, single-use approvals and the
+  human decision UI are delivered. All currently implemented side-effecting
+  agent actions use typed guarded executors with current-state revalidation.
+- FR-066: Database security foundation and owner upload/version/archive UI are
+  delivered for quarantine, scan/parse states, private storage, bounded
+  citations, versioning, tenant-scoped retrieval, and immutable evidence.
+  Scanner/parser workers remain pending.
 - FR-067: Immutable redacted run/step traces and inspection UI are delivered;
   replay controls and provider execution remain pending.
 - FR-068: Deterministic agent-specific adversarial fixtures are delivered for
