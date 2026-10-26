@@ -1420,6 +1420,69 @@ export type Database = {
           },
         ];
       };
+      knowledge_processing_jobs: {
+        Row: {
+          attempt_count: number;
+          available_at: string;
+          completed_at: string | null;
+          created_at: string;
+          document_id: string;
+          id: string;
+          last_error_code: string | null;
+          lease_expires_at: string | null;
+          lease_token: string | null;
+          stage: Database['public']['Enums']['knowledge_processing_stage'];
+          status: Database['public']['Enums']['knowledge_processing_job_status'];
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          attempt_count?: number;
+          available_at?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          document_id: string;
+          id?: string;
+          last_error_code?: string | null;
+          lease_expires_at?: string | null;
+          lease_token?: string | null;
+          stage: Database['public']['Enums']['knowledge_processing_stage'];
+          status?: Database['public']['Enums']['knowledge_processing_job_status'];
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          attempt_count?: number;
+          available_at?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          document_id?: string;
+          id?: string;
+          last_error_code?: string | null;
+          lease_expires_at?: string | null;
+          lease_token?: string | null;
+          stage?: Database['public']['Enums']['knowledge_processing_stage'];
+          status?: Database['public']['Enums']['knowledge_processing_job_status'];
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'knowledge_processing_jobs_document_tenant_fk';
+            columns: ['document_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'knowledge_documents';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'knowledge_processing_jobs_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       knowledge_documents: {
         Row: {
           activated_at: string | null;
@@ -2665,6 +2728,23 @@ export type Database = {
           title: string;
         }[];
       };
+      claim_knowledge_processing_jobs: {
+        Args: { target_batch_size?: number };
+        Returns: {
+          attempt_count: number;
+          byte_size: number;
+          content_sha256: string | null;
+          document_id: string;
+          job_id: string;
+          lease_token: string;
+          media_type: string;
+          original_file_name: string;
+          stage: Database['public']['Enums']['knowledge_processing_stage'];
+          storage_path: string;
+          tenant_id: string;
+          upload_sha256_claim: string | null;
+        }[];
+      };
       complete_expired_job_media_cleanup: {
         Args: { target_media_ids: string[] };
         Returns: number;
@@ -2673,11 +2753,16 @@ export type Database = {
         Args: { target_chunks: Json; target_document_id: string };
         Returns: string;
       };
+      complete_knowledge_processing_job: {
+        Args: { target_job_id: string; target_lease_token: string };
+        Returns: string;
+      };
       complete_push_notification_deliveries: {
         Args: { target_delivery_ids: string[] };
         Returns: number;
       };
       configure_paddle_reconciliation_cron: { Args: never; Returns: number };
+      configure_knowledge_processing_cron: { Args: never; Returns: number };
       configure_push_notification_cron: {
         Args: { target_project_url: string; target_service_key: string };
         Returns: number;
@@ -2819,6 +2904,27 @@ export type Database = {
       };
       finalize_knowledge_document_upload: {
         Args: { target_document_id: string; target_upload_sha256: string };
+        Returns: string;
+      };
+      finish_knowledge_parse_job: {
+        Args: {
+          target_chunks?: Json;
+          target_failure_code?: string;
+          target_job_id: string;
+          target_lease_token: string;
+        };
+        Returns: string;
+      };
+      finish_knowledge_scan_job: {
+        Args: {
+          target_content_sha256: string;
+          target_failure_code?: string;
+          target_job_id: string;
+          target_lease_token: string;
+          target_result: Database['public']['Enums']['knowledge_scan_status'];
+          target_scanner_name: string;
+          target_scanner_version: string;
+        };
         Returns: string;
       };
       finish_paddle_sandbox_reconciliation: {
@@ -3079,6 +3185,14 @@ export type Database = {
         Args: { error_code: string; target_delivery_ids: string[] };
         Returns: number;
       };
+      retry_knowledge_processing_job: {
+        Args: {
+          target_error_code: string;
+          target_job_id: string;
+          target_lease_token: string;
+        };
+        Returns: Database['public']['Enums']['knowledge_processing_job_status'];
+      };
       revoke_team_invitation: {
         Args: { target_invitation_id: string };
         Returns: undefined;
@@ -3257,6 +3371,9 @@ export type Database = {
         | 'ready'
         | 'archived';
       knowledge_parse_status: 'pending' | 'succeeded' | 'failed';
+      knowledge_processing_job_status:
+        'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
+      knowledge_processing_stage: 'scan' | 'parse';
       knowledge_scan_status: 'pending' | 'clean' | 'infected' | 'failed';
       membership_role: 'owner' | 'office' | 'technician';
       membership_status: 'invited' | 'active' | 'deactivated';
@@ -3488,6 +3605,14 @@ export const Constants = {
         'archived',
       ],
       knowledge_parse_status: ['pending', 'succeeded', 'failed'],
+      knowledge_processing_job_status: [
+        'queued',
+        'processing',
+        'completed',
+        'failed',
+        'cancelled',
+      ],
+      knowledge_processing_stage: ['scan', 'parse'],
       knowledge_scan_status: ['pending', 'clean', 'infected', 'failed'],
       membership_role: ['owner', 'office', 'technician'],
       membership_status: ['invited', 'active', 'deactivated'],
