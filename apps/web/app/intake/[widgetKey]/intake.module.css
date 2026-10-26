@@ -133,6 +133,78 @@
   border-radius: 14px;
 }
 
+.slotPanel {
+  margin: 22px 28px;
+  padding: 20px;
+  color: #173553;
+  background: #f7faff;
+  border: 1px solid #cddded;
+  border-radius: 16px;
+}
+
+.slotPanel h2 {
+  margin: 3px 0 8px;
+  font-size: 1.25rem;
+}
+
+.slotPanel > p {
+  line-height: 1.5;
+}
+
+.slotKicker {
+  margin: 0;
+  color: #176fe5;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.slotList {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.slotList button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 15px;
+  color: #0b3667;
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #9fc0e4;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.slotList button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.slotList small {
+  color: #176fe5;
+  font-weight: 800;
+}
+
+.slotNotice {
+  margin-bottom: 0;
+  color: #526d88;
+  font-size: 0.82rem;
+}
+
+.selectionState {
+  margin: 22px 28px;
+  padding: 16px;
+  color: #174f3b;
+  background: #eaf8f1;
+  border: 1px solid #b9e1cd;
+  border-radius: 14px;
+}
+
 .fatal {
   color: #7f241b;
   background: #fff0ed;
@@ -226,6 +298,18 @@
   .privacy {
     padding-right: 20px;
     padding-left: 20px;
+  }
+
+  .slotPanel,
+  .selectionState {
+    margin-right: 20px;
+    margin-left: 20px;
+  }
+
+  .slotList button {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .transcript {

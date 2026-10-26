@@ -113,3 +113,39 @@ export async function requestIntakeDraftProposalAction(
     status: data?.[0]?.proposal_result === 'escalated' ? 'error' : 'success',
   };
 }
+
+export async function confirmIntakeSelectedSlotAction(
+  _previousState: IntakeActionState,
+  formData: FormData,
+): Promise<IntakeActionState> {
+  await requireTenantContext(['owner', 'office']);
+  const parsedId = conversationIdSchema.safeParse(
+    formData.get('conversationId'),
+  );
+  if (!parsedId.success) {
+    return {
+      message: 'Conversation could not be identified.',
+      status: 'error',
+    };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('confirm_intake_selected_slot', {
+    target_conversation_id: parsedId.data,
+  });
+  if (error) {
+    return {
+      message:
+        'Booking could not be confirmed. Ensure the customer accepted the quote and the technician is still available.',
+      status: 'error',
+    };
+  }
+
+  revalidatePath('/app/intake');
+  revalidatePath('/app/jobs');
+  revalidatePath('/app/dispatch');
+  return {
+    message: data?.[0]?.result_message ?? 'Customer-selected slot confirmed.',
+    status: 'success',
+  };
+}

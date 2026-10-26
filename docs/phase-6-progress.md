@@ -216,6 +216,19 @@ enabled by this slice.
   pricing, tax, exact approved payload, and both slots before creating exactly
   one customer, one unscheduled new job, and one editable draft quote. It never
   assigns a technician, reserves a slot, sends a quote, or confirms a booking.
+- Each successful Intake conversion now persists exactly two public-safe slot
+  offers from the approved payload. The hashed Intake session may poll only the
+  bounded service, estimate total, business time zone, and offer timestamps;
+  technician identity and privileged job/customer data are never returned.
+- A customer may select one still-eligible preference. Selection revalidates
+  active technician status, skills, ZIP coverage, availability, time off, and
+  conflicts, withdraws the alternate option, and writes an anonymous-token
+  audit event, but it does not assign or schedule the job.
+- The office inbox displays the selected preference. Final confirmation is an
+  explicit owner/office action that requires full subscription access, prior
+  signed quote acceptance, an accepted job, and another current eligibility
+  check before advancing the job to scheduled. Repeated confirmation is
+  idempotent and queues the existing assignment/schedule notifications.
 
 ## Validation
 
@@ -272,6 +285,10 @@ enabled by this slice.
   pricing and tax, exactly two eligible slots, proposal-only behavior, pending
   approval denial, guarded draft creation, no assignment/reservation/send, and
   idempotent conversion evidence.
+- Public Intake slot tests cover hashed-session status, two-option output,
+  technician-data minimization, selection without booking, quote-acceptance
+  gating, office confirmation, exact scheduling, idempotency, and the confirmed
+  public state.
 
 ## Next Phase 6 slices
 
@@ -281,8 +298,8 @@ enabled by this slice.
 2. Connect a malware-scanner and safe-parser worker. The owner upload,
    version-history, pipeline-state, and archive screen is now delivered;
    retrieval must stay unavailable until both service stages complete.
-3. Add explicit customer slot acceptance and office booking confirmation on top
-   of the delivered non-reserved Intake suggestions.
+3. Add replacement-offer generation for the exceptional case where both
+   customer-facing options expire or fail the later eligibility check.
 4. Extend the delivered deterministic adversarial fixtures with provider/model
    quality and cost thresholds when a live provider is explicitly approved.
 5. Select a live provider/model, retention window, document limits, and cost
@@ -293,8 +310,9 @@ enabled by this slice.
 
 - FR-060: Intake collection, office takeover, deterministic trusted-price quote
   drafting, two-slot availability policy, authoritative database orchestration,
-  approval persistence, and guarded draft execution are delivered. Public slot
-  acceptance and final office booking confirmation remain pending.
+  approval persistence, guarded draft execution, public slot preference, and
+  guarded office booking confirmation are delivered. Replacement offers after
+  expiry or changed eligibility remain a manual office workflow.
 - FR-061: Deterministic proposal policy, authorized data loading, governed
   persistence, UI invocation, human approval, and guarded execution are
   delivered.

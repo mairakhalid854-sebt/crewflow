@@ -29,11 +29,22 @@ describe('public Intake edge boundary', () => {
     expect(edgeFunction).toContain('constantTimeEqual');
   });
 
-  it('bounds public requests and returns no catalog or price data', () => {
+  it('bounds public requests and returns no catalog or unit-price data', () => {
     expect(edgeFunction).toContain('contentLength > 10_000');
     expect(edgeFunction).toContain('value.trim().length <= 4000');
     expect(edgeFunction).not.toMatch(/return json\([^;]*catalog_snapshot/s);
     expect(edgeFunction).not.toMatch(/return json\([^;]*unitPriceCents/s);
+  });
+
+  it('supports session-bound status and preference actions without booking', () => {
+    expect(edgeFunction).toContain("body?.action === 'status'");
+    expect(edgeFunction).toContain("body?.action === 'select_slot'");
+    expect(edgeFunction).toContain("admin.rpc('get_public_intake_slot_status'");
+    expect(edgeFunction).toContain("admin.rpc('select_public_intake_slot'");
+    expect(edgeFunction).toContain('It is not booked until they confirm it.');
+    expect(edgeFunction).not.toContain(
+      "admin.rpc('confirm_intake_selected_slot'",
+    );
   });
 
   it('is explicitly configured as a public function with app-level checks', () => {

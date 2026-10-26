@@ -237,6 +237,51 @@
   gap: 10px;
 }
 
+.selectedSlot {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18px 0;
+  padding: 16px;
+  color: #183f60;
+  background: #eef7ff;
+  border: 1px solid #c9e0f3;
+  border-radius: 12px;
+}
+
+.selectedSlot div,
+.confirmSlotForm {
+  display: grid;
+  gap: 6px;
+}
+
+.selectedSlot p {
+  margin: 0;
+}
+
+.selectedSlot span {
+  color: #56718a;
+  font-size: 0.82rem;
+}
+
+.selectedSlot a {
+  width: fit-content;
+  color: #1769aa;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.confirmSlotForm {
+  justify-items: end;
+}
+
+.confirmSlotForm span {
+  max-width: 280px;
+  font-size: 0.75rem;
+  text-align: right;
+}
+
 .takeoverForm span {
   max-width: 220px;
   font-size: 0.75rem;
@@ -278,6 +323,20 @@
 
   .conversationActions {
     justify-items: stretch;
+  }
+
+  .selectedSlot {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .confirmSlotForm {
+    justify-items: stretch;
+  }
+
+  .confirmSlotForm span {
+    max-width: none;
+    text-align: left;
   }
 
   .takeoverForm span {

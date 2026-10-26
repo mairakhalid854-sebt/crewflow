@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 
 import {
   type IntakeActionState,
+  confirmIntakeSelectedSlotAction,
   requestIntakeDraftProposalAction,
   setIntakeWidgetEnabledAction,
   takeOverIntakeConversationAction,
@@ -120,6 +121,34 @@ export function IntakeProposalButton({
       <input name="conversationId" type="hidden" value={conversationId} />
       <button disabled={pending} type="submit">
         {pending ? 'Verifying price and slots...' : 'Prepare quote + slots'}
+      </button>
+      {state.message ? (
+        <span
+          className={state.status === 'error' ? styles.error : styles.success}
+          role="status"
+        >
+          {state.message}
+        </span>
+      ) : null}
+    </form>
+  );
+}
+
+export function ConfirmIntakeSlotButton({
+  conversationId,
+}: {
+  conversationId: string;
+}) {
+  const [state, action, pending] = useActionState(
+    confirmIntakeSelectedSlotAction,
+    initialState,
+  );
+
+  return (
+    <form action={action} className={styles.confirmSlotForm}>
+      <input name="conversationId" type="hidden" value={conversationId} />
+      <button disabled={pending} type="submit">
+        {pending ? 'Rechecking availability...' : 'Confirm selected slot'}
       </button>
       {state.message ? (
         <span
