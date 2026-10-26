@@ -236,7 +236,7 @@ SELECT set_config(
 );
 SELECT throws_ok(
   'SELECT * FROM public.run_follow_up_scheduler(now())',
-  '42501', 'service role required',
+  '42501', 'permission denied for function run_follow_up_scheduler',
   'Browser users cannot run the global scheduler'
 );
 SELECT throws_ok(
