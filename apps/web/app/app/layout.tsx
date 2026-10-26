@@ -53,6 +53,11 @@ const navItems: readonly {
     label: 'AI operations',
     roles: ['owner', 'office'],
   },
+  {
+    href: '/app/knowledge',
+    label: 'Knowledge base',
+    roles: ['owner', 'office'],
+  },
   { href: '/app/profile', label: 'My profile' },
   {
     href: '/app/settings',
