@@ -38,11 +38,14 @@
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:test": "supabase test db",
+    "test:a11y": "playwright test --config=apps/web/playwright.a11y.config.ts",
     "test": "npm run test --workspaces --if-present && node --test scripts/web-smoke.test.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.5",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",

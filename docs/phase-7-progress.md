@@ -23,14 +23,26 @@ requires the public Intake experience to be embeddable. A route-specific frame
 policy must be validated with the final customer embedding design before
 production.
 
+## Accessibility automation foundation
+
+- Playwright and axe scan login, signup, password recovery, and the privacy
+  notice against WCAG 2.0/2.1 A and AA rules in a real Chromium browser.
+- A separate keyboard-order test confirms that email, password, submit, and
+  password-recovery controls are reachable without a pointer.
+- Pull requests and staging/main pushes run the accessibility suite in a clean
+  browser through a dedicated CI job.
+- `npm run test:a11y` runs the same suite with Playwright Chromium. Automated
+  checks are a regression gate, not a replacement for the pending screen-reader
+  and representative authenticated-journey acceptance sessions.
+
 ## Remaining Phase 7 gates
 
 - Separate production Supabase, Vercel environment, credentials, storage,
   billing webhooks, email credentials, and AI keys.
 - Centralized logs, alert destinations, uptime checks, queue-depth alarms, and
   an incident-response drill.
-- Measured load, Core Web Vitals, keyboard, screen-reader, and contrast
-  acceptance against representative journeys.
+- Measured load and Core Web Vitals, plus manual keyboard, screen-reader, and
+  contrast acceptance against representative authenticated journeys.
 - Provider backup policy plus a tested off-provider export/restore drill.
 - Transactional email domain/provider delivery and suppression acceptance.
 - Privacy, terms, consent, tax, cross-border, and marketing review by qualified
