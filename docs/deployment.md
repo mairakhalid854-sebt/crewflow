@@ -45,6 +45,25 @@ The native app owns the `crewflow` URL scheme with Android package and iOS bundl
 13. Replay signed, duplicate, out-of-order, pause, cancellation, recovery, reconciliation, and owner portal simulations before calling `configure_paddle_reconciliation_cron()` or enabling any checkout UI.
 14. Promote the same reviewed commit to production only after all release blockers are closed.
 
+## Web smoke check
+
+Run the deployment smoke check against an HTTPS environment after its deploy
+finishes:
+
+```powershell
+npm.cmd run smoke:web -- https://your-environment.example
+```
+
+For a protected Vercel preview, place its automation bypass secret only in the
+current PowerShell process and then run the same command. Do not paste the
+secret into chat, source files, command history, or CI logs.
+
+The check verifies public login/privacy availability, the non-cacheable web
+health endpoint, required security headers, and rejection of unauthenticated
+workspace access. A successful smoke check is evidence for that exact URL and
+commit only; it is not a substitute for database, mobile, billing, email, or
+tenant-isolation acceptance.
+
 ## Secrets
 
 The Supabase access token, database password, service-role key, Paddle webhook/API credentials, SMTP credentials, Vercel token, and future provider keys belong only in the relevant platform secret store. They must never be pasted into source files, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, build logs, or Git history.
