@@ -1,6 +1,6 @@
 # Phase 6 progress: governed AI platform
 
-Updated: 2026-10-25
+Updated: 2026-10-26
 
 Phase 6 has started with a provider-neutral governance boundary. No paid AI
 provider, model API key, autonomous customer action, or production AI feature is
@@ -65,9 +65,18 @@ enabled by this slice.
   Every retrieval records an immutable SHA-256 query hash and selected citation
   IDs without retaining the raw query. Archived versions remain retained but
   are excluded from retrieval.
-- This slice establishes the security and data contract only. No malware vendor,
-  parser worker, owner upload screen, or live AI model is enabled yet, so owners
-  cannot put documents into the ready state from the product UI.
+- Knowledge uploads now enter a private durable two-stage queue. Service-only
+  claims use expiring leases, bounded exponential retry, a five-attempt cap,
+  atomic document/job completion, and immutable terminal-failure auditing.
+- A scheduled Edge worker verifies object size and SHA-256 before and after
+  scanning, accepts only bounded clean/infected responses from an HTTPS malware
+  scanner, and parses UTF-8 TXT, DOCX main-document XML, and PDF page text into
+  deterministic bounded citation chunks. Empty, encrypted, malformed,
+  oversized, hash-changed, and retry-exhausted documents fail closed.
+- The worker and parser are delivered, but staging activation remains disabled
+  until a private malware-scanner endpoint and bearer credential are supplied.
+  Retrieval therefore remains unavailable for new uploads in the current
+  environment; no browser or cron path can bypass the clean-scan boundary.
 - Owners and office staff now have an AI Operations workspace showing pending
   approvals and recent governed runs. Each approval exposes its rationale,
   consequences, exact bounded change set, target-state version, and expiry.
@@ -295,9 +304,9 @@ enabled by this slice.
 1. Run the controlled staging Intake acceptance path through public chat,
    authoritative proposal, office approval, guarded draft creation, and audit
    verification.
-2. Connect a malware-scanner and safe-parser worker. The owner upload,
-   version-history, pipeline-state, and archive screen is now delivered;
-   retrieval must stay unavailable until both service stages complete.
+2. Configure a private HTTPS malware-scanner endpoint and bearer credential,
+   deploy the delivered worker, enable its Vault-backed cron, and run the TXT,
+   DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
 3. Add replacement-offer generation for the exceptional case where both
    customer-facing options expire or fail the later eligibility check.
 4. Extend the delivered deterministic adversarial fixtures with provider/model
@@ -333,10 +342,11 @@ enabled by this slice.
 - FR-065: Inspectable, expiring, role-controlled, single-use approvals and the
   human decision UI are delivered. All currently implemented side-effecting
   agent actions use typed guarded executors with current-state revalidation.
-- FR-066: Database security foundation and owner upload/version/archive UI are
-  delivered for quarantine, scan/parse states, private storage, bounded
-  citations, versioning, tenant-scoped retrieval, and immutable evidence.
-  Scanner/parser workers remain pending.
+- FR-066: Database security foundation, owner upload/version/archive UI,
+  durable service-only queue, fail-closed scan adapter, bounded TXT/DOCX/PDF
+  parser, retries, leases, scheduling contract, tenant-scoped retrieval, and
+  immutable evidence are delivered. Staging activation and acceptance remain
+  gated only by a private malware-scanner endpoint and credential.
 - FR-067: Immutable redacted run/step traces and inspection UI are delivered;
   replay controls and provider execution remain pending.
 - FR-068: Deterministic agent-specific adversarial fixtures are delivered for

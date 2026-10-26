@@ -412,6 +412,10 @@ entrypoint = './functions/create-paddle-portal-session/index.js'
 verify_jwt = false
 entrypoint = './functions/public-intake/index.js'
 
+[functions.process-knowledge-documents]
+verify_jwt = false
+entrypoint = './functions/process-knowledge-documents/index.js'
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
