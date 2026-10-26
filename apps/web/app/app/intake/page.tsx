@@ -9,6 +9,7 @@ import { createClient } from '../../../lib/supabase/server';
 import {
   ConfirmIntakeSlotButton,
   IntakeProposalButton,
+  ReplacementSlotsButton,
   TakeoverButton,
   WidgetControls,
 } from './intake-controls';
@@ -108,6 +109,19 @@ export default async function IntakeInboxPage() {
   if (slotOffersResult.error)
     throw new Error('Intake slot selections could not be loaded.');
 
+  const conversionsResult = conversationIds.length
+    ? await supabase
+        .from('intake_draft_conversions')
+        .select('conversation_id')
+        .in('conversation_id', conversationIds)
+    : { data: [], error: null };
+  if (conversionsResult.error)
+    throw new Error('Intake draft conversions could not be loaded.');
+
+  const convertedConversations = new Set(
+    (conversionsResult.data ?? []).map((item) => item.conversation_id),
+  );
+
   const slotByConversation = new Map<string, SlotOffer>();
   for (const offer of slotOffersResult.data ?? []) {
     slotByConversation.set(offer.conversation_id, offer);
@@ -195,6 +209,12 @@ export default async function IntakeInboxPage() {
                   <div className={styles.conversationActions}>
                     {conversation.status === 'ready_for_human_review' ? (
                       <IntakeProposalButton conversationId={conversation.id} />
+                    ) : null}
+                    {convertedConversations.has(conversation.id) &&
+                    selectedSlot?.status !== 'confirmed' ? (
+                      <ReplacementSlotsButton
+                        conversationId={conversation.id}
+                      />
                     ) : null}
                     {['collecting', 'ready_for_human_review'].includes(
                       conversation.status,

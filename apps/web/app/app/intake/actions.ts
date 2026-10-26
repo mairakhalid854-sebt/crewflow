@@ -149,3 +149,38 @@ export async function confirmIntakeSelectedSlotAction(
     status: 'success',
   };
 }
+
+export async function requestIntakeReplacementSlotsAction(
+  _previousState: IntakeActionState,
+  formData: FormData,
+): Promise<IntakeActionState> {
+  await requireTenantContext(['owner', 'office']);
+  const parsedId = conversationIdSchema.safeParse(
+    formData.get('conversationId'),
+  );
+  if (!parsedId.success) {
+    return {
+      message: 'Conversation could not be identified.',
+      status: 'error',
+    };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc(
+    'request_intake_replacement_slots',
+    { target_conversation_id: parsedId.data },
+  );
+  if (error || data?.[0]?.replacement_result !== 'replaced') {
+    return {
+      message:
+        'New options could not be prepared. Check service coverage, availability, and the replacement limit.',
+      status: 'error',
+    };
+  }
+
+  revalidatePath('/app/intake');
+  return {
+    message: data[0].result_message,
+    status: 'success',
+  };
+}

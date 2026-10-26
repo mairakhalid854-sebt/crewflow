@@ -151,6 +151,22 @@
   line-height: 1.5;
 }
 
+.slotPanel > button {
+  padding: 12px 18px;
+  color: #fff;
+  font: inherit;
+  font-weight: 850;
+  background: #176fe5;
+  border: 0;
+  border-radius: 11px;
+  cursor: pointer;
+}
+
+.slotPanel > button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .slotKicker {
   margin: 0;
   color: #176fe5;

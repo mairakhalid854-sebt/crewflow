@@ -6,6 +6,7 @@ import {
   type IntakeActionState,
   confirmIntakeSelectedSlotAction,
   requestIntakeDraftProposalAction,
+  requestIntakeReplacementSlotsAction,
   setIntakeWidgetEnabledAction,
   takeOverIntakeConversationAction,
 } from './actions';
@@ -149,6 +150,34 @@ export function ConfirmIntakeSlotButton({
       <input name="conversationId" type="hidden" value={conversationId} />
       <button disabled={pending} type="submit">
         {pending ? 'Rechecking availability...' : 'Confirm selected slot'}
+      </button>
+      {state.message ? (
+        <span
+          className={state.status === 'error' ? styles.error : styles.success}
+          role="status"
+        >
+          {state.message}
+        </span>
+      ) : null}
+    </form>
+  );
+}
+
+export function ReplacementSlotsButton({
+  conversationId,
+}: {
+  conversationId: string;
+}) {
+  const [state, action, pending] = useActionState(
+    requestIntakeReplacementSlotsAction,
+    initialState,
+  );
+
+  return (
+    <form action={action} className={styles.takeoverForm}>
+      <input name="conversationId" type="hidden" value={conversationId} />
+      <button disabled={pending} type="submit">
+        {pending ? 'Checking new times...' : 'Prepare new time options'}
       </button>
       {state.message ? (
         <span

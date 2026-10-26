@@ -354,6 +354,34 @@ async function selectSlot(admin, body, correlationId) {
   );
 }
 
+async function replaceSlots(admin, body, correlationId) {
+  if (!validSessionRequest(body)) {
+    return json({ error: 'Invalid replacement request.' }, 400, correlationId);
+  }
+
+  const { data, error } = await admin.rpc('request_intake_replacement_slots', {
+    session_token: body.sessionToken,
+    target_conversation_id: body.conversationId,
+  });
+  if (error || data?.[0]?.replacement_result !== 'replaced') {
+    const status = databaseErrorStatus(error);
+    return json(
+      {
+        error:
+          status === 410
+            ? 'This intake conversation has expired.'
+            : error?.message?.includes('limit reached')
+              ? 'No more automatic options are available. Please contact the office.'
+              : 'Two new times are not available yet. Please contact the office.',
+      },
+      status,
+      correlationId,
+    );
+  }
+
+  return readSlotStatus(admin, body, correlationId);
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -399,6 +427,9 @@ Deno.serve(async (request) => {
   }
   if (body?.action === 'select_slot') {
     return selectSlot(admin, body, correlationId);
+  }
+  if (body?.action === 'replace_slots') {
+    return replaceSlots(admin, body, correlationId);
   }
   return json({ error: 'Unsupported intake action.' }, 400, correlationId);
 });
