@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import type { Database, Json } from '@crewflow/database';
 
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
@@ -5,6 +7,7 @@ import { appUrl } from '../../../lib/app-url';
 import { createClient } from '../../../lib/supabase/server';
 
 import {
+  ConfirmIntakeSlotButton,
   IntakeProposalButton,
   TakeoverButton,
   WidgetControls,
@@ -23,10 +26,16 @@ type IntakeMessage = Pick<
   | 'sequence_number'
 >;
 
-function formatDate(value: string): string {
+type SlotOffer = Pick<
+  Database['public']['Tables']['intake_slot_offers']['Row'],
+  'conversation_id' | 'ends_at' | 'job_id' | 'starts_at' | 'status'
+>;
+
+function formatDate(value: string, timeZone?: string): string {
   return new Intl.DateTimeFormat('en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',
+    ...(timeZone ? { timeZone } : {}),
   }).format(new Date(value));
 }
 
@@ -88,6 +97,21 @@ export default async function IntakeInboxPage() {
 
   if (messagesResult.error)
     throw new Error('Intake messages could not be loaded.');
+
+  const slotOffersResult = conversationIds.length
+    ? await supabase
+        .from('intake_slot_offers')
+        .select('conversation_id,ends_at,job_id,starts_at,status')
+        .in('conversation_id', conversationIds)
+        .in('status', ['selected', 'confirmed'])
+    : { data: [], error: null };
+  if (slotOffersResult.error)
+    throw new Error('Intake slot selections could not be loaded.');
+
+  const slotByConversation = new Map<string, SlotOffer>();
+  for (const offer of slotOffersResult.data ?? []) {
+    slotByConversation.set(offer.conversation_id, offer);
+  }
 
   const messagesByConversation = new Map<string, IntakeMessage[]>();
   for (const message of messagesResult.data ?? []) {
@@ -152,6 +176,7 @@ export default async function IntakeInboxPage() {
           {conversations.map((conversation) => {
             const values = object(conversation.collected_values);
             const messages = messagesByConversation.get(conversation.id) ?? [];
+            const selectedSlot = slotByConversation.get(conversation.id);
             return (
               <article className={styles.conversation} key={conversation.id}>
                 <div className={styles.conversationHeader}>
@@ -200,6 +225,30 @@ export default async function IntakeInboxPage() {
                   </div>
                 </dl>
 
+                {selectedSlot ? (
+                  <section className={styles.selectedSlot}>
+                    <div>
+                      <p className={styles.kicker}>Customer-selected time</p>
+                      <strong>
+                        {formatDate(selectedSlot.starts_at, context.timeZone)}
+                      </strong>
+                      <span>
+                        {selectedSlot.status === 'confirmed'
+                          ? 'Confirmed and scheduled'
+                          : 'Preference only — quote acceptance and office confirmation required'}
+                      </span>
+                      <Link href={`/app/jobs/${selectedSlot.job_id}`}>
+                        Open job
+                      </Link>
+                    </div>
+                    {selectedSlot.status === 'selected' ? (
+                      <ConfirmIntakeSlotButton
+                        conversationId={conversation.id}
+                      />
+                    ) : null}
+                  </section>
+                ) : null}
+
                 {conversation.escalation_reason ? (
                   <p className={styles.escalation}>
                     <strong>Why office attention is needed:</strong>{' '}
@@ -220,7 +269,7 @@ export default async function IntakeInboxPage() {
                         <span>{statusLabel(message.sender)}</span>
                         <p>{message.body}</p>
                         <time dateTime={message.created_at}>
-                          {formatDate(message.created_at)}
+                          {formatDate(message.created_at, context.timeZone)}
                         </time>
                       </div>
                     ))}

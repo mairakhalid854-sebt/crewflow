@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(21);
+SELECT plan(41);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -71,7 +71,11 @@ INSERT INTO public.intake_conversations (
   catalog_snapshot, selected_service_id
 ) VALUES (
   '5e000000-0000-4000-8000-000000000001',
-  '2e000000-0000-4000-8000-000000000001', repeat('a', 64),
+  '2e000000-0000-4000-8000-000000000001',
+  pg_catalog.encode(
+    extensions.digest(pg_catalog.convert_to(repeat('s', 43), 'UTF8'), 'sha256'),
+    'hex'
+  ),
   'ready_for_human_review', 'complete',
   jsonb_build_object(
     'customerName', 'Casey Customer',
@@ -213,6 +217,152 @@ SELECT is(
 );
 SELECT is((SELECT count(*) FROM public.intake_draft_conversions), 1::bigint,
   'One immutable conversion links all created drafts');
+SELECT is((SELECT count(*) FROM public.intake_slot_offers), 2::bigint,
+  'Guarded conversion persists exactly two public-safe slot offers');
+
+RESET ROLE;
+SET LOCAL ROLE service_role;
+SELECT set_config(
+  'request.jwt.claims',
+  '{"role":"service_role"}',
+  true
+);
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.intake_public_status',
+    public.get_public_intake_slot_status(
+      '5e000000-0000-4000-8000-000000000001', repeat('s', 43)
+    )::text,
+    true
+  )$$,
+  'Hashed Intake session can read the approved public-safe outcome'
+);
+SELECT is(
+  current_setting('crewflow.intake_public_status')::jsonb ->> 'state',
+  'slots_available',
+  'Public outcome exposes two available preferences after office approval'
+);
+SELECT is(
+  jsonb_array_length(
+    current_setting('crewflow.intake_public_status')::jsonb -> 'options'
+  ),
+  2,
+  'Public outcome includes exactly two options'
+);
+SELECT ok(
+  current_setting('crewflow.intake_public_status') !~ 'technicianMembershipId',
+  'Public outcome does not expose the technician identity'
+);
+SELECT lives_ok(
+  format(
+    'SELECT public.select_public_intake_slot(%L, %L, repeat(''s'', 43))',
+    '5e000000-0000-4000-8000-000000000001'::uuid,
+    (SELECT id FROM public.intake_slot_offers WHERE option_number = 1)
+  ),
+  'Customer can select one current slot with the hashed session token'
+);
+SELECT is(
+  (SELECT count(*) FROM public.intake_slot_offers WHERE status = 'selected'),
+  1::bigint,
+  'Only one slot becomes the customer preference'
+);
+SELECT is(
+  (SELECT count(*) FROM public.intake_slot_offers WHERE status = 'withdrawn'),
+  1::bigint,
+  'The unselected option is withdrawn'
+);
+SELECT is(
+  (SELECT status::text FROM public.jobs LIMIT 1),
+  'new',
+  'Customer selection does not advance the job workflow'
+);
+SELECT is(
+  (SELECT scheduled_start_at FROM public.jobs LIMIT 1),
+  NULL::timestamptz,
+  'Customer selection does not reserve or schedule the job'
+);
+
+RESET ROLE;
+SET LOCAL ROLE authenticated;
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"1e000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+SELECT throws_ok(
+  $$SELECT public.confirm_intake_selected_slot(
+    '5e000000-0000-4000-8000-000000000001'
+  )$$,
+  'P0001',
+  'customer quote acceptance is required before booking',
+  'Office cannot confirm a slot before customer quote acceptance'
+);
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.intake_quote_token',
+    public.publish_job_quote(
+      (current_setting('crewflow.intake_execution')::jsonb ->> 'quote_id')::uuid
+    ),
+    true
+  )$$,
+  'Office can publish the approved draft quote separately'
+);
+SELECT is(
+  public.decide_public_quote(
+    current_setting('crewflow.intake_quote_token'), 'accepted'
+  ),
+  'accepted',
+  'Customer can accept the separate signed quote'
+);
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.intake_confirmation', row_to_json(result)::text, true
+  ) FROM public.confirm_intake_selected_slot(
+    '5e000000-0000-4000-8000-000000000001'
+  ) AS result$$,
+  'Office can explicitly confirm the still-eligible selected slot'
+);
+SELECT is(
+  current_setting('crewflow.intake_confirmation')::jsonb
+    ->> 'confirmation_result',
+  'confirmed',
+  'Guarded office confirmation reports success'
+);
+SELECT is(
+  (SELECT status::text FROM public.jobs LIMIT 1),
+  'scheduled',
+  'Office confirmation advances the accepted job to scheduled'
+);
+SELECT is(
+  (SELECT assigned_membership_id FROM public.jobs LIMIT 1),
+  '3e000000-0000-4000-8000-000000000002'::uuid,
+  'Office confirmation assigns the approved eligible technician'
+);
+SELECT is(
+  (SELECT scheduled_start_at FROM public.jobs LIMIT 1),
+  (SELECT starts_at FROM public.intake_slot_offers WHERE status = 'confirmed'),
+  'Scheduled job uses the exact customer-selected start time'
+);
+SELECT is(
+  (
+    SELECT confirmation_result FROM public.confirm_intake_selected_slot(
+      '5e000000-0000-4000-8000-000000000001'
+    )
+  ),
+  'confirmed',
+  'Repeated office confirmation is idempotent'
+);
+
+RESET ROLE;
+SET LOCAL ROLE service_role;
+SELECT set_config('request.jwt.claims', '{"role":"service_role"}', true);
+SELECT is(
+  public.get_public_intake_slot_status(
+    '5e000000-0000-4000-8000-000000000001', repeat('s', 43)
+  ) ->> 'state',
+  'confirmed',
+  'Public session sees confirmation without privileged job or technician data'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

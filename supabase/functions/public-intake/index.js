@@ -93,7 +93,19 @@ function databaseErrorStatus(error) {
   if (message.includes('expired')) return 410;
   if (message.includes('unavailable')) return 404;
   if (message.includes('no longer collecting')) return 409;
+  if (message.includes('slot') || message.includes('already selected'))
+    return 409;
   return 400;
+}
+
+function validSessionRequest(body) {
+  return (
+    typeof body.conversationId === 'string' &&
+    uuidPattern.test(body.conversationId) &&
+    typeof body.sessionToken === 'string' &&
+    body.sessionToken.length >= 43 &&
+    body.sessionToken.length <= 256
+  );
 }
 
 async function startConversation(admin, body, correlationId) {
@@ -277,6 +289,71 @@ async function continueConversation(admin, body, correlationId) {
   );
 }
 
+async function readSlotStatus(admin, body, correlationId) {
+  if (!validSessionRequest(body)) {
+    return json({ error: 'Invalid intake request.' }, 400, correlationId);
+  }
+
+  const { data, error } = await admin.rpc('get_public_intake_slot_status', {
+    session_token: body.sessionToken,
+    target_conversation_id: body.conversationId,
+  });
+  if (error || !data || typeof data !== 'object') {
+    const status = databaseErrorStatus(error);
+    return json(
+      {
+        error:
+          status === 410
+            ? 'This intake conversation has expired.'
+            : 'Unable to check this service request.',
+      },
+      status,
+      correlationId,
+    );
+  }
+  return json(data, 200, correlationId);
+}
+
+async function selectSlot(admin, body, correlationId) {
+  if (
+    !validSessionRequest(body) ||
+    typeof body.offerId !== 'string' ||
+    !uuidPattern.test(body.offerId)
+  ) {
+    return json({ error: 'Invalid slot selection.' }, 400, correlationId);
+  }
+
+  const { data, error } = await admin.rpc('select_public_intake_slot', {
+    session_token: body.sessionToken,
+    target_conversation_id: body.conversationId,
+    target_offer_id: body.offerId,
+  });
+  if (error) {
+    const status = databaseErrorStatus(error);
+    return json(
+      {
+        error:
+          status === 410
+            ? 'This intake conversation has expired.'
+            : status === 409
+              ? 'That slot is no longer available. Ask the office for new options.'
+              : 'Unable to save this slot selection.',
+      },
+      status,
+      correlationId,
+    );
+  }
+  return json(
+    {
+      message:
+        'Your preferred time was sent to the office. It is not booked until they confirm it.',
+      selectionResult: data,
+    },
+    200,
+    correlationId,
+  );
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -316,6 +393,12 @@ Deno.serve(async (request) => {
   }
   if (body?.action === 'message') {
     return continueConversation(admin, body, correlationId);
+  }
+  if (body?.action === 'status') {
+    return readSlotStatus(admin, body, correlationId);
+  }
+  if (body?.action === 'select_slot') {
+    return selectSlot(admin, body, correlationId);
   }
   return json({ error: 'Unsupported intake action.' }, 400, correlationId);
 });

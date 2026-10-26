@@ -849,6 +849,83 @@ export type Database = {
           },
         ];
       };
+      intake_slot_offers: {
+        Row: {
+          confirmed_at: string | null;
+          conversation_id: string;
+          conversion_id: string;
+          created_at: string;
+          ends_at: string;
+          id: string;
+          job_id: string;
+          option_number: number;
+          selected_at: string | null;
+          starts_at: string;
+          status: Database['public']['Enums']['intake_slot_offer_status'];
+          technician_membership_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          confirmed_at?: string | null;
+          conversation_id: string;
+          conversion_id: string;
+          created_at?: string;
+          ends_at: string;
+          id?: string;
+          job_id: string;
+          option_number: number;
+          selected_at?: string | null;
+          starts_at: string;
+          status?: Database['public']['Enums']['intake_slot_offer_status'];
+          technician_membership_id: string;
+          tenant_id: string;
+        };
+        Update: {
+          confirmed_at?: string | null;
+          conversation_id?: string;
+          conversion_id?: string;
+          created_at?: string;
+          ends_at?: string;
+          id?: string;
+          job_id?: string;
+          option_number?: number;
+          selected_at?: string | null;
+          starts_at?: string;
+          status?: Database['public']['Enums']['intake_slot_offer_status'];
+          technician_membership_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'intake_slot_offers_conversion_tenant_fk';
+            columns: ['conversion_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'intake_draft_conversions';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'intake_slot_offers_conversation_tenant_fk';
+            columns: ['conversation_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'intake_conversations';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'intake_slot_offers_job_tenant_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'intake_slot_offers_technician_tenant_fk';
+            columns: ['technician_membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
       invoice_line_items: {
         Row: {
           created_at: string;
@@ -2692,6 +2769,14 @@ export type Database = {
           technician_membership_id: string;
         }[];
       };
+      confirm_intake_selected_slot: {
+        Args: { target_conversation_id: string };
+        Returns: {
+          confirmation_result: string;
+          job_id: string;
+          result_message: string;
+        }[];
+      };
       execute_approved_follow_up_message: {
         Args: { target_approval_id: string };
         Returns: {
@@ -2750,6 +2835,10 @@ export type Database = {
       get_current_tenant_access_mode: {
         Args: never;
         Returns: Database['public']['Enums']['billing_access_mode'];
+      };
+      get_public_intake_slot_status: {
+        Args: { session_token: string; target_conversation_id: string };
+        Returns: Json;
       };
       get_mobile_notification_preferences: {
         Args: never;
@@ -2978,6 +3067,14 @@ export type Database = {
           run_id: string;
         }[];
       };
+      select_public_intake_slot: {
+        Args: {
+          session_token: string;
+          target_conversation_id: string;
+          target_offer_id: string;
+        };
+        Returns: string;
+      };
       retry_push_notification_deliveries: {
         Args: { error_code: string; target_delivery_ids: string[] };
         Returns: number;
@@ -3137,6 +3234,8 @@ export type Database = {
         | 'closed'
         | 'expired';
       intake_message_sender: 'customer' | 'assistant' | 'office' | 'system';
+      intake_slot_offer_status:
+        'offered' | 'selected' | 'confirmed' | 'withdrawn' | 'expired';
       invoice_status: 'draft' | 'sent' | 'partially_paid' | 'paid' | 'void';
       job_media_kind: 'before' | 'after';
       job_priority: 'low' | 'normal' | 'high' | 'urgent';
@@ -3359,6 +3458,13 @@ export const Constants = {
         'expired',
       ],
       intake_message_sender: ['customer', 'assistant', 'office', 'system'],
+      intake_slot_offer_status: [
+        'offered',
+        'selected',
+        'confirmed',
+        'withdrawn',
+        'expired',
+      ],
       invoice_status: ['draft', 'sent', 'partially_paid', 'paid', 'void'],
       job_media_kind: ['before', 'after'],
       job_priority: ['low', 'normal', 'high', 'urgent'],
