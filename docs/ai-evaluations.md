@@ -22,3 +22,15 @@ The executable TypeScript fixtures live in
 in `packages/database/test/ai-adversarial-budget-coverage.test.ts` and the Phase
 6 pgTAP suites. A live-provider evaluation set must extend, not replace, these
 deterministic gates.
+
+## Hosted provider candidate result
+
+On 2026-10-26 an owner-triggered staging evaluation ran eight synthetic cases
+across Intake, Dispatcher, Report, and Follow-Up through the server-only OpenAI
+Responses adapter. The candidate `gpt-6-luna` passed 8/8 cases with a 2,645 ms
+p95 duration and $0.08 estimated total cost.
+
+The run used strict structured output, `store: false`, no tools, bounded token
+and cost thresholds, synthetic identifiers, and mandatory human-approval
+output. This result approves the model for guarded staging integration only; it
+does not enable production use or autonomous business mutations.
