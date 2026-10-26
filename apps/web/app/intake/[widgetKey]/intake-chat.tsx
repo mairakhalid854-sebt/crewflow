@@ -30,6 +30,7 @@ type SlotOffer = {
 };
 
 type IntakeOutcome = {
+  canRequestReplacement?: boolean;
   expiresAt?: string;
   jobStatus?: string;
   options?: SlotOffer[];
@@ -41,6 +42,7 @@ type IntakeOutcome = {
 };
 
 type IntakeResponse = {
+  canRequestReplacement?: boolean;
   conversationId?: string;
   error?: string;
   expiresAt?: string;
@@ -93,6 +95,7 @@ export function IntakeChat({ endpoint, widgetKey }: IntakeChatProps) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [selectingOfferId, setSelectingOfferId] = useState<string>();
+  const [refreshingSlots, setRefreshingSlots] = useState(false);
   const [session, setSession] = useState<IntakeSession>();
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -201,6 +204,7 @@ export function IntakeChat({ endpoint, widgetKey }: IntakeChatProps) {
               ? {
                   ...current,
                   outcome: {
+                    canRequestReplacement: result.body.canRequestReplacement,
                     expiresAt: result.body.expiresAt,
                     jobStatus: result.body.jobStatus,
                     options: result.body.options,
@@ -352,11 +356,81 @@ export function IntakeChat({ endpoint, widgetKey }: IntakeChatProps) {
                   true,
                 ),
               ],
+              outcome: current.outcome
+                ? {
+                    ...current.outcome,
+                    canRequestReplacement: true,
+                    state: 'slots_unavailable',
+                  }
+                : current.outcome,
             }
           : current,
       );
     } finally {
       setSelectingOfferId(undefined);
+    }
+  }
+
+  async function requestReplacementSlots() {
+    if (!endpoint || !session || refreshingSlots) return;
+    setRefreshingSlots(true);
+    try {
+      const result = await request(endpoint, {
+        action: 'replace_slots',
+        conversationId: session.conversationId,
+        sessionToken: session.sessionToken,
+      });
+      if (!result.ok || !result.body.state) {
+        throw new Error(
+          result.body.error ?? 'Unable to prepare new time options.',
+        );
+      }
+      const outcomeState = result.body.state;
+      setSession((current) =>
+        current
+          ? {
+              ...current,
+              messages: [
+                ...current.messages,
+                message(
+                  'assistant',
+                  'Two new preferred times are ready. Availability will be checked again before booking.',
+                ),
+              ],
+              outcome: {
+                canRequestReplacement: result.body.canRequestReplacement,
+                expiresAt: result.body.expiresAt,
+                jobStatus: result.body.jobStatus,
+                options: result.body.options,
+                quoteStatus: result.body.quoteStatus,
+                quoteTotalCents: result.body.quoteTotalCents,
+                serviceName: result.body.serviceName,
+                state: outcomeState,
+                timeZone: result.body.timeZone,
+              },
+            }
+          : current,
+      );
+    } catch (error) {
+      setSession((current) =>
+        current
+          ? {
+              ...current,
+              messages: [
+                ...current.messages,
+                message(
+                  'assistant',
+                  error instanceof Error
+                    ? error.message
+                    : 'Unable to prepare new time options.',
+                  true,
+                ),
+              ],
+            }
+          : current,
+      );
+    } finally {
+      setRefreshingSlots(false);
     }
   }
 
@@ -460,6 +534,33 @@ export function IntakeChat({ endpoint, widgetKey }: IntakeChatProps) {
             Preferred time sent. Waiting for office confirmation and quote
             acceptance.
           </div>
+        ) : null}
+
+        {session?.outcome?.state === 'slots_unavailable' ? (
+          <section
+            className={styles.slotPanel}
+            aria-labelledby="new-slot-title"
+          >
+            <p className={styles.slotKicker}>AVAILABILITY CHANGED</p>
+            <h2 id="new-slot-title">Choose from new times</h2>
+            <p>
+              Those options expired or are no longer available. No booking was
+              made.
+            </p>
+            {session.outcome.canRequestReplacement !== false ? (
+              <button
+                disabled={refreshingSlots}
+                onClick={() => void requestReplacementSlots()}
+                type="button"
+              >
+                {refreshingSlots ? 'Checking new times...' : 'Get new options'}
+              </button>
+            ) : (
+              <p className={styles.slotNotice}>
+                Please contact the office for a manual time.
+              </p>
+            )}
+          </section>
         ) : null}
 
         {session?.outcome?.state === 'confirmed' ? (

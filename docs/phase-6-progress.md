@@ -238,6 +238,15 @@ enabled by this slice.
   signed quote acceptance, an accepted job, and another current eligibility
   check before advancing the job to scheduled. Repeated confirmation is
   idempotent and queues the existing assignment/schedule notifications.
+- Customers and office staff can now request two fresh Intake preferences when
+  offered times expire or later eligibility changes. Each replacement reruns
+  current skill, ZIP, availability, time-off, and conflict checks, excludes all
+  prior suggestions, retains old generations as withdrawn/expired evidence,
+  and exposes only the latest public-safe pair.
+- Replacement generation is session- or office-authorized, audited, capped at
+  five total generations, and remains a preference-only action. It never
+  assigns a technician, reserves time, changes price, or schedules the job;
+  quote acceptance and guarded office confirmation are still required.
 
 ## Validation
 
@@ -298,6 +307,9 @@ enabled by this slice.
   technician-data minimization, selection without booking, quote-acceptance
   gating, office confirmation, exact scheduling, idempotency, and the confirmed
   public state.
+- Replacement-slot tests cover wrong-token denial, retained prior generations,
+  exactly two fresh options, latest-generation public projection, continued
+  technician-data minimization, selection, and the no-auto-booking boundary.
 
 ## Next Phase 6 slices
 
@@ -307,11 +319,9 @@ enabled by this slice.
 2. Configure a private HTTPS malware-scanner endpoint and bearer credential,
    deploy the delivered worker, enable its Vault-backed cron, and run the TXT,
    DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
-3. Add replacement-offer generation for the exceptional case where both
-   customer-facing options expire or fail the later eligibility check.
-4. Extend the delivered deterministic adversarial fixtures with provider/model
+3. Extend the delivered deterministic adversarial fixtures with provider/model
    quality and cost thresholds when a live provider is explicitly approved.
-5. Select a live provider/model, retention window, document limits, and cost
+4. Select a live provider/model, retention window, document limits, and cost
    caps only after owner approval; add it through a separate explicit migration
    and server adapter.
 
@@ -320,8 +330,9 @@ enabled by this slice.
 - FR-060: Intake collection, office takeover, deterministic trusted-price quote
   drafting, two-slot availability policy, authoritative database orchestration,
   approval persistence, guarded draft execution, public slot preference, and
-  guarded office booking confirmation are delivered. Replacement offers after
-  expiry or changed eligibility remain a manual office workflow.
+  guarded office booking confirmation are delivered. Bounded customer/office
+  replacement generations after expiry or changed eligibility are delivered
+  without weakening the final confirmation boundary.
 - FR-061: Deterministic proposal policy, authorized data loading, governed
   persistence, UI invocation, human approval, and guarded execution are
   delivered.

@@ -39,8 +39,12 @@ describe('public Intake edge boundary', () => {
   it('supports session-bound status and preference actions without booking', () => {
     expect(edgeFunction).toContain("body?.action === 'status'");
     expect(edgeFunction).toContain("body?.action === 'select_slot'");
+    expect(edgeFunction).toContain("body?.action === 'replace_slots'");
     expect(edgeFunction).toContain("admin.rpc('get_public_intake_slot_status'");
     expect(edgeFunction).toContain("admin.rpc('select_public_intake_slot'");
+    expect(edgeFunction).toContain(
+      "admin.rpc('request_intake_replacement_slots'",
+    );
     expect(edgeFunction).toContain('It is not booked until they confirm it.');
     expect(edgeFunction).not.toContain(
       "admin.rpc('confirm_intake_selected_slot'",

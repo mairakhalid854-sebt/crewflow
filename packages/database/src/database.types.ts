@@ -858,6 +858,7 @@ export type Database = {
           ends_at: string;
           id: string;
           job_id: string;
+          offer_generation: number;
           option_number: number;
           selected_at: string | null;
           starts_at: string;
@@ -873,6 +874,7 @@ export type Database = {
           ends_at: string;
           id?: string;
           job_id: string;
+          offer_generation?: number;
           option_number: number;
           selected_at?: string | null;
           starts_at: string;
@@ -888,6 +890,7 @@ export type Database = {
           ends_at?: string;
           id?: string;
           job_id?: string;
+          offer_generation?: number;
           option_number?: number;
           selected_at?: string | null;
           starts_at?: string;
@@ -3171,6 +3174,14 @@ export type Database = {
           proposal_result: string;
           result_message: string;
           run_id: string;
+        }[];
+      };
+      request_intake_replacement_slots: {
+        Args: { session_token?: string; target_conversation_id: string };
+        Returns: {
+          offer_generation: number;
+          replacement_result: string;
+          result_message: string;
         }[];
       };
       select_public_intake_slot: {

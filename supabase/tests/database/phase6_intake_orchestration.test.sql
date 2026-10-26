@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(41);
+SELECT plan(46);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -227,6 +227,44 @@ SELECT set_config(
   '{"role":"service_role"}',
   true
 );
+SELECT throws_ok(
+  $$SELECT public.request_intake_replacement_slots(
+    '5e000000-0000-4000-8000-000000000001', repeat('x', 43)
+  )$$,
+  '42501',
+  'Intake conversation unavailable',
+  'A wrong public session token cannot replace slot offers'
+);
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.intake_replacement', row_to_json(result)::text, true
+  ) FROM public.request_intake_replacement_slots(
+    '5e000000-0000-4000-8000-000000000001', repeat('s', 43)
+  ) AS result$$,
+  'Hashed public session can request bounded replacement preferences'
+);
+SELECT is(
+  current_setting('crewflow.intake_replacement')::jsonb
+    ->> 'replacement_result',
+  'replaced',
+  'Replacement generation reports success without booking'
+);
+SELECT is(
+  (
+    SELECT count(*) FROM public.intake_slot_offers
+    WHERE offer_generation = 1 AND status = 'withdrawn'
+  ),
+  2::bigint,
+  'Prior generation is retained and withdrawn'
+);
+SELECT is(
+  (
+    SELECT count(*) FROM public.intake_slot_offers
+    WHERE offer_generation = 2 AND status = 'offered'
+  ),
+  2::bigint,
+  'Replacement generation contains exactly two fresh preferences'
+);
 SELECT lives_ok(
   $$SELECT set_config(
     'crewflow.intake_public_status',
@@ -257,7 +295,8 @@ SELECT lives_ok(
   format(
     'SELECT public.select_public_intake_slot(%L, %L, repeat(''s'', 43))',
     '5e000000-0000-4000-8000-000000000001'::uuid,
-    (SELECT id FROM public.intake_slot_offers WHERE option_number = 1)
+    (SELECT id FROM public.intake_slot_offers
+      WHERE offer_generation = 2 AND option_number = 1)
   ),
   'Customer can select one current slot with the hashed session token'
 );
@@ -267,7 +306,8 @@ SELECT is(
   'Only one slot becomes the customer preference'
 );
 SELECT is(
-  (SELECT count(*) FROM public.intake_slot_offers WHERE status = 'withdrawn'),
+  (SELECT count(*) FROM public.intake_slot_offers
+    WHERE offer_generation = 2 AND status = 'withdrawn'),
   1::bigint,
   'The unselected option is withdrawn'
 );
