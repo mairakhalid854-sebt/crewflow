@@ -310,6 +310,9 @@ enabled by this slice.
 - Replacement-slot tests cover wrong-token denial, retained prior generations,
   exactly two fresh options, latest-generation public projection, continued
   technician-data minimization, selection, and the no-auto-booking boundary.
+- Governed replay tests cover cross-tenant denial, fresh current-policy
+  evaluation, distinct run and approval evidence, proposal-only behavior,
+  immutable provenance, and idempotent retries.
 
 ## Next Phase 6 slices
 
@@ -358,8 +361,11 @@ enabled by this slice.
   parser, retries, leases, scheduling contract, tenant-scoped retrieval, and
   immutable evidence are delivered. Staging activation and acceptance remain
   gated only by a private malware-scanner endpoint and credential.
-- FR-067: Immutable redacted run/step traces and inspection UI are delivered;
-  replay controls and provider execution remain pending.
+- FR-067: Immutable redacted run/step traces, inspection UI, and authorized
+  deterministic replay controls are delivered. Replay re-enters current
+  policy, permission, budget, and state checks to create a distinct proposal
+  and approval; it never reuses a decision or executes the change. Live
+  provider execution remains pending explicit provider approval.
 - FR-068: Deterministic agent-specific adversarial fixtures are delivered for
   price grounding, tenant isolation, prompt injection, tool authorization,
   hallucination resistance, escalation, replay stability, and budget gates.

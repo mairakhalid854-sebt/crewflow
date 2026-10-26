@@ -326,6 +326,47 @@
   border-top: 1px solid #e6ecf2;
 }
 
+.replayForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 18px;
+  align-items: center;
+  padding: 14px;
+  background: #eef6ff;
+  border: 1px solid #c9def8;
+  border-radius: 11px;
+}
+
+.replayForm strong,
+.replayForm p {
+  margin: 0;
+}
+
+.replayForm div p {
+  margin-top: 4px;
+  color: #526b82;
+}
+
+.replayForm button {
+  padding: 10px 13px;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  background: #176fe5;
+  border: 0;
+  border-radius: 9px;
+}
+
+.replayForm button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.replayForm > p {
+  grid-column: 1 / -1;
+}
+
 .runFacts {
   margin-top: 18px;
   grid-template-columns: repeat(3, minmax(0, 1fr));

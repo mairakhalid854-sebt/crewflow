@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(35);
+SELECT plan(42);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -398,6 +398,73 @@ SELECT is(
   ),
   NULL::uuid,
   'Stale proposal never assigns the technician'
+);
+
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"1a000000-0000-4000-8000-000000000003","role":"authenticated"}',
+  true
+);
+SELECT throws_ok(
+  format(
+    'SELECT public.replay_ai_agent_run(%L, %L)',
+    (current_setting('crewflow.dispatcher_stale')::jsonb ->> 'run_id')::uuid,
+    '7a000000-0000-4000-8000-000000000008'::uuid
+  ),
+  '42501',
+  'AI run not found or unavailable',
+  'Another tenant owner cannot replay the source run'
+);
+SELECT set_config(
+  'request.jwt.claims',
+  '{"sub":"1a000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.dispatcher_replay', row_to_json(result)::text, true
+  ) FROM public.replay_ai_agent_run(
+    (current_setting('crewflow.dispatcher_stale')::jsonb ->> 'run_id')::uuid,
+    '7a000000-0000-4000-8000-000000000008'
+  ) AS result$$,
+  'Owner can replay a closed run through current proposal controls'
+);
+SELECT isnt(
+  current_setting('crewflow.dispatcher_replay')::jsonb ->> 'replay_run_id',
+  current_setting('crewflow.dispatcher_stale')::jsonb ->> 'run_id',
+  'Replay creates a distinct governed run'
+);
+SELECT is(
+  (
+    SELECT count(*) FROM public.ai_run_replays
+    WHERE source_run_id = (
+      current_setting('crewflow.dispatcher_stale')::jsonb ->> 'run_id'
+    )::uuid
+  ),
+  1::bigint,
+  'Replay stores immutable provenance'
+);
+SELECT is(
+  (
+    SELECT assigned_membership_id FROM public.jobs
+    WHERE id = '6a000000-0000-4000-8000-000000000003'
+  ),
+  NULL::uuid,
+  'Replay only proposes and never assigns the technician'
+);
+SELECT lives_ok(
+  $$SELECT set_config(
+    'crewflow.dispatcher_replay_repeat', row_to_json(result)::text, true
+  ) FROM public.replay_ai_agent_run(
+    (current_setting('crewflow.dispatcher_stale')::jsonb ->> 'run_id')::uuid,
+    '7a000000-0000-4000-8000-000000000008'
+  ) AS result$$,
+  'Repeating one replay correlation is idempotent'
+);
+SELECT is(
+  current_setting('crewflow.dispatcher_replay_repeat')::jsonb ->> 'replay_run_id',
+  current_setting('crewflow.dispatcher_replay')::jsonb ->> 'replay_run_id',
+  'Idempotent replay returns the same fresh run'
 );
 
 SELECT lives_ok(
