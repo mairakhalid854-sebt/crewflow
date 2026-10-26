@@ -183,6 +183,13 @@ enabled by this slice.
   sender/domain is supplied. The durable queue already includes bounded retry,
   provider-reference, ready, delivered, failed, and cancelled state fields for
   that later worker.
+- Owners now have a Knowledge Base workspace for PDF, DOCX, and TXT uploads.
+  The browser creates an owner-bound short-lived reservation, computes a local
+  SHA-256 claim, writes only to the private quarantine path, and finalizes the
+  exact size/type reservation. Owners can create a version against an existing
+  logical document, inspect retained pipeline state, and archive a version;
+  office staff have read-only visibility. Uploaded content remains unavailable
+  to retrieval until a service-role scanner and safe parser succeed.
 
 ## Validation
 
@@ -240,9 +247,9 @@ enabled by this slice.
 
 1. Run the first controlled staging Intake conversation through public chat,
    office inbox, explicit takeover, and audit verification.
-2. Connect a malware-scanner and safe-parser worker, then add the owner knowledge
-   upload/version/archive screen. Retrieval must stay unavailable until both
-   stages complete successfully.
+2. Connect a malware-scanner and safe-parser worker. The owner upload,
+   version-history, pipeline-state, and archive screen is now delivered;
+   retrieval must stay unavailable until both service stages complete.
 3. Connect approved requests to typed guarded executors that revalidate current
    role, target state, policy, and idempotency before any side effect.
 4. Add adversarial evaluation fixtures for price grounding, cross-tenant
