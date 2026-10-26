@@ -396,7 +396,10 @@ BEGIN
   terminal := locked_job.attempt_count >= 5;
 
   UPDATE public.knowledge_processing_jobs
-  SET status = CASE WHEN terminal THEN 'failed' ELSE 'queued' END,
+  SET status = CASE WHEN terminal
+        THEN 'failed'::public.knowledge_processing_job_status
+        ELSE 'queued'::public.knowledge_processing_job_status
+      END,
       available_at = CASE WHEN terminal THEN available_at ELSE
         now() + (interval '1 minute' * least(60, power(2, locked_job.attempt_count - 1)::integer))
       END,
