@@ -16,6 +16,11 @@ INSERT INTO auth.users (
     '11000000-0000-4000-8000-000000000002', 'authenticated', 'authenticated',
     'other-owner@crewflow.test', '', now(),
     '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now()
+  ),
+  (
+    '11000000-0000-4000-8000-000000000003', 'authenticated', 'authenticated',
+    'follow-tech@crewflow.test', '', now(),
+    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now()
   );
 
 INSERT INTO public.tenants (
@@ -46,6 +51,11 @@ VALUES
     '33000000-0000-4000-8000-000000000002',
     '22000000-0000-4000-8000-000000000002',
     '11000000-0000-4000-8000-000000000002', 'owner', 'active', now()
+  ),
+  (
+    '33000000-0000-4000-8000-000000000003',
+    '22000000-0000-4000-8000-000000000001',
+    '11000000-0000-4000-8000-000000000003', 'technician', 'active', now()
   );
 
 INSERT INTO public.customers (
@@ -103,8 +113,19 @@ UPDATE public.jobs SET status = 'accepted'
 WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
 UPDATE public.jobs
 SET status = 'scheduled',
-    scheduled_start_at = '2026-10-20T14:00:00Z',
-    scheduled_end_at = '2026-10-20T15:00:00Z'
+    assigned_membership_id = '33000000-0000-4000-8000-000000000003',
+    scheduled_start_at = CASE id
+      WHEN '55000000-0000-4000-8000-000000000001' THEN '2026-10-20T14:00:00Z'::timestamptz
+      WHEN '55000000-0000-4000-8000-000000000002' THEN '2026-10-20T15:00:00Z'::timestamptz
+      WHEN '55000000-0000-4000-8000-000000000003' THEN '2026-10-20T16:00:00Z'::timestamptz
+      ELSE '2026-10-20T17:00:00Z'::timestamptz
+    END,
+    scheduled_end_at = CASE id
+      WHEN '55000000-0000-4000-8000-000000000001' THEN '2026-10-20T15:00:00Z'::timestamptz
+      WHEN '55000000-0000-4000-8000-000000000002' THEN '2026-10-20T16:00:00Z'::timestamptz
+      WHEN '55000000-0000-4000-8000-000000000003' THEN '2026-10-20T17:00:00Z'::timestamptz
+      ELSE '2026-10-20T18:00:00Z'::timestamptz
+    END
 WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
 UPDATE public.jobs SET status = 'in_progress'
 WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
