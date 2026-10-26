@@ -313,6 +313,17 @@ enabled by this slice.
 - Governed replay tests cover cross-tenant denial, fresh current-policy
   evaluation, distinct run and approval evidence, proposal-only behavior,
   immutable provenance, and idempotent retries.
+- A provider-neutral activation boundary now defaults to the deterministic
+  stub, requires an explicit deployment approval for live mode, validates
+  server-only credentials and bounded token/cost/timeout settings, and rejects
+  unapproved provider or model identities.
+- Live model responses are fail-closed on incomplete output, identity mismatch,
+  invalid usage, token/output/cost overruns, and every attempted tool call.
+  Provider output remains proposal-only and cannot invoke business mutations.
+- A reusable live-provider evaluation gate covers all four governed agents and
+  enforces safety-critical case success, minimum quality pass rate, p95 latency,
+  per-request limits, and aggregate evaluation cost. Reports retain only fixture
+  IDs, bounded usage, duration, and sanitized failure codes.
 
 ## Next Phase 6 slices
 
@@ -322,11 +333,11 @@ enabled by this slice.
 2. Configure a private HTTPS malware-scanner endpoint and bearer credential,
    deploy the delivered worker, enable its Vault-backed cron, and run the TXT,
    DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
-3. Extend the delivered deterministic adversarial fixtures with provider/model
-   quality and cost thresholds when a live provider is explicitly approved.
-4. Select a live provider/model, retention window, document limits, and cost
-   caps only after owner approval; add it through a separate explicit migration
-   and server adapter.
+3. Select a live provider/model, retention window, document limits, and cost
+   caps after owner approval; implement its server adapter behind the delivered
+   fail-closed activation boundary.
+4. Run the delivered all-agent quality, safety, latency, and cost gate against
+   that candidate model before enabling live mode.
 
 ## Requirement status
 
@@ -368,5 +379,7 @@ enabled by this slice.
   provider execution remains pending explicit provider approval.
 - FR-068: Deterministic agent-specific adversarial fixtures are delivered for
   price grounding, tenant isolation, prompt injection, tool authorization,
-  hallucination resistance, escalation, replay stability, and budget gates.
-  Live-provider quality/cost evaluation remains pending provider selection.
+  hallucination resistance, escalation, replay stability, and budget gates. A
+  provider-neutral live evaluation harness now enforces all-agent quality,
+  safety, latency, and cost thresholds; running it remains pending provider and
+  model selection.
