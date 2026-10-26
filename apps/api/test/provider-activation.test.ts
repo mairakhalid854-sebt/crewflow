@@ -14,6 +14,12 @@ const request: AiProviderRequest = {
   maxOutputTokens: 100,
   policyVersion: 'dispatcher-v1',
   redactedInput: { jobId: 'job-redacted' },
+  responseSchema: {
+    additionalProperties: false,
+    properties: { status: { type: 'string' } },
+    required: ['status'],
+    type: 'object',
+  },
   schemaName: 'dispatcher-proposal-v1',
 };
 

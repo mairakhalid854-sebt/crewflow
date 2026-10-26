@@ -11,11 +11,13 @@ import { ApprovalDecisionForm } from './approval-decision-form';
 import { DispatcherExecutionForm } from './dispatcher-execution-form';
 import { FollowUpExecutionForm } from './follow-up-execution-form';
 import { IntakeExecutionForm } from './intake-execution-form';
+import { ProviderEvaluationForm } from './provider-evaluation-form';
 import { ReportExecutionForm } from './report-execution-form';
 import { ReportInvoiceExecutionForm } from './report-invoice-execution-form';
 import { ReplayRunForm } from './replay-run-form';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 type Run = Database['public']['Tables']['ai_agent_runs']['Row'];
 type Step = Database['public']['Tables']['ai_run_steps']['Row'];
@@ -51,6 +53,10 @@ function runDuration(run: Run): string {
 
 export default async function AiOperationsPage() {
   const context = await requireTenantContext(['owner', 'office']);
+  const canEvaluateProvider =
+    context.role === 'owner' &&
+    process.env.VERCEL_ENV === 'preview' &&
+    process.env.VERCEL_GIT_COMMIT_REF === 'staging';
   const supabase = await createClient();
   const [runsResult, approvalsResult] = await Promise.all([
     supabase
@@ -154,6 +160,8 @@ export default async function AiOperationsPage() {
           <strong>{formatCost(estimatedSpend)}</strong>
         </div>
       </section>
+
+      {canEvaluateProvider ? <ProviderEvaluationForm /> : null}
 
       <section className={styles.section}>
         <div className={styles.sectionHeading}>

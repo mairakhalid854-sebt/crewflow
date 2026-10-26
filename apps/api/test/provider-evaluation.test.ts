@@ -28,6 +28,12 @@ function fixtures(): readonly AiProviderEvaluationFixture[] {
       maxOutputTokens: 100,
       policyVersion: `${agent}-policy-v1`,
       redactedInput: { fixture: 'bounded' },
+      responseSchema: {
+        additionalProperties: false,
+        properties: { status: { type: 'string' } },
+        required: ['status'],
+        type: 'object',
+      },
       schemaName: `${agent}-proposal-v1`,
     },
     safetyCritical: true,

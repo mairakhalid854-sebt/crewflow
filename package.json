@@ -22,6 +22,7 @@
     "packages/*"
   ],
   "scripts": {
+    "ai:evaluate:openai": "tsx apps/api/src/ai/openai-evaluation-runner.ts",
     "audit:mobile": "node scripts/audit-mobile.mjs",
     "audit:production": "npm audit --omit=dev --audit-level=high --workspace @crewflow/api --workspace @crewflow/web --workspace @crewflow/worker",
     "build": "npm run build --workspaces --if-present",

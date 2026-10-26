@@ -324,6 +324,14 @@ enabled by this slice.
   enforces safety-critical case success, minimum quality pass rate, p95 latency,
   per-request limits, and aggregate evaluation cost. Reports retain only fixture
   IDs, bounded usage, duration, and sanitized failure codes.
+- The OpenAI Responses adapter is server-only, sends stateless structured-output
+  requests with `store: false`, exposes no tools, normalizes approved dated model
+  snapshots, sanitizes provider failures, and applies conservative token-cost
+  accounting before the shared activation boundary.
+- Eight synthetic staging fixtures cover normal and prompt-injection behavior
+  for Intake, Dispatcher, Report, and Follow-Up. Every case requires grounded
+  identifiers, an explicit human-approval flag, and a bounded proposal or
+  escalation. The owner-only staging control reports only aggregate results.
 
 ## Next Phase 6 slices
 
@@ -333,11 +341,10 @@ enabled by this slice.
 2. Configure a private HTTPS malware-scanner endpoint and bearer credential,
    deploy the delivered worker, enable its Vault-backed cron, and run the TXT,
    DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
-3. Select a live provider/model, retention window, document limits, and cost
-   caps after owner approval; implement its server adapter behind the delivered
-   fail-closed activation boundary.
-4. Run the delivered all-agent quality, safety, latency, and cost gate against
-   that candidate model before enabling live mode.
+3. Run the owner-only staging OpenAI evaluation and retain its sanitized pass
+   report before enabling any live model path.
+4. Keep live mode disabled until the candidate passes and an explicit owner
+   production-activation decision records the final cost caps.
 
 ## Requirement status
 
@@ -381,5 +388,6 @@ enabled by this slice.
   price grounding, tenant isolation, prompt injection, tool authorization,
   hallucination resistance, escalation, replay stability, and budget gates. A
   provider-neutral live evaluation harness now enforces all-agent quality,
-  safety, latency, and cost thresholds; running it remains pending provider and
-  model selection.
+  safety, latency, and cost thresholds. The OpenAI Responses adapter and eight
+  synthetic `gpt-6-luna` staging fixtures are delivered; recording a passing
+  hosted run remains pending.

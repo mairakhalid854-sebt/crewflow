@@ -5,7 +5,7 @@ import {
   type AiProviderAdapter,
   type AiProviderRequest,
   type AiProviderResponse,
-} from './provider-activation.js';
+} from './provider-activation.ts';
 
 export interface AiProviderEvaluationFixture {
   readonly agent: AiAgentKind;

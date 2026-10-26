@@ -14,6 +14,7 @@ export interface AiProviderRequest {
   readonly maxOutputTokens: number;
   readonly policyVersion: string;
   readonly redactedInput: AiJsonValue;
+  readonly responseSchema: AiJsonValue;
   readonly schemaName: string;
 }
 
