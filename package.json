@@ -33,11 +33,12 @@
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
     "paddle:configure:sandbox": "node scripts/configure-paddle-sandbox.mjs",
+    "smoke:web": "node scripts/web-smoke.mjs",
     "supabase:reset": "supabase db reset",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:test": "supabase test db",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && node --test scripts/web-smoke.test.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
