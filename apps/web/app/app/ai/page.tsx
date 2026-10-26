@@ -9,6 +9,7 @@ import styles from './ai.module.css';
 import { humanize, proposedChangeLines } from './ai-presenters';
 import { ApprovalDecisionForm } from './approval-decision-form';
 import { DispatcherExecutionForm } from './dispatcher-execution-form';
+import { FollowUpExecutionForm } from './follow-up-execution-form';
 import { ReportExecutionForm } from './report-execution-form';
 import { ReportInvoiceExecutionForm } from './report-invoice-execution-form';
 
@@ -216,6 +217,11 @@ export default async function AiOperationsPage() {
                       approval.action_kind === 'report.save_invoice_draft' &&
                       !approval.execution_status ? (
                         <ReportInvoiceExecutionForm approvalId={approval.id} />
+                      ) : null}
+                      {approval.status === 'approved' &&
+                      approval.action_kind === 'follow_up.queue_message' &&
+                      !approval.execution_status ? (
+                        <FollowUpExecutionForm approvalId={approval.id} />
                       ) : null}
                     </div>
                   )}
