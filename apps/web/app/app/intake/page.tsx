@@ -4,7 +4,11 @@ import { requireTenantContext } from '../../../lib/auth/tenant-context';
 import { appUrl } from '../../../lib/app-url';
 import { createClient } from '../../../lib/supabase/server';
 
-import { TakeoverButton, WidgetControls } from './intake-controls';
+import {
+  IntakeProposalButton,
+  TakeoverButton,
+  WidgetControls,
+} from './intake-controls';
 import styles from './intake.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -163,11 +167,16 @@ export default async function IntakeInboxPage() {
                     </h2>
                     <p>Updated {formatDate(conversation.updated_at)}</p>
                   </div>
-                  {['collecting', 'ready_for_human_review'].includes(
-                    conversation.status,
-                  ) ? (
-                    <TakeoverButton conversationId={conversation.id} />
-                  ) : null}
+                  <div className={styles.conversationActions}>
+                    {conversation.status === 'ready_for_human_review' ? (
+                      <IntakeProposalButton conversationId={conversation.id} />
+                    ) : null}
+                    {['collecting', 'ready_for_human_review'].includes(
+                      conversation.status,
+                    ) ? (
+                      <TakeoverButton conversationId={conversation.id} />
+                    ) : null}
+                  </div>
                 </div>
 
                 <dl className={styles.details}>

@@ -140,6 +140,40 @@ async function executeFollowUpApproval(
   };
 }
 
+async function executeIntakeApproval(
+  approvalId: string,
+): Promise<ApprovalDecisionState> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc(
+    'execute_approved_intake_draft_records',
+    { target_approval_id: approvalId },
+  );
+
+  revalidatePath('/app/ai');
+  revalidatePath('/app/intake');
+  revalidatePath('/app/customers');
+  revalidatePath('/app/jobs');
+  if (data?.[0]?.job_id) {
+    revalidatePath(`/app/jobs/${data[0].job_id}`);
+    revalidatePath(`/app/jobs/${data[0].job_id}/quote`);
+  }
+
+  if (error) {
+    return {
+      message:
+        'Guarded Intake draft creation could not finish. The approval is retained; refresh and retry execution.',
+      status: 'error',
+    };
+  }
+
+  return {
+    message:
+      data?.[0]?.result_message ??
+      'Approval was recorded and guarded Intake draft creation completed.',
+    status: 'success',
+  };
+}
+
 export async function decideApprovalAction(
   _previousState: ApprovalDecisionState,
   formData: FormData,
@@ -212,6 +246,13 @@ export async function decideApprovalAction(
     approval.action_kind === 'follow_up.queue_message'
   ) {
     return executeFollowUpApproval(parsed.data.approvalId);
+  }
+
+  if (
+    data === 'approved' &&
+    approval.action_kind === 'intake.create_draft_records'
+  ) {
+    return executeIntakeApproval(parsed.data.approvalId);
   }
 
   revalidatePath('/app/ai');
@@ -364,4 +405,39 @@ export async function retryFollowUpExecutionAction(
   }
 
   return executeFollowUpApproval(parsed.data.approvalId);
+}
+
+export async function retryIntakeExecutionAction(
+  _previousState: ApprovalDecisionState,
+  formData: FormData,
+): Promise<ApprovalDecisionState> {
+  const context = await requireTenantContext(['owner', 'office']);
+  const parsed = executionSchema.safeParse({
+    approvalId: formData.get('approvalId'),
+  });
+  if (!parsed.success) {
+    return { message: 'Approval could not be identified.', status: 'error' };
+  }
+
+  const supabase = await createClient();
+  const { data: approval, error } = await supabase
+    .from('ai_approval_requests')
+    .select('action_kind,status,execution_status')
+    .eq('id', parsed.data.approvalId)
+    .eq('tenant_id', context.tenantId)
+    .single();
+
+  if (
+    error ||
+    !approval ||
+    approval.action_kind !== 'intake.create_draft_records' ||
+    approval.status !== 'approved'
+  ) {
+    return {
+      message: 'This Intake approval is not available for execution.',
+      status: 'error',
+    };
+  }
+
+  return executeIntakeApproval(parsed.data.approvalId);
 }

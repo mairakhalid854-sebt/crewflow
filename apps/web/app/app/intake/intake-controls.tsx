@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 
 import {
   type IntakeActionState,
+  requestIntakeDraftProposalAction,
   setIntakeWidgetEnabledAction,
   takeOverIntakeConversationAction,
 } from './actions';
@@ -96,6 +97,34 @@ export function TakeoverButton({ conversationId }: { conversationId: string }) {
       {state.message ? (
         <span
           className={state.status === 'error' ? styles.error : styles.success}
+        >
+          {state.message}
+        </span>
+      ) : null}
+    </form>
+  );
+}
+
+export function IntakeProposalButton({
+  conversationId,
+}: {
+  conversationId: string;
+}) {
+  const [state, action, pending] = useActionState(
+    requestIntakeDraftProposalAction,
+    initialState,
+  );
+
+  return (
+    <form action={action} className={styles.takeoverForm}>
+      <input name="conversationId" type="hidden" value={conversationId} />
+      <button disabled={pending} type="submit">
+        {pending ? 'Verifying price and slots...' : 'Prepare quote + slots'}
+      </button>
+      {state.message ? (
+        <span
+          className={state.status === 'error' ? styles.error : styles.success}
+          role="status"
         >
           {state.message}
         </span>

@@ -72,3 +72,44 @@ export async function takeOverIntakeConversationAction(
   revalidatePath('/app/intake');
   return { message: 'Conversation assigned to the office.', status: 'success' };
 }
+
+export async function requestIntakeDraftProposalAction(
+  _previousState: IntakeActionState,
+  formData: FormData,
+): Promise<IntakeActionState> {
+  await requireTenantContext(['owner', 'office']);
+  const parsedId = conversationIdSchema.safeParse(
+    formData.get('conversationId'),
+  );
+  if (!parsedId.success) {
+    return {
+      message: 'Conversation could not be identified.',
+      status: 'error',
+    };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc(
+    'request_intake_quote_slot_proposal',
+    {
+      target_conversation_id: parsedId.data,
+      target_correlation_id: crypto.randomUUID(),
+    },
+  );
+
+  if (error) {
+    return {
+      message:
+        'Proposal could not be prepared. Check AI settings, subscription access, service coverage, and technician availability.',
+      status: 'error',
+    };
+  }
+
+  revalidatePath('/app/intake');
+  revalidatePath('/app/ai');
+  return {
+    message:
+      data?.[0]?.result_message ?? 'Intake proposal evaluation completed.',
+    status: data?.[0]?.proposal_result === 'escalated' ? 'error' : 'success',
+  };
+}
