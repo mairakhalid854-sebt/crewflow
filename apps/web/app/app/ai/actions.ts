@@ -18,6 +18,40 @@ const decisionSchema = z.object({
   reason: z.string().trim().min(3).max(500),
 });
 const executionSchema = z.object({ approvalId: z.uuid() });
+const replaySchema = z.object({ runId: z.uuid() });
+
+export async function replayAiRunAction(
+  _previousState: ApprovalDecisionState,
+  formData: FormData,
+): Promise<ApprovalDecisionState> {
+  await requireTenantContext(['owner', 'office']);
+  const parsed = replaySchema.safeParse({ runId: formData.get('runId') });
+  if (!parsed.success) {
+    return { message: 'AI run could not be identified.', status: 'error' };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('replay_ai_agent_run', {
+    target_correlation_id: crypto.randomUUID(),
+    target_source_run_id: parsed.data.runId,
+  });
+
+  revalidatePath('/app/ai');
+  if (error) {
+    return {
+      message:
+        'Replay was blocked. Refresh the page; the source may still be pending or current policy may no longer allow a proposal.',
+      status: 'error',
+    };
+  }
+
+  return {
+    message:
+      data?.[0]?.result_message ??
+      'Current policy produced a fresh governed result.',
+    status: 'success',
+  };
+}
 
 async function executeDispatcherApproval(
   approvalId: string,

@@ -13,11 +13,20 @@ import { FollowUpExecutionForm } from './follow-up-execution-form';
 import { IntakeExecutionForm } from './intake-execution-form';
 import { ReportExecutionForm } from './report-execution-form';
 import { ReportInvoiceExecutionForm } from './report-invoice-execution-form';
+import { ReplayRunForm } from './replay-run-form';
 
 export const dynamic = 'force-dynamic';
 
 type Run = Database['public']['Tables']['ai_agent_runs']['Row'];
 type Step = Database['public']['Tables']['ai_run_steps']['Row'];
+type Approval = Database['public']['Tables']['ai_approval_requests']['Row'];
+
+const replayableActions = new Set([
+  'dispatcher.assign_technician',
+  'intake.create_draft_records',
+  'report.save_draft',
+  'report.save_invoice_draft',
+]);
 
 function formatDate(value: string, timeZone: string): string {
   return new Intl.DateTimeFormat('en-US', {
@@ -73,8 +82,20 @@ export default async function AiOperationsPage() {
         .order('sequence_number', { ascending: true })
         .limit(500)
     : { data: [], error: null };
+  const replaysResult = runIds.length
+    ? await supabase
+        .from('ai_run_replays')
+        .select('source_run_id,replay_run_id,created_at')
+        .eq('tenant_id', context.tenantId)
+        .or(
+          `source_run_id.in.(${runIds.join(',')}),replay_run_id.in.(${runIds.join(',')})`,
+        )
+        .order('created_at', { ascending: false })
+    : { data: [], error: null };
 
   if (stepsResult.error) throw new Error('AI run traces could not be loaded.');
+  if (replaysResult.error)
+    throw new Error('AI replay provenance could not be loaded.');
 
   const stepsByRun = new Map<string, Step[]>();
   for (const step of stepsResult.data ?? []) {
@@ -82,6 +103,18 @@ export default async function AiOperationsPage() {
     existing.push(step);
     stepsByRun.set(step.run_id, existing);
   }
+  const approvalByRun = new Map<string, Approval>();
+  for (const approval of approvals) {
+    if (!approvalByRun.has(approval.run_id)) {
+      approvalByRun.set(approval.run_id, approval);
+    }
+  }
+  const replaySourceByRun = new Map(
+    (replaysResult.data ?? []).map((replay) => [
+      replay.replay_run_id,
+      replay.source_run_id,
+    ]),
+  );
 
   const pendingApprovals = approvals.filter(
     (approval) => approval.status === 'pending',
@@ -258,6 +291,12 @@ export default async function AiOperationsPage() {
           <div className={styles.runList}>
             {runs.map((run) => {
               const steps = stepsByRun.get(run.id) ?? [];
+              const approval = approvalByRun.get(run.id);
+              const replaySource = replaySourceByRun.get(run.id);
+              const canReplay =
+                approval &&
+                approval.status !== 'pending' &&
+                replayableActions.has(approval.action_kind);
               return (
                 <details className={styles.runCard} key={run.id}>
                   <summary>
@@ -300,6 +339,12 @@ export default async function AiOperationsPage() {
                         <dt>Correlation</dt>
                         <dd className={styles.mono}>{run.correlation_id}</dd>
                       </div>
+                      {replaySource ? (
+                        <div>
+                          <dt>Replay of</dt>
+                          <dd className={styles.mono}>{replaySource}</dd>
+                        </div>
+                      ) : null}
                     </dl>
 
                     <div className={styles.trace}>
@@ -326,6 +371,7 @@ export default async function AiOperationsPage() {
                         <p>No trace steps were recorded for this run.</p>
                       )}
                     </div>
+                    {canReplay ? <ReplayRunForm runId={run.id} /> : null}
                   </div>
                 </details>
               );

@@ -197,6 +197,67 @@ export type Database = {
           },
         ];
       };
+      ai_run_replays: {
+        Row: {
+          action_kind: string;
+          created_at: string;
+          id: string;
+          replay_run_id: string;
+          requested_by_user_id: string;
+          requested_correlation_id: string;
+          source_run_id: string;
+          target_entity_id: string;
+          target_entity_type: string;
+          tenant_id: string;
+        };
+        Insert: {
+          action_kind: string;
+          created_at?: string;
+          id?: string;
+          replay_run_id: string;
+          requested_by_user_id: string;
+          requested_correlation_id: string;
+          source_run_id: string;
+          target_entity_id: string;
+          target_entity_type: string;
+          tenant_id: string;
+        };
+        Update: {
+          action_kind?: string;
+          created_at?: string;
+          id?: string;
+          replay_run_id?: string;
+          requested_by_user_id?: string;
+          requested_correlation_id?: string;
+          source_run_id?: string;
+          target_entity_id?: string;
+          target_entity_type?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_run_replays_replay_tenant_fk';
+            columns: ['replay_run_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'ai_agent_runs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'ai_run_replays_source_tenant_fk';
+            columns: ['source_run_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'ai_agent_runs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'ai_run_replays_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       ai_run_steps: {
         Row: {
           created_at: string;
@@ -3112,6 +3173,15 @@ export type Database = {
           target_invoice_id: string;
         };
         Returns: string;
+      };
+      replay_ai_agent_run: {
+        Args: { target_correlation_id: string; target_source_run_id: string };
+        Returns: {
+          approval_id: string | null;
+          replay_result: string;
+          replay_run_id: string;
+          result_message: string;
+        }[];
       };
       run_follow_up_scheduler: {
         Args: { target_now?: string };
