@@ -1,17 +1,18 @@
 # Phase 6 progress: governed AI platform
 
-Updated: 2026-10-26
+Updated: 2026-10-27
 
-Phase 6 has started with a provider-neutral governance boundary. No paid AI
-provider, model API key, autonomous customer action, or production AI feature is
-enabled by this slice.
+Phase 6 began with a provider-neutral governance boundary. The evaluated OpenAI
+candidate is now connected only to the bounded staging Dispatcher review path;
+autonomous customer actions and production AI remain disabled.
 
 ## Delivered in this slice
 
 - Tenant-scoped run records cover Intake, Dispatcher, Report, and Follow-Up
   agent kinds without enabling any of those agents yet.
-- The only allowed provider/model pair is the deterministic development stub;
-  live provider names and credentials are absent.
+- Provider/model identity is constrained to the deterministic development stub
+  or the evaluated OpenAI model. Only the Dispatcher review path can record the
+  latter, through a service-role-only bounded recorder.
 - New AI work is blocked unless an owner has enabled AI operations and a
   positive monthly budget remains.
 - The effective monthly budget respects both the tenant setting and the active
@@ -335,6 +336,19 @@ enabled by this slice.
 - On 2026-10-26 the hosted staging evaluation for `gpt-6-luna` passed all 8/8
   cases. Sanitized evidence recorded a 2,645 ms p95 duration and an $0.08
   estimated total cost. No tool access or live business mutation was enabled.
+- The Dispatcher is the first proposal path wired to the evaluated model. Its
+  authoritative database policy always runs first and remains the sole source
+  of technician eligibility and the exact proposed assignment. The model may
+  only explain that result with grounded IDs and cannot change the outcome.
+- Dispatcher provider calls use strict JSON-schema output, `store: false`, an
+  empty tools list, a 30-second timeout, a 300-token output cap, and a two-cent
+  request cap. Identity drift, tools, invented IDs, changed outcomes, malformed
+  output, excessive usage, missing credentials, and provider outages retain the
+  deterministic proposal as a safe fallback.
+- Only the service-role Edge Function can attach bounded OpenAI usage metadata
+  and a redacted immutable review step to an authorized Dispatcher run. Browser
+  clients cannot forge provider/model/cost records, and every changed assignment
+  still enters the existing human approval and guarded execution path.
 
 ## Next Phase 6 slices
 
@@ -344,12 +358,13 @@ enabled by this slice.
 2. Configure a private HTTPS malware-scanner endpoint and bearer credential,
    deploy the delivered worker, enable its Vault-backed cron, and run the TXT,
    DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
-3. Integrate the approved candidate into staging proposal generation behind
-   the existing token, output, timeout, cost, and tool-call boundaries. Keep
-   all side effects behind the existing human approval queue.
-4. Run end-to-end staging acceptance for Intake, Dispatcher, Report, and
+3. Deploy the Dispatcher provider-review migration and Edge Function, add the
+   provider key only to Supabase Secrets, and run its staging proposal,
+   fallback, approval, guarded execution, and audit acceptance path.
+4. Apply the same bounded review pattern to Intake, Report, and Follow-Up.
+5. Run end-to-end staging acceptance for Intake, Dispatcher, Report, and
    Follow-Up before any production activation decision.
-5. Keep production live mode disabled until an explicit owner decision records
+6. Keep production live mode disabled until an explicit owner decision records
    final monthly cost caps, retention, and rollback policy.
 
 ## Requirement status
@@ -362,7 +377,8 @@ enabled by this slice.
   without weakening the final confirmation boundary.
 - FR-061: Deterministic proposal policy, authorized data loading, governed
   persistence, UI invocation, human approval, and guarded execution are
-  delivered.
+  delivered. The bounded OpenAI review path is delivered for staging without
+  granting the model eligibility authority, tool access, or mutation rights.
 - FR-062: Deterministic, evidence-bounded report drafting policy, authorized
   orchestration, governed persistence, exact office approvals, and guarded
   editable-draft saving are delivered. Deterministic invoice policy is
@@ -376,7 +392,8 @@ enabled by this slice.
   execution are delivered. Actual provider delivery remains pending production
   email configuration.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
-  usage metadata; live provider cost accounting remains pending.
+  usage metadata. Dispatcher provider usage/cost recording is delivered;
+  equivalent live accounting for the other three agents remains pending.
 - FR-065: Inspectable, expiring, role-controlled, single-use approvals and the
   human decision UI are delivered. All currently implemented side-effecting
   agent actions use typed guarded executors with current-state revalidation.
@@ -388,13 +405,14 @@ enabled by this slice.
 - FR-067: Immutable redacted run/step traces, inspection UI, and authorized
   deterministic replay controls are delivered. Replay re-enters current
   policy, permission, budget, and state checks to create a distinct proposal
-  and approval; it never reuses a decision or executes the change. Live
-  provider execution remains pending explicit provider approval.
+  and approval; it never reuses a decision or executes the change. Dispatcher
+  provider review remains proposal-only and service-role recorded.
 - FR-068: Deterministic agent-specific adversarial fixtures are delivered for
   price grounding, tenant isolation, prompt injection, tool authorization,
   hallucination resistance, escalation, replay stability, and budget gates. A
   provider-neutral live evaluation harness now enforces all-agent quality,
   safety, latency, and cost thresholds. The OpenAI Responses adapter and eight
   synthetic `gpt-6-luna` staging fixtures are delivered. The hosted run passed
-  8/8 cases at 2,645 ms p95 and $0.08 estimated total cost; staging proposal
-  integration and end-to-end acceptance remain pending.
+  8/8 cases at 2,645 ms p95 and $0.08 estimated total cost. Dispatcher staging
+  proposal integration is delivered; hosted acceptance and the remaining three
+  agent integrations are pending.

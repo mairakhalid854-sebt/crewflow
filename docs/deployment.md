@@ -43,7 +43,11 @@ The native app owns the `crewflow` URL scheme with Android package and iOS bundl
 11. For Phase 5 sandbox billing, set `PADDLE_SANDBOX_WEBHOOK_SECRET` only in Supabase Secrets, deploy `paddle-billing-webhook`, and configure a Paddle sandbox notification destination to its HTTPS function URL.
 12. Create a least-privilege sandbox API key with `subscription.read` and `customer_portal_session.write`, store it only as the Supabase secret `PADDLE_SANDBOX_API_KEY`, then deploy `reconcile-paddle-billing` and `create-paddle-portal-session`.
 13. Replay signed, duplicate, out-of-order, pause, cancellation, recovery, reconciliation, and owner portal simulations before calling `configure_paddle_reconciliation_cron()` or enabling any checkout UI.
-14. Promote the same reviewed commit to production only after all release blockers are closed.
+14. For the Dispatcher staging model review, store `CREWFLOW_AI_PROVIDER_API_KEY`
+    only in Supabase Secrets, push the reviewed migration, deploy
+    `dispatcher-openai-proposal`, and verify both provider-reviewed and
+    credential-absent safe-fallback paths. Never expose this key to the browser.
+15. Promote the same reviewed commit to production only after all release blockers are closed.
 
 ## Web smoke check
 
@@ -66,7 +70,7 @@ tenant-isolation acceptance.
 
 ## Secrets
 
-The Supabase access token, database password, service-role key, Paddle webhook/API credentials, SMTP credentials, Vercel token, and future provider keys belong only in the relevant platform secret store. They must never be pasted into source files, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, build logs, or Git history.
+The Supabase access token, database password, service-role key, Paddle webhook/API credentials, SMTP credentials, Vercel token, and AI provider keys belong only in the relevant platform secret store. They must never be pasted into source files, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, build logs, or Git history. A Vercel secret is not automatically available to a Supabase Edge Function; configure each runtime independently.
 
 ## Current external state
 
