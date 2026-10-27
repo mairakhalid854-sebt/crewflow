@@ -125,6 +125,13 @@ export default async function DispatcherSuggestionsPage() {
               job.scheduled_start_at && job.scheduled_end_at,
             );
             const hasPostalCode = Boolean(customer?.postal_code);
+            const disabledReason = !enabled
+              ? 'Enable AI operations in Settings first'
+              : !hasSchedule
+                ? 'Add a complete schedule first'
+                : !hasPostalCode
+                  ? 'Add a customer service ZIP first'
+                  : undefined;
             return (
               <article className={styles.dispatcherJob} key={job.id}>
                 <div>
@@ -172,7 +179,7 @@ export default async function DispatcherSuggestionsPage() {
                   </div>
                 </dl>
                 <DispatcherRequestForm
-                  disabled={!enabled || !hasSchedule || !hasPostalCode}
+                  disabledReason={disabledReason}
                   jobId={job.id}
                 />
               </article>
