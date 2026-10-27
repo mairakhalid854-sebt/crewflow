@@ -380,9 +380,10 @@ autonomous customer actions and production AI remain disabled.
    credential-absent fallback, human approval, guarded execution, idempotency,
    and redacted audit evidence. Dispatcher no-candidate acceptance has passed;
    its eligible-candidate approval/execution case remains.
-2. Configure a private HTTPS malware-scanner endpoint and bearer credential,
-   deploy the delivered worker, enable its Vault-backed cron, and run the TXT,
-   DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
+2. Deploy the delivered authenticated `apps/scanner` ClamAV gateway on a
+   private network, configure its HTTPS endpoint and bearer credential, enable
+   the Vault-backed cron, and run the TXT, DOCX, PDF, infected-file, and
+   retry-exhaustion staging acceptance matrix.
 3. Keep production live mode disabled until an explicit owner decision records
    final monthly cost caps, retention, and rollback policy.
 
@@ -422,10 +423,11 @@ autonomous customer actions and production AI remain disabled.
   human decision UI are delivered. All currently implemented side-effecting
   agent actions use typed guarded executors with current-state revalidation.
 - FR-066: Database security foundation, owner upload/version/archive UI,
-  durable service-only queue, fail-closed scan adapter, bounded TXT/DOCX/PDF
-  parser, retries, leases, scheduling contract, tenant-scoped retrieval, and
-  immutable evidence are delivered. Staging activation and acceptance remain
-  gated only by a private malware-scanner endpoint and credential.
+  durable service-only queue, authenticated ClamAV gateway, fail-closed scan
+  adapter, bounded TXT/DOCX/PDF parser, retries, leases, scheduling contract,
+  tenant-scoped retrieval, and immutable evidence are delivered. Staging
+  activation and acceptance remain gated by private gateway/ClamAV hosting and
+  runtime credentials.
 - FR-067: Immutable redacted run/step traces, inspection UI, and authorized
   deterministic replay controls are delivered. Replay re-enters current
   policy, permission, budget, and state checks to create a distinct proposal
