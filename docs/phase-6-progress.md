@@ -3,7 +3,7 @@
 Updated: 2026-10-27
 
 Phase 6 began with a provider-neutral governance boundary. The evaluated OpenAI
-candidate is now connected to bounded Dispatcher, Intake, and Report review paths;
+candidate is now connected to bounded review paths for all four agent kinds;
 autonomous customer actions and production AI remain disabled.
 
 ## Delivered in this slice
@@ -365,6 +365,12 @@ autonomous customer actions and production AI remain disabled.
   the only source of report evidence, quote/catalog pricing, totals, and exact
   proposed changes. The model receives only the trusted outcome and bounded
   grounding IDs; it cannot save, publish, send, charge, or record payment.
+- Scheduled Follow-Up proposals now enter a private durable provider-review
+  queue. A service-authenticated worker claims at most four leased jobs, sends
+  only bounded run/approval/message/invoice IDs and the deterministic outcome,
+  rejects tools or changed results, and records redacted usage evidence. Failed
+  reviews retry with bounded exponential backoff and stop after five attempts.
+  The review never changes the exact queued message, approves it, or sends it.
 
 ## Next Phase 6 slices
 
@@ -377,8 +383,7 @@ autonomous customer actions and production AI remain disabled.
    DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
 3. Run the Dispatcher proposed-candidate, fallback, approval, guarded execution,
    and audit acceptance cases; the hosted no-candidate escalation is accepted.
-4. Deploy and accept the Report provider path, then apply the same bounded
-   review pattern to Follow-Up.
+4. Deploy and accept the Report and Follow-Up provider paths.
 5. Run end-to-end staging acceptance for Intake, Dispatcher, Report, and
    Follow-Up before any production activation decision.
 6. Keep production live mode disabled until an explicit owner decision records
@@ -410,11 +415,12 @@ autonomous customer actions and production AI remain disabled.
   are delivered. Daily orchestration, persisted provider-neutral delivery
   queue, customer suppression, exact approvals, and guarded ready-state
   execution are delivered. Actual provider delivery remains pending production
-  email configuration.
-- FR-064: Foundation delivered for settings/plan budget enforcement and bounded
-  usage metadata. Dispatcher and Intake provider usage/cost recording are
-  delivered; equivalent live accounting for Report and Follow-Up remains
-  pending.
+  email configuration. The bounded scheduled provider-review queue and worker
+  are delivered in source and await hosted staging acceptance.
+- FR-064: Settings/plan budget enforcement and bounded usage metadata are
+  delivered. All four agent kinds now have service-controlled provider
+  usage/cost recording; final hosted acceptance remains pending for Intake,
+  Report, and Follow-Up.
 - FR-065: Inspectable, expiring, role-controlled, single-use approvals and the
   human decision UI are delivered. All currently implemented side-effecting
   agent actions use typed guarded executors with current-state revalidation.
@@ -436,5 +442,5 @@ autonomous customer actions and production AI remain disabled.
   synthetic `gpt-6-luna` staging fixtures are delivered. The hosted run passed
   8/8 cases at 2,645 ms p95 and $0.08 estimated total cost. Dispatcher hosted
   escalation acceptance passed on 2026-10-27. Intake source integration is
-  delivered; its hosted acceptance plus Report deployment/acceptance and the
-  Follow-Up integration are pending.
+  delivered; hosted acceptance remains pending for Intake, Report, and
+  Follow-Up.
