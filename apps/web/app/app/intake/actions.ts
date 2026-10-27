@@ -13,6 +13,28 @@ export interface IntakeActionState {
 
 const conversationIdSchema = z.uuid();
 
+interface IntakeProposalResult {
+  readonly proposal_result: 'escalated' | 'proposed';
+  readonly provider_reviewed: boolean;
+  readonly result_message?: string;
+}
+
+function parseIntakeProposalResult(
+  value: unknown,
+): IntakeProposalResult | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const candidate = value as Record<string, unknown>;
+  if (
+    !['escalated', 'proposed'].includes(String(candidate.proposal_result)) ||
+    typeof candidate.provider_reviewed !== 'boolean' ||
+    (candidate.result_message !== undefined &&
+      typeof candidate.result_message !== 'string')
+  ) {
+    return undefined;
+  }
+  return candidate as unknown as IntakeProposalResult;
+}
+
 export async function setIntakeWidgetEnabledAction(
   _previousState: IntakeActionState,
   formData: FormData,
@@ -89,15 +111,39 @@ export async function requestIntakeDraftProposalAction(
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc(
-    'request_intake_quote_slot_proposal',
+  const correlationId = crypto.randomUUID();
+  const invocation: unknown = await supabase.functions.invoke(
+    'intake-openai-proposal',
     {
-      target_conversation_id: parsedId.data,
-      target_correlation_id: crypto.randomUUID(),
+      body: {
+        conversationId: parsedId.data,
+        correlationId,
+      },
     },
   );
+  const invoked = invocation as
+    { data?: unknown; error?: unknown } | null | undefined;
+  let result = invoked?.error
+    ? undefined
+    : parseIntakeProposalResult(invoked?.data);
+  let fallbackError: { message: string } | null = null;
 
-  if (error) {
+  if (!result) {
+    const fallback = await supabase.rpc('request_intake_quote_slot_proposal', {
+      target_conversation_id: parsedId.data,
+      target_correlation_id: correlationId,
+    });
+    fallbackError = fallback.error;
+    const deterministic = fallback.data?.[0];
+    if (deterministic) {
+      result = parseIntakeProposalResult({
+        ...deterministic,
+        provider_reviewed: false,
+      });
+    }
+  }
+
+  if (fallbackError || !result) {
     return {
       message:
         'Proposal could not be prepared. Check AI settings, subscription access, service coverage, and technician availability.',
@@ -108,9 +154,12 @@ export async function requestIntakeDraftProposalAction(
   revalidatePath('/app/intake');
   revalidatePath('/app/ai');
   return {
-    message:
-      data?.[0]?.result_message ?? 'Intake proposal evaluation completed.',
-    status: data?.[0]?.proposal_result === 'escalated' ? 'error' : 'success',
+    message: result.provider_reviewed
+      ? result.proposal_result === 'proposed'
+        ? 'Intake proposal and bounded AI review recorded. Office approval is still required before any records are created.'
+        : 'Two verified slots were unavailable. The AI-reviewed escalation is recorded; schedule manually.'
+      : (result.result_message ?? 'Intake proposal evaluation completed.'),
+    status: result.proposal_result === 'escalated' ? 'error' : 'success',
   };
 }
 

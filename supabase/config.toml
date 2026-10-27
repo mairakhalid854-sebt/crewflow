@@ -420,6 +420,10 @@ entrypoint = './functions/process-knowledge-documents/index.js'
 verify_jwt = false
 entrypoint = './functions/dispatcher-openai-proposal/index.js'
 
+[functions.intake-openai-proposal]
+verify_jwt = false
+entrypoint = './functions/intake-openai-proposal/index.js'
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
