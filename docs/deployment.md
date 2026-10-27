@@ -27,6 +27,14 @@ The native app owns the `crewflow` URL scheme with Android package and iOS bundl
 - Every NestJS API route has a default process-local limit of 120 requests per 60 seconds. `API_RATE_LIMIT_MAX` and `API_RATE_LIMIT_WINDOW_MS` accept bounded integer overrides and fail startup on unsafe values.
 - API responses carry `x-correlation-id`. Only UUID-shaped incoming values are preserved; other values are replaced. Completion logs contain the correlation ID, method, path without query data, status, and duration—never cookies, request bodies, query values, or customer identifiers.
 - Production API logs are newline-delimited JSON on stdout for a hosting log drain. Before more than one API replica or public traffic, configure a shared Redis limiter or provider WAF and a centralized log/alert destination; process-local counters do not coordinate across replicas.
+- Next.js server request failures are emitted as redacted JSON. They contain a
+  framework route pattern and validated operational identifiers, never the
+  actual request URL, query values, headers, cookies, error message, stack, or
+  request body. Configure the Vercel log drain and alert rules before public
+  traffic; console retention alone is not the production observability plan.
+- Use `docs/incident-response.md` for severity, containment, evidence, recovery,
+  and drill requirements. Record correlation/event IDs only; do not copy raw
+  customer data or secrets into incident tickets.
 
 ## Staging sequence
 

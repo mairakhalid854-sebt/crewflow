@@ -24,6 +24,20 @@ production environment.
 - Intake, Report/Invoice, and Follow-Up still require authenticated staging
   business-flow acceptance before Phase 6 can be signed off.
 
+## Observability and incident-response foundation
+
+- Next.js server request failures emit one structured JSON event for hosting
+  log drains. Events include only a bounded framework route pattern, method,
+  route kind, validated correlation ID, error class, and numeric framework
+  digest.
+- Actual request paths, query strings, headers, cookies, error messages, stack
+  traces, customer identifiers, and public-purpose tokens are excluded.
+- The incident runbook defines severity, containment, evidence handling,
+  credential/tenant-isolation response, recovery verification, and the two
+  drills required before launch.
+- A centralized log destination, named responders, alert routing, provider
+  monitors, and completed drill records remain external release gates.
+
 ## Web release smoke foundation
 
 - The Next.js web surface sends HSTS, MIME-sniffing protection, a strict
