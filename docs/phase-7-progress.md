@@ -42,6 +42,18 @@ production environment.
 - A centralized log destination, named responders, alert routing, provider
   monitors, and completed drill records remain external release gates.
 
+## Backup and restore foundation
+
+- The recovery runbook treats the database and private Storage bytes as
+  separate required artifacts, requires encrypted off-provider copies and
+  checksums, and forbids restore testing against the source project.
+- The isolated drill disables every outbound integration before restoring,
+  verifies migrations/RLS/tenant isolation/storage/queues/core journeys, and
+  records sanitized RPO/RTO evidence plus target deletion.
+- Production plan/retention and approved RPO/RTO decisions, an actual provider
+  backup, a private Storage export, and a completed restore drill remain launch
+  gates. CI schema resets do not satisfy this requirement.
+
 ## Web release smoke foundation
 
 - The Next.js web surface sends HSTS, MIME-sniffing protection, a strict
