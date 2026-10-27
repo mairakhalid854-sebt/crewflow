@@ -17,7 +17,8 @@ Supabase staging and production must be separate projects before real customer d
 - Web: Vercel project built from the repository root with workspace-aware `vercel.json`; the deployed Next.js app lives in `apps/web` and initially uses a generated `*.vercel.app` hostname.
 - Identity/database: Supabase, deployed only from committed files under `supabase/migrations`.
 - API and worker: Railway services after their Phase 1/2 runtime responsibilities exist. They are not deployable product services yet.
-- Knowledge scanner: `apps/scanner/Dockerfile` behind private HTTPS, paired
+- Knowledge scanner: `apps/scanner/Dockerfile` behind authenticated HTTPS on a
+  low-cost VPS (`apps/scanner/vps`) or Railway (`apps/scanner/railway.json`), paired
   with a private ClamAV daemon. The gateway is deployable; its hosting,
   credential provisioning, signature-update monitoring, and staging acceptance
   remain external rollout steps.
