@@ -85,6 +85,7 @@ The Supabase access token, database password, service-role key, Paddle webhook/A
 - A custom domain is optional for staging; the generated Vercel hostname is sufficient.
 - The Dispatcher provider-review migration and `dispatcher-openai-proposal`
   Edge Function are deployed to staging. The function is active, rejects
-  unauthenticated requests, and retains deterministic proposals when the model
-  credential is absent. `CREWFLOW_AI_PROVIDER_API_KEY` is not yet present in
-  Supabase Secrets, so hosted provider review and acceptance remain pending.
+  unauthenticated requests, and retains deterministic proposals if the model is
+  unavailable. `CREWFLOW_AI_PROVIDER_API_KEY` is present in Supabase Secrets;
+  authenticated provider-review and guarded-execution acceptance remain
+  pending.
