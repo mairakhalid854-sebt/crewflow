@@ -33,6 +33,25 @@ jobs:
       - name: Monitor blocked mobile advisories
         run: npm run audit:mobile
 
+  scanner-container:
+    name: Knowledge scanner container build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build scanner image
+        run: docker build --file apps/scanner/Dockerfile --tag crewflow-scanner:ci .
+
+      - name: Verify image defaults fail closed without a secret
+        run: |
+          if docker run --rm crewflow-scanner:ci; then
+            echo "Scanner unexpectedly started without SCANNER_AUTH_TOKEN"
+            exit 1
+          fi
+
   quality:
     name: Format, lint, typecheck, test, build
     runs-on: ubuntu-latest
