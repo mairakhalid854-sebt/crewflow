@@ -43,10 +43,13 @@ The native app owns the `crewflow` URL scheme with Android package and iOS bundl
 11. For Phase 5 sandbox billing, set `PADDLE_SANDBOX_WEBHOOK_SECRET` only in Supabase Secrets, deploy `paddle-billing-webhook`, and configure a Paddle sandbox notification destination to its HTTPS function URL.
 12. Create a least-privilege sandbox API key with `subscription.read` and `customer_portal_session.write`, store it only as the Supabase secret `PADDLE_SANDBOX_API_KEY`, then deploy `reconcile-paddle-billing` and `create-paddle-portal-session`.
 13. Replay signed, duplicate, out-of-order, pause, cancellation, recovery, reconciliation, and owner portal simulations before calling `configure_paddle_reconciliation_cron()` or enabling any checkout UI.
-14. For the Dispatcher staging model review, store `CREWFLOW_AI_PROVIDER_API_KEY`
-    only in Supabase Secrets, push the reviewed migration, deploy
-    `dispatcher-openai-proposal`, and verify both provider-reviewed and
-    credential-absent safe-fallback paths. Never expose this key to the browser.
+14. For the four staging model-review paths, store
+    `CREWFLOW_AI_PROVIDER_API_KEY` only in Supabase Secrets, push the reviewed
+    migrations, and deploy `dispatcher-openai-proposal`,
+    `intake-openai-proposal`, `report-openai-proposal`, and
+    `process-follow-up-openai-reviews`. Verify provider-reviewed and
+    credential-absent deterministic fallback paths. Never expose this key to
+    the browser.
 15. Promote the same reviewed commit to production only after all release blockers are closed.
 
 ## Web smoke check
@@ -78,14 +81,16 @@ The Supabase access token, database password, service-role key, Paddle webhook/A
 - The repository is linked to Supabase project `mlgfyxsqorualqwbecmp`; committed migrations are promoted through the CLI and the hosted schema lint is checked after each push.
 - The sandbox reconciliation and customer-portal functions are deployed. The least-privilege sandbox API key is stored in Supabase Secrets, and the hourly reconciliation cron is active at minute 17. Hosted verification on October 22, 2026 showed five consecutive successful runs against the linked sandbox subscription with zero failures.
 - GitHub remote `mairakhalid854-sebt/crewflow` is connected locally.
-- Generated database types match the hosted schema. Full pgTAP execution awaits Docker/Podman on a test runner.
+- Generated database types match the hosted schema. The GitHub database-integration job provisions Supabase and passes the full pgTAP/database suite; the workstation still has no Docker/Podman runtime.
 - Vercel project `saas-team-crew-flow/crewflow` is linked and the protected Preview alias at `https://crewflow-git-staging-saas-team-crew-flow.vercel.app` builds successfully from `staging`.
 - Preview Supabase public variables are configured in Vercel. Supabase Auth allows localhost, the Vercel team preview-host pattern, and the exact `crewflow://auth/reset` mobile recovery callback; undeclared hosted Auth/MFA/pooler settings were left unchanged.
 - Vercel's GitHub App is connected to `mairakhalid854-sebt/crewflow`. Ongoing work is pushed to the `staging` branch for protected Preview deployments; `main` is reserved for reviewed production promotion.
 - A custom domain is optional for staging; the generated Vercel hostname is sufficient.
-- The Dispatcher provider-review migration and `dispatcher-openai-proposal`
-  Edge Function are deployed to staging. The function is active, rejects
-  unauthenticated requests, and retains deterministic proposals if the model is
-  unavailable. `CREWFLOW_AI_PROVIDER_API_KEY` is present in Supabase Secrets;
-  authenticated provider-review and guarded-execution acceptance remain
-  pending.
+- All four guarded provider-review paths are deployed to staging. The
+  Dispatcher, Intake, Report/Invoice, and Follow-Up functions reject
+  unauthenticated requests, preserve deterministic fallback behavior, retain
+  redacted audit traces, and never bypass human approval. The Follow-Up worker
+  is scheduled every five minutes and cannot send customer messages itself.
+  `CREWFLOW_AI_PROVIDER_API_KEY` is present in Supabase Secrets. Dispatcher
+  authenticated acceptance passed with `openai/gpt-6-luna`; authenticated
+  Intake, Report/Invoice, and Follow-Up business-flow acceptance remains.

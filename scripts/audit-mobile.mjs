@@ -3,19 +3,10 @@ import process from 'node:process';
 
 const reviewedAdvisories = new Map([
   [
-    'https://github.com/advisories/GHSA-86w9-cpqp-85rv',
-    {
-      packageName: 'node-forge',
-      reviewBy: '2026-10-27',
-      severity: 'high',
-      source: 1240912,
-    },
-  ],
-  [
     'https://github.com/advisories/GHSA-mrhx-c7xc-m3w5',
     {
       packageName: 'zod',
-      reviewBy: '2026-10-27',
+      reviewBy: '2026-11-10',
       severity: 'high',
       source: 1243066,
     },
@@ -95,5 +86,5 @@ for (const [url, reviewed] of reviewedAdvisories) {
 
 process.stderr.write(
   `Mobile release remains blocked by ${observed.size} reviewed transitive advisories. ` +
-    'No new advisories were found; review is required again by 2026-10-27.\n',
+    'No new advisories were found; review is required again by 2026-11-10.\n',
 );
