@@ -3254,6 +3254,24 @@ export type Database = {
           result_message: string;
         }[];
       };
+      request_report_invoice_proposal: {
+        Args: { target_correlation_id: string; target_job_id: string };
+        Returns: {
+          approval_id: string | null;
+          proposal_result: string;
+          result_message: string;
+          run_id: string;
+        }[];
+      };
+      request_report_proposal: {
+        Args: { target_correlation_id: string; target_job_id: string };
+        Returns: {
+          approval_id: string | null;
+          proposal_result: string;
+          result_message: string;
+          run_id: string;
+        }[];
+      };
       select_public_intake_slot: {
         Args: {
           session_token: string;

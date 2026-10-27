@@ -8,6 +8,7 @@ import type { Tables } from '@crewflow/database';
 import {
   type WorkReportActionState,
   publishWorkReportAction,
+  requestAiReportProposalAction,
 } from './report-actions';
 
 type WorkReport = Tables<'work_reports'>;
@@ -27,6 +28,10 @@ export function WorkReportPanel({
     publishWorkReportAction,
     initialState,
   );
+  const [proposalState, proposalAction, proposing] = useActionState(
+    requestAiReportProposalAction,
+    initialState,
+  );
   const [copied, setCopied] = useState(false);
   const jobCanReport = ['completed', 'closed'].includes(jobStatus);
   const canEdit = jobCanReport && (!report || report.status !== 'draft');
@@ -38,16 +43,42 @@ export function WorkReportPanel({
           <h2>Work report</h2>
           <p>Reviewed customer summary of the completed service.</p>
         </div>
-        {report?.status === 'draft' || canEdit ? (
-          <Link className="secondary-button" href={`/app/jobs/${jobId}/report`}>
-            {report?.status === 'draft'
-              ? 'Edit draft'
-              : report
-                ? 'Create revision'
-                : 'Create report'}
-          </Link>
-        ) : null}
+        <div className="panel-heading-actions">
+          {jobCanReport && (!report || report.status === 'draft') ? (
+            <form action={proposalAction}>
+              <input name="jobId" type="hidden" value={jobId} />
+              <button
+                className="secondary-button"
+                disabled={proposing}
+                type="submit"
+              >
+                {proposing ? 'Evaluating...' : 'Prepare AI draft'}
+              </button>
+            </form>
+          ) : null}
+          {report?.status === 'draft' || canEdit ? (
+            <Link
+              className="secondary-button"
+              href={`/app/jobs/${jobId}/report`}
+            >
+              {report?.status === 'draft'
+                ? 'Edit draft'
+                : report
+                  ? 'Create revision'
+                  : 'Create report'}
+            </Link>
+          ) : null}
+        </div>
       </div>
+
+      {proposalState.message ? (
+        <p
+          className={`form-status form-status-${proposalState.status}`}
+          role="status"
+        >
+          {proposalState.message}
+        </p>
+      ) : null}
 
       {!report ? (
         <p className="form-help">

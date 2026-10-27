@@ -424,6 +424,10 @@ entrypoint = './functions/dispatcher-openai-proposal/index.js'
 verify_jwt = false
 entrypoint = './functions/intake-openai-proposal/index.js'
 
+[functions.report-openai-proposal]
+verify_jwt = false
+entrypoint = './functions/report-openai-proposal/index.js'
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

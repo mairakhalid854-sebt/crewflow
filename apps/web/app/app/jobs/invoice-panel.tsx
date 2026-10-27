@@ -12,6 +12,7 @@ import {
   publishInvoiceAction,
   recordAdjustmentAction,
   recordPaymentAction,
+  requestAiInvoiceProposalAction,
   voidInvoiceAction,
 } from './invoice-actions';
 
@@ -57,6 +58,10 @@ export function InvoicePanel({
     voidInvoiceAction,
     initialState,
   );
+  const [proposalState, proposalAction, proposing] = useActionState(
+    requestAiInvoiceProposalAction,
+    initialState,
+  );
   const [copied, setCopied] = useState(false);
   const jobCanInvoice = ['completed', 'closed'].includes(jobStatus);
   const canCreate = jobCanInvoice && (!invoice || invoice.status === 'void');
@@ -70,6 +75,18 @@ export function InvoicePanel({
           <p>Billing snapshot and manually verified payment history.</p>
         </div>
         <div className="panel-heading-actions">
+          {canCreate ? (
+            <form action={proposalAction}>
+              <input name="jobId" type="hidden" value={jobId} />
+              <button
+                className="secondary-button"
+                disabled={proposing}
+                type="submit"
+              >
+                {proposing ? 'Evaluating...' : 'Prepare AI draft'}
+              </button>
+            </form>
+          ) : null}
           {invoice ? (
             <a
               className="secondary-button"
@@ -93,6 +110,15 @@ export function InvoicePanel({
           ) : null}
         </div>
       </div>
+
+      {proposalState.message ? (
+        <p
+          className={`form-status form-status-${proposalState.status}`}
+          role="status"
+        >
+          {proposalState.message}
+        </p>
+      ) : null}
 
       {!invoice ? (
         <p className="form-help">

@@ -15,6 +15,30 @@ export interface InvoiceActionState {
   readonly status: 'idle' | 'error' | 'success';
 }
 
+interface InvoiceProposalResult {
+  readonly proposal_result: 'escalated' | 'proposed' | 'unchanged';
+  readonly provider_reviewed: boolean;
+  readonly result_message?: string;
+}
+
+function parseInvoiceProposalResult(
+  value: unknown,
+): InvoiceProposalResult | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const candidate = value as Record<string, unknown>;
+  if (
+    !['escalated', 'proposed', 'unchanged'].includes(
+      String(candidate.proposal_result),
+    ) ||
+    typeof candidate.provider_reviewed !== 'boolean' ||
+    (candidate.result_message !== undefined &&
+      typeof candidate.result_message !== 'string')
+  ) {
+    return undefined;
+  }
+  return candidate as unknown as InvoiceProposalResult;
+}
+
 const headerSchema = z.object({
   discount: z
     .string()
@@ -65,6 +89,75 @@ function invoiceError(message?: string): string {
     return 'This job already has an active invoice.';
   }
   return 'Invoice could not be updated. Please try again.';
+}
+
+export async function requestAiInvoiceProposalAction(
+  _previous: InvoiceActionState,
+  formData: FormData,
+): Promise<InvoiceActionState> {
+  await requireTenantContext(['owner', 'office']);
+  const parsedJobId = z.uuid().safeParse(formData.get('jobId'));
+  if (!parsedJobId.success) {
+    return { message: 'Job could not be identified.', status: 'error' };
+  }
+
+  const supabase = await createClient();
+  const correlationId = crypto.randomUUID();
+  const invocation: unknown = await supabase.functions.invoke(
+    'report-openai-proposal',
+    {
+      body: {
+        correlationId,
+        jobId: parsedJobId.data,
+        proposalType: 'invoice',
+      },
+    },
+  );
+  const invoked = invocation as
+    { data?: unknown; error?: unknown } | null | undefined;
+  let result = invoked?.error
+    ? undefined
+    : parseInvoiceProposalResult(invoked?.data);
+  let fallbackError: { message: string } | null = null;
+
+  if (!result) {
+    const fallback = await supabase.rpc('request_report_invoice_proposal', {
+      target_correlation_id: correlationId,
+      target_job_id: parsedJobId.data,
+    });
+    fallbackError = fallback.error;
+    if (fallback.data?.[0]) {
+      result = parseInvoiceProposalResult({
+        ...fallback.data[0],
+        provider_reviewed: false,
+      });
+    }
+  }
+
+  if (fallbackError || !result) {
+    return {
+      message:
+        'AI invoice evaluation could not finish. Check AI settings, trusted pricing, job status, and subscription access.',
+      status: 'error',
+    };
+  }
+
+  revalidatePath('/app/ai');
+  revalidatePath(`/app/jobs/${parsedJobId.data}`);
+  return {
+    message:
+      result.proposal_result === 'proposed'
+        ? result.provider_reviewed
+          ? 'Invoice proposal and bounded AI review recorded. Review it in AI Operations before approving.'
+          : 'Invoice proposal created from trusted pricing. AI review was unavailable, so the deterministic proposal was kept.'
+        : result.proposal_result === 'unchanged'
+          ? 'This job already has an active invoice.'
+          : result.provider_reviewed
+            ? 'Invoice drafting needs human input. The AI-reviewed escalation is recorded in AI Operations.'
+            : (result.result_message ??
+              'Invoice drafting needs human input. Review the trace in AI Operations.'),
+    status: result.proposal_result === 'escalated' ? 'error' : 'success',
+  };
 }
 
 export async function saveInvoiceAction(
