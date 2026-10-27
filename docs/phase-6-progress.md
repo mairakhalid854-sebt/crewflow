@@ -412,8 +412,11 @@ autonomous customer actions and production AI remain disabled.
   milestones, dedupe keys, payment-source disclosure, and mandatory approval
   are delivered. Daily orchestration, persisted provider-neutral delivery
   queue, customer suppression, exact approvals, and guarded ready-state
-  execution are delivered. Actual provider delivery remains pending production
-  email configuration. The bounded scheduled provider-review queue and worker
+  execution are delivered. A Resend delivery worker with claim-time revalidation,
+  idempotent sends, bounded retries, and webhook suppression is delivered for
+  transactional reminders; live delivery awaits a verified sending domain.
+  Review requests stay unsent until an unsubscribe flow and counsel approval
+  exist. The bounded scheduled provider-review queue and worker
   are deployed to staging and await hosted acceptance.
 - FR-064: Settings/plan budget enforcement and bounded usage metadata are
   delivered. All four agent kinds now have service-controlled provider

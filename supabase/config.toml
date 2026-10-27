@@ -432,6 +432,14 @@ entrypoint = './functions/report-openai-proposal/index.js'
 verify_jwt = false
 entrypoint = './functions/process-follow-up-openai-reviews/index.js'
 
+[functions.process-follow-up-email-deliveries]
+verify_jwt = false
+entrypoint = './functions/process-follow-up-email-deliveries/index.js'
+
+[functions.resend-email-webhook]
+verify_jwt = false
+entrypoint = './functions/resend-email-webhook/index.js'
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

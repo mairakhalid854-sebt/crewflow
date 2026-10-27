@@ -98,6 +98,19 @@ production.
   remain release gates because synthetic local measurements cannot replace
   real-user data.
 
+## Transactional email foundation
+
+- Resend is the selected provider for Supabase Auth SMTP and application
+  email. `docs/transactional-email.md` covers domain DNS, keys, secrets,
+  deployment, the delivery schedule, and acceptance.
+- `process-follow-up-email-deliveries` sends only approved transactional
+  Follow-Up reminders, revalidating contact and invoice state at claim time,
+  with idempotency keys, two-minute leases, and five bounded attempts.
+- `resend-email-webhook` verifies Svix signatures and suppresses permanently
+  bounced or complaining recipients across tenants.
+- Delivery is never scheduled by migration. Live sending, invite/quote/
+  invoice/status templates, and review-request unsubscribe remain open.
+
 ## Remaining Phase 7 gates
 
 - Separate production Supabase, Vercel environment, credentials, storage,
