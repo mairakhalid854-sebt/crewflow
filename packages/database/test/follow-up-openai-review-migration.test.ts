@@ -48,5 +48,9 @@ describe('Follow-Up OpenAI review migration', () => {
       "'/functions/v1/process-follow-up-openai-reviews'",
     );
     expect(migration).toContain("name = 'crewflow_edge_function_service_key'");
+    expect(migration).toContain("current_user <> 'postgres'");
+    expect(migration).toContain(
+      'REVOKE ALL ON FUNCTION public.configure_follow_up_provider_review_cron()',
+    );
   });
 });
