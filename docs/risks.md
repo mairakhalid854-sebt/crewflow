@@ -6,21 +6,21 @@
 - Observed: 2026-10-12
 - Scope: Expo SDK 57 / Metro transitive build tooling
 
-`npm audit --omit=dev --workspace @crewflow/mobile` reports high-severity advisories in transitive `braces` and `node-forge` packages, plus a moderate `uuid` advisory. npm currently offers only a breaking downgrade to Expo 44, which is not an acceptable remediation. These packages belong to the Expo/Metro native build toolchain and are not included in the deployed web, API, or worker services. No production mobile build or deployment is authorized while high findings remain.
+The 2026-10-27 review upgraded transitive `node-forge` from 1.4.0 to its compatible patched 1.4.1 release. `npm audit --omit=dev --workspace @crewflow/mobile` now reports one underlying high-severity advisory in transitive `zod` 3.25.76 through `@expo/cli` 57.0.32. Expo 57.0.31 is the latest SDK 57 release and its CLI requires `zod ^3.25.76`; npm's suggested remediation is a breaking downgrade to Expo 54, which is not acceptable. The vulnerable code is in the native build CLI rather than the shipped web, API, or worker services. No production mobile build or deployment is authorized while this high finding remains.
 
 Mitigation:
 
 1. Keep a strict blocking audit for the deployable web, API, and worker workspaces.
-2. Monitor the three exact mobile advisories in CI with package, severity, and advisory-source validation; any new advisory or metadata change fails CI.
-3. Expire the temporary review on 2026-10-27 so CI cannot silently carry the exception indefinitely.
+2. Monitor the exact remaining mobile advisory in CI with package, severity, and advisory-source validation; any new advisory or metadata change fails CI.
+3. Expire the renewed temporary review on 2026-11-10 so CI cannot silently carry the exception indefinitely.
 4. Track patched stable Expo/Metro packages and update promptly.
 5. Re-run application type checks, native builds, and device smoke tests after upgrading.
 6. Do not use `npm audit fix --force` to accept an unreviewed downgrade.
 
-## R-002: Local infrastructure unverified in current workstation
+## R-002: Local infrastructure validation depends on CI
 
-Docker is not installed in the current workspace environment. `compose.yaml` can be reviewed, but PostgreSQL and Redis health checks cannot be exercised here. Validate `docker compose config` and start both health checks on a Docker-enabled development or CI host before Phase 1 migrations.
+Docker is not installed in the current workstation environment, so local PostgreSQL and Redis health checks cannot run here. The GitHub database-integration job now provisions Supabase and repeatedly passes the pgTAP/database suite for staging pull requests and post-merge commits. Keep that CI job required, and run the provider backup/restore drill against a separate production-like environment before launch.
 
-## R-003: Pending Next.js upstream security update
+## R-003: Web dependency security monitoring
 
-The Next.js project announced an out-of-band security update for October 14, 2026, concerning upstream dependency vulnerabilities. CrewFlow is not deployed. Re-check the official advisory, upgrade to the patched stable version, and re-run the build and audit before any environment is exposed.
+The web app has been upgraded to Next.js 16.4.3. On 2026-10-27, `npm run audit:production` reported zero known production vulnerabilities across the web, API, and worker workspaces. Keep the production audit required in CI and re-run it immediately before promotion because this status can change as advisories are published.

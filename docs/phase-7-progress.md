@@ -3,6 +3,27 @@
 Phase 7 hardening has started. Staging remains synthetic-only and is not a
 production environment.
 
+## Dependency security baseline
+
+- On 2026-10-27, `npm run audit:production` reported zero known production
+  vulnerabilities for the web, API, and worker workspaces.
+- The compatible `node-forge` 1.4.1 patch removed one Expo CLI advisory without
+  changing Expo SDK 57.
+- Mobile release remains blocked by one underlying high-severity transitive
+  `zod` advisory in `@expo/cli` 57.0.32. Expo 57.0.31 is the latest SDK 57
+  release; npm's proposed fix is an incompatible downgrade to Expo 54. The
+  reviewed exception expires on 2026-11-10 and does not authorize a production
+  mobile release.
+
+## AI staging baseline
+
+- Dispatcher, Intake, Report/Invoice, and Follow-Up guarded provider-review
+  functions and migrations are deployed to staging.
+- Dispatcher authenticated acceptance passed with `openai/gpt-6-luna` while
+  preserving deterministic escalation and no direct mutation.
+- Intake, Report/Invoice, and Follow-Up still require authenticated staging
+  business-flow acceptance before Phase 6 can be signed off.
+
 ## Web release smoke foundation
 
 - The Next.js web surface sends HSTS, MIME-sniffing protection, a strict
