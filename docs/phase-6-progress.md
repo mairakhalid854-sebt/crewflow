@@ -11,8 +11,8 @@ autonomous customer actions and production AI remain disabled.
 - Tenant-scoped run records cover Intake, Dispatcher, Report, and Follow-Up
   agent kinds without enabling any of those agents yet.
 - Provider/model identity is constrained to the deterministic development stub
-  or the evaluated OpenAI model. Dispatcher and Intake review paths can record
-  the latter only through service-role-only bounded recorders.
+  or the evaluated OpenAI model. All four agent review paths can record the
+  latter only through service-role-only bounded recorders.
 - New AI work is blocked unless an owner has enabled AI operations and a
   positive monthly budget remains.
 - The effective monthly budget respects both the tenant setting and the active
@@ -148,7 +148,8 @@ autonomous customer actions and production AI remain disabled.
   cross-tenant or invalid pricing evidence, non-accepted quote data, and absent
   trusted pricing escalate. Technician notes, photos, parts, recommendations,
   and prompt-like text are never converted into charges. This policy is
-  side-effect free; orchestration and guarded invoice saving remain pending.
+  side-effect free; the delivered orchestration and guarded executor preserve
+  that boundary and can save only an unsent editable draft after approval.
 - Owner and office actors can now request an authoritative invoice evaluation.
   The database prefers the latest tenant-bound accepted quote snapshot and
   otherwise uses one enabled, non-archived catalog service. It reads the current
@@ -374,19 +375,15 @@ autonomous customer actions and production AI remain disabled.
 
 ## Next Phase 6 slices
 
-1. Deploy the Intake provider recorder and Edge Function, then run the
-   controlled staging path through public chat, authoritative proposal, bounded
-   provider review, office approval, guarded draft creation, and audit
-   verification.
+1. Run authenticated staging acceptance for the already deployed Intake,
+   Report/Invoice, and Follow-Up provider paths. Verify provider-reviewed,
+   credential-absent fallback, human approval, guarded execution, idempotency,
+   and redacted audit evidence. Dispatcher no-candidate acceptance has passed;
+   its eligible-candidate approval/execution case remains.
 2. Configure a private HTTPS malware-scanner endpoint and bearer credential,
    deploy the delivered worker, enable its Vault-backed cron, and run the TXT,
    DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
-3. Run the Dispatcher proposed-candidate, fallback, approval, guarded execution,
-   and audit acceptance cases; the hosted no-candidate escalation is accepted.
-4. Deploy and accept the Report and Follow-Up provider paths.
-5. Run end-to-end staging acceptance for Intake, Dispatcher, Report, and
-   Follow-Up before any production activation decision.
-6. Keep production live mode disabled until an explicit owner decision records
+3. Keep production live mode disabled until an explicit owner decision records
    final monthly cost caps, retention, and rollback policy.
 
 ## Requirement status
@@ -397,7 +394,7 @@ autonomous customer actions and production AI remain disabled.
   guarded office booking confirmation are delivered. Bounded customer/office
   replacement generations after expiry or changed eligibility are delivered
   without weakening the final confirmation boundary. The bounded OpenAI review
-  source integration is delivered and awaits hosted staging acceptance.
+  integration is deployed and awaits hosted staging acceptance.
 - FR-061: Deterministic proposal policy, authorized data loading, governed
   persistence, UI invocation, human approval, and guarded execution are
   delivered. The bounded OpenAI review path is delivered for staging without
@@ -408,15 +405,15 @@ autonomous customer actions and production AI remain disabled.
   delivered with trusted invoice orchestration, exact approval persistence,
   and guarded editable-draft saving. Sending and payment remain separate
   human-controlled workflows. Bounded work-report and invoice provider-review
-  source integrations plus their job-screen request controls are delivered and
-  await hosted staging acceptance.
+  integrations plus their job-screen request controls are deployed and await
+  hosted staging acceptance.
 - FR-063: Deterministic reminder/review policy, contact checks, local-day
   milestones, dedupe keys, payment-source disclosure, and mandatory approval
   are delivered. Daily orchestration, persisted provider-neutral delivery
   queue, customer suppression, exact approvals, and guarded ready-state
   execution are delivered. Actual provider delivery remains pending production
   email configuration. The bounded scheduled provider-review queue and worker
-  are delivered in source and await hosted staging acceptance.
+  are deployed to staging and await hosted acceptance.
 - FR-064: Settings/plan budget enforcement and bounded usage metadata are
   delivered. All four agent kinds now have service-controlled provider
   usage/cost recording; final hosted acceptance remains pending for Intake,
@@ -432,7 +429,7 @@ autonomous customer actions and production AI remain disabled.
 - FR-067: Immutable redacted run/step traces, inspection UI, and authorized
   deterministic replay controls are delivered. Replay re-enters current
   policy, permission, budget, and state checks to create a distinct proposal
-  and approval; it never reuses a decision or executes the change. Dispatcher
+  and approval; it never reuses a decision or executes the change. Every
   provider review remains proposal-only and service-role recorded.
 - FR-068: Deterministic agent-specific adversarial fixtures are delivered for
   price grounding, tenant isolation, prompt injection, tool authorization,
@@ -441,6 +438,6 @@ autonomous customer actions and production AI remain disabled.
   safety, latency, and cost thresholds. The OpenAI Responses adapter and eight
   synthetic `gpt-6-luna` staging fixtures are delivered. The hosted run passed
   8/8 cases at 2,645 ms p95 and $0.08 estimated total cost. Dispatcher hosted
-  escalation acceptance passed on 2026-10-27. Intake source integration is
-  delivered; hosted acceptance remains pending for Intake, Report, and
-  Follow-Up.
+  escalation acceptance passed on 2026-10-27. All four provider integrations
+  are deployed to staging; hosted business-flow acceptance remains pending for
+  Intake, Report/Invoice, and Follow-Up plus the eligible Dispatcher case.
