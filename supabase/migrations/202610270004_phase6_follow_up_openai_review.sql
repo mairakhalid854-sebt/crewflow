@@ -317,7 +317,10 @@ SET search_path = ''
 AS $$
 DECLARE existing_job_id bigint; scheduled_job_id bigint;
 BEGIN
-  IF auth.role() IS DISTINCT FROM 'service_role' AND session_user <> 'postgres' THEN
+  -- Migration sessions do not carry a service-role JWT claim. This
+  -- SECURITY DEFINER function is owned by postgres and its EXECUTE privilege is
+  -- revoked from browser roles below, so owner context is the trusted fallback.
+  IF auth.role() IS DISTINCT FROM 'service_role' AND current_user <> 'postgres' THEN
     RAISE EXCEPTION 'service role required' USING ERRCODE = '42501';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'crewflow_project_url')
