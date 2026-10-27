@@ -117,6 +117,13 @@ export function createScannerServer(
           jsonResponse(response, 200, { status: 'ok' });
           return;
         }
+        if (request.method === 'GET' && request.url === '/ready') {
+          await scanner.ready().catch(() => {
+            throw new ClamAvError('clamav_readiness_failed');
+          });
+          jsonResponse(response, 200, { status: 'ready' });
+          return;
+        }
         if (request.method !== 'POST' || request.url !== '/v1/scan') {
           throw new RequestError(404, 'not_found');
         }

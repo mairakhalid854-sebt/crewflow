@@ -40,7 +40,7 @@ afterEach(async () => {
 describe('scanner HTTP boundary', () => {
   it('rejects unauthenticated calls before invoking ClamAV', async () => {
     const scan = vi.fn<MalwareScanner['scan']>();
-    const baseUrl = await start({ scan });
+    const baseUrl = await start({ ready: vi.fn(), scan });
     const response = await fetch(`${baseUrl}/v1/scan`, {
       method: 'POST',
       headers: { 'content-type': 'text/plain' },
@@ -54,7 +54,7 @@ describe('scanner HTTP boundary', () => {
 
   it('checks media type and the claimed digest before scanning', async () => {
     const scan = vi.fn<MalwareScanner['scan']>();
-    const baseUrl = await start({ scan });
+    const baseUrl = await start({ ready: vi.fn(), scan });
     const response = await fetch(`${baseUrl}/v1/scan`, {
       method: 'POST',
       headers: {
@@ -79,7 +79,7 @@ describe('scanner HTTP boundary', () => {
       scannerName: 'ClamAV gateway',
       scannerVersion: '1.4.3',
     });
-    const baseUrl = await start({ scan });
+    const baseUrl = await start({ ready: vi.fn(), scan });
     const response = await fetch(`${baseUrl}/v1/scan`, {
       method: 'POST',
       headers: {
@@ -101,6 +101,7 @@ describe('scanner HTTP boundary', () => {
 
   it('fails closed without exposing ClamAV failure details', async () => {
     const baseUrl = await start({
+      ready: vi.fn(),
       scan: vi.fn().mockRejectedValue(new Error('private upstream details')),
     });
     const bytes = Buffer.from('safe document');
@@ -114,6 +115,27 @@ describe('scanner HTTP boundary', () => {
       body: bytes,
     });
 
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: 'scanner_unavailable' });
+  });
+
+  it('reports ClamAV readiness without exposing upstream details', async () => {
+    const ready = vi.fn<MalwareScanner['ready']>().mockResolvedValue();
+    const baseUrl = await start({ ready, scan: vi.fn() });
+
+    const response = await fetch(`${baseUrl}/ready`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: 'ready' });
+    expect(ready).toHaveBeenCalledOnce();
+  });
+
+  it('fails readiness closed when ClamAV is unavailable', async () => {
+    const ready = vi
+      .fn<MalwareScanner['ready']>()
+      .mockRejectedValue(new Error('private upstream details'));
+    const baseUrl = await start({ ready, scan: vi.fn() });
+
+    const response = await fetch(`${baseUrl}/ready`);
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ error: 'scanner_unavailable' });
   });
