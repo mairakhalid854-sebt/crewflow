@@ -12,6 +12,7 @@ export interface MalwareScanResult {
 }
 
 export interface MalwareScanner {
+  ready(): Promise<void>;
   scan(bytes: Buffer): Promise<MalwareScanResult>;
 }
 
@@ -44,6 +45,12 @@ interface ClamAvConnectionOptions {
 
 export class ClamAvClient implements MalwareScanner {
   constructor(private readonly options: ClamAvConnectionOptions) {}
+
+  async ready(): Promise<void> {
+    parseClamAvVersion(
+      await this.sendCommand(Buffer.from('zVERSION\0', 'utf8')),
+    );
+  }
 
   async scan(bytes: Buffer): Promise<MalwareScanResult> {
     const [versionResponse, scanResponse] = await Promise.all([

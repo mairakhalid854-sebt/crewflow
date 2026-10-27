@@ -52,9 +52,11 @@ ClamAV daemon. The application container needs these server-only variables:
 
 Terminate TLS at the hosting platform or private ingress and set
 `KNOWLEDGE_SCANNER_URL` to the exact HTTPS `/v1/scan` route. `/health` is a
-credential-free liveness check and intentionally reveals only `{"status":"ok"}`;
-it does not certify ClamAV readiness. Do not place secrets in Docker build args,
-image layers, client-visible variables, logs, or chat.
+credential-free process liveness check. `/ready` verifies a bounded ClamAV
+version response and returns only ready or a generic 503; the image healthcheck
+uses this stronger endpoint. Neither route returns daemon addresses, versions,
+credentials, or document data. Do not place secrets in Docker build args, image
+layers, client-visible variables, logs, or chat.
 
 Before deployment, run:
 
