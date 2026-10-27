@@ -358,9 +358,9 @@ autonomous customer actions and production AI remain disabled.
 2. Configure a private HTTPS malware-scanner endpoint and bearer credential,
    deploy the delivered worker, enable its Vault-backed cron, and run the TXT,
    DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
-3. Add the provider key only to Supabase Secrets, then run the deployed
-   Dispatcher staging proposal, fallback, approval, guarded execution, and
-   audit acceptance path.
+3. Run the deployed Dispatcher staging proposal, fallback, approval, guarded
+   execution, and audit acceptance path with the provider key now stored in
+   Supabase Secrets.
 4. Apply the same bounded review pattern to Intake, Report, and Follow-Up.
 5. Run end-to-end staging acceptance for Intake, Dispatcher, Report, and
    Follow-Up before any production activation decision.
