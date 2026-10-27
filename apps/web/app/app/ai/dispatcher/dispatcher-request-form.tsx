@@ -11,10 +11,10 @@ import {
 const initialState: DispatcherRequestState = { status: 'idle' };
 
 export function DispatcherRequestForm({
-  disabled,
+  disabledReason,
   jobId,
 }: {
-  disabled: boolean;
+  disabledReason?: string;
   jobId: string;
 }) {
   const [state, action, pending] = useActionState(
@@ -25,8 +25,13 @@ export function DispatcherRequestForm({
   return (
     <form action={action} className={styles.dispatcherForm}>
       <input name="jobId" type="hidden" value={jobId} />
-      <button disabled={disabled || pending} type="submit">
-        {pending ? 'Evaluating…' : 'Suggest technician'}
+      <button
+        aria-busy={pending}
+        disabled={Boolean(disabledReason) || pending}
+        title={disabledReason}
+        type="submit"
+      >
+        {pending ? 'Evaluating…' : (disabledReason ?? 'Suggest technician')}
       </button>
       {state.message ? (
         <p
