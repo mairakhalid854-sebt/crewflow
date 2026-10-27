@@ -332,6 +332,9 @@ enabled by this slice.
   for Intake, Dispatcher, Report, and Follow-Up. Every case requires grounded
   identifiers, an explicit human-approval flag, and a bounded proposal or
   escalation. The owner-only staging control reports only aggregate results.
+- On 2026-10-26 the hosted staging evaluation for `gpt-6-luna` passed all 8/8
+  cases. Sanitized evidence recorded a 2,645 ms p95 duration and an $0.08
+  estimated total cost. No tool access or live business mutation was enabled.
 
 ## Next Phase 6 slices
 
@@ -341,10 +344,13 @@ enabled by this slice.
 2. Configure a private HTTPS malware-scanner endpoint and bearer credential,
    deploy the delivered worker, enable its Vault-backed cron, and run the TXT,
    DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
-3. Run the owner-only staging OpenAI evaluation and retain its sanitized pass
-   report before enabling any live model path.
-4. Keep live mode disabled until the candidate passes and an explicit owner
-   production-activation decision records the final cost caps.
+3. Integrate the approved candidate into staging proposal generation behind
+   the existing token, output, timeout, cost, and tool-call boundaries. Keep
+   all side effects behind the existing human approval queue.
+4. Run end-to-end staging acceptance for Intake, Dispatcher, Report, and
+   Follow-Up before any production activation decision.
+5. Keep production live mode disabled until an explicit owner decision records
+   final monthly cost caps, retention, and rollback policy.
 
 ## Requirement status
 
@@ -389,5 +395,6 @@ enabled by this slice.
   hallucination resistance, escalation, replay stability, and budget gates. A
   provider-neutral live evaluation harness now enforces all-agent quality,
   safety, latency, and cost thresholds. The OpenAI Responses adapter and eight
-  synthetic `gpt-6-luna` staging fixtures are delivered; recording a passing
-  hosted run remains pending.
+  synthetic `gpt-6-luna` staging fixtures are delivered. The hosted run passed
+  8/8 cases at 2,645 ms p95 and $0.08 estimated total cost; staging proposal
+  integration and end-to-end acceptance remain pending.
