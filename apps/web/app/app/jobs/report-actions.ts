@@ -27,6 +27,30 @@ const reportSchema = z.object({
     .max(10_000),
 });
 
+interface ReportProposalResult {
+  readonly proposal_result: 'escalated' | 'proposed' | 'unchanged';
+  readonly provider_reviewed: boolean;
+  readonly result_message?: string;
+}
+
+function parseReportProposalResult(
+  value: unknown,
+): ReportProposalResult | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const candidate = value as Record<string, unknown>;
+  if (
+    !['escalated', 'proposed', 'unchanged'].includes(
+      String(candidate.proposal_result),
+    ) ||
+    typeof candidate.provider_reviewed !== 'boolean' ||
+    (candidate.result_message !== undefined &&
+      typeof candidate.result_message !== 'string')
+  ) {
+    return undefined;
+  }
+  return candidate as unknown as ReportProposalResult;
+}
+
 function databaseMessage(detail?: string): string {
   const normalized = detail?.toLowerCase() ?? '';
   if (normalized.includes('fields are invalid')) {
@@ -36,6 +60,75 @@ function databaseMessage(detail?: string): string {
     return 'This job must be completed before a work report can be prepared.';
   }
   return 'Work report could not be saved. Please try again.';
+}
+
+export async function requestAiReportProposalAction(
+  _previousState: WorkReportActionState,
+  formData: FormData,
+): Promise<WorkReportActionState> {
+  await requireTenantContext(['owner', 'office']);
+  const parsedJobId = z.uuid().safeParse(formData.get('jobId'));
+  if (!parsedJobId.success) {
+    return { message: 'Job could not be identified.', status: 'error' };
+  }
+
+  const supabase = await createClient();
+  const correlationId = crypto.randomUUID();
+  const invocation: unknown = await supabase.functions.invoke(
+    'report-openai-proposal',
+    {
+      body: {
+        correlationId,
+        jobId: parsedJobId.data,
+        proposalType: 'report',
+      },
+    },
+  );
+  const invoked = invocation as
+    { data?: unknown; error?: unknown } | null | undefined;
+  let result = invoked?.error
+    ? undefined
+    : parseReportProposalResult(invoked?.data);
+  let fallbackError: { message: string } | null = null;
+
+  if (!result) {
+    const fallback = await supabase.rpc('request_report_proposal', {
+      target_correlation_id: correlationId,
+      target_job_id: parsedJobId.data,
+    });
+    fallbackError = fallback.error;
+    if (fallback.data?.[0]) {
+      result = parseReportProposalResult({
+        ...fallback.data[0],
+        provider_reviewed: false,
+      });
+    }
+  }
+
+  if (fallbackError || !result) {
+    return {
+      message:
+        'AI report evaluation could not finish. Check AI settings, job status, technician notes, and subscription access.',
+      status: 'error',
+    };
+  }
+
+  revalidatePath('/app/ai');
+  revalidatePath(`/app/jobs/${parsedJobId.data}`);
+  return {
+    message:
+      result.proposal_result === 'proposed'
+        ? result.provider_reviewed
+          ? 'Report proposal and bounded AI review recorded. Review it in AI Operations before approving.'
+          : 'Report proposal created from trusted evidence. AI review was unavailable, so the deterministic proposal was kept.'
+        : result.proposal_result === 'unchanged'
+          ? 'The existing report draft already matches the trusted evidence.'
+          : result.provider_reviewed
+            ? 'Report drafting needs human input. The AI-reviewed escalation is recorded in AI Operations.'
+            : (result.result_message ??
+              'Report drafting needs human input. Review the trace in AI Operations.'),
+    status: result.proposal_result === 'escalated' ? 'error' : 'success',
+  };
 }
 
 export async function saveWorkReportAction(

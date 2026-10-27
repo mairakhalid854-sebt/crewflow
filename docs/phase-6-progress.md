@@ -3,7 +3,7 @@
 Updated: 2026-10-27
 
 Phase 6 began with a provider-neutral governance boundary. The evaluated OpenAI
-candidate is now connected to bounded Dispatcher and Intake review paths;
+candidate is now connected to bounded Dispatcher, Intake, and Report review paths;
 autonomous customer actions and production AI remain disabled.
 
 ## Delivered in this slice
@@ -359,6 +359,12 @@ autonomous customer actions and production AI remain disabled.
   Missing credentials, provider failure, output drift, invented IDs, tools, or
   usage overruns retain the deterministic result. The provider cannot create a
   customer, job, quote, assignment, slot reservation, or booking.
+- The Report Agent source path now applies the bounded provider review to both
+  work-report and invoice-draft proposals. Completed-job screens expose separate
+  `Prepare AI draft` controls, while the authoritative database policies remain
+  the only source of report evidence, quote/catalog pricing, totals, and exact
+  proposed changes. The model receives only the trusted outcome and bounded
+  grounding IDs; it cannot save, publish, send, charge, or record payment.
 
 ## Next Phase 6 slices
 
@@ -371,7 +377,8 @@ autonomous customer actions and production AI remain disabled.
    DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
 3. Run the Dispatcher proposed-candidate, fallback, approval, guarded execution,
    and audit acceptance cases; the hosted no-candidate escalation is accepted.
-4. Apply the same bounded review pattern to Report and Follow-Up.
+4. Deploy and accept the Report provider path, then apply the same bounded
+   review pattern to Follow-Up.
 5. Run end-to-end staging acceptance for Intake, Dispatcher, Report, and
    Follow-Up before any production activation decision.
 6. Keep production live mode disabled until an explicit owner decision records
@@ -395,7 +402,9 @@ autonomous customer actions and production AI remain disabled.
   editable-draft saving are delivered. Deterministic invoice policy is
   delivered with trusted invoice orchestration, exact approval persistence,
   and guarded editable-draft saving. Sending and payment remain separate
-  human-controlled workflows.
+  human-controlled workflows. Bounded work-report and invoice provider-review
+  source integrations plus their job-screen request controls are delivered and
+  await hosted staging acceptance.
 - FR-063: Deterministic reminder/review policy, contact checks, local-day
   milestones, dedupe keys, payment-source disclosure, and mandatory approval
   are delivered. Daily orchestration, persisted provider-neutral delivery
@@ -427,5 +436,5 @@ autonomous customer actions and production AI remain disabled.
   synthetic `gpt-6-luna` staging fixtures are delivered. The hosted run passed
   8/8 cases at 2,645 ms p95 and $0.08 estimated total cost. Dispatcher hosted
   escalation acceptance passed on 2026-10-27. Intake source integration is
-  delivered; its hosted acceptance plus Report and Follow-Up integrations are
-  pending.
+  delivered; its hosted acceptance plus Report deployment/acceptance and the
+  Follow-Up integration are pending.
