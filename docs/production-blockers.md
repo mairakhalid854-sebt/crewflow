@@ -14,6 +14,9 @@ These do not block local Phase 0 development, but they block claims of productio
    Authenticated staging acceptance remains for Intake, Report/Invoice, and
    Follow-Up; production retention, knowledge-document limits, monthly cost
    caps, and explicit live approval also remain unresolved.
+   The private knowledge scanner gateway is implemented, but private hosting,
+   ClamAV signature operations, runtime credentials, and staging malware/file
+   acceptance remain external rollout work.
 8. Contact consent, reminder, review solicitation, privacy, and cross-border processing policies approved by counsel.
 9. Final brand/domain clearance, privacy policy, and terms.
 10. Mapping/geocoding provider and budget if travel estimates are required.

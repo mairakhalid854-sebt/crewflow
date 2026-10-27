@@ -17,6 +17,10 @@ Supabase staging and production must be separate projects before real customer d
 - Web: Vercel project built from the repository root with workspace-aware `vercel.json`; the deployed Next.js app lives in `apps/web` and initially uses a generated `*.vercel.app` hostname.
 - Identity/database: Supabase, deployed only from committed files under `supabase/migrations`.
 - API and worker: Railway services after their Phase 1/2 runtime responsibilities exist. They are not deployable product services yet.
+- Knowledge scanner: `apps/scanner/Dockerfile` behind private HTTPS, paired
+  with a private ClamAV daemon. The gateway is deployable; its hosting,
+  credential provisioning, signature-update monitoring, and staging acceptance
+  remain external rollout steps.
 - Mobile: Expo EAS internal builds first; store submission remains blocked until mobile security advisories and store prerequisites are cleared.
 
 The native app owns the `crewflow` URL scheme with Android package and iOS bundle identifier `com.crewflow.mobile`. Supabase Auth must allow the exact `crewflow://auth/reset` redirect before testing password recovery in an installed development or internal build. Expo Go does not provide a stable custom-scheme callback and is not the acceptance-test target for this flow.
@@ -58,7 +62,11 @@ The native app owns the `crewflow` URL scheme with Android package and iOS bundl
     `process-follow-up-openai-reviews`. Verify provider-reviewed and
     credential-absent deterministic fallback paths. Never expose this key to
     the browser.
-15. Promote the same reviewed commit to production only after all release blockers are closed.
+15. Deploy the knowledge scanner gateway and ClamAV daemon on a private network,
+    configure the two Supabase scanner secrets, then enable the processing cron
+    and complete the malware/document acceptance matrix in
+    `docs/phase-6-knowledge-processing-runbook.md`.
+16. Promote the same reviewed commit to production only after all release blockers are closed.
 
 ## Web smoke check
 

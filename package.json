@@ -24,7 +24,7 @@
   "scripts": {
     "ai:evaluate:openai": "tsx apps/api/src/ai/openai-evaluation-runner.ts",
     "audit:mobile": "node scripts/audit-mobile.mjs",
-    "audit:production": "npm audit --omit=dev --audit-level=high --workspace @crewflow/api --workspace @crewflow/web --workspace @crewflow/worker",
+    "audit:production": "npm audit --omit=dev --audit-level=high --workspace @crewflow/api --workspace @crewflow/scanner --workspace @crewflow/web --workspace @crewflow/worker",
     "build": "npm run build --workspaces --if-present",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
     "dev:api": "npm run dev --workspace @crewflow/api",
