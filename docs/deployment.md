@@ -83,3 +83,8 @@ The Supabase access token, database password, service-role key, Paddle webhook/A
 - Preview Supabase public variables are configured in Vercel. Supabase Auth allows localhost, the Vercel team preview-host pattern, and the exact `crewflow://auth/reset` mobile recovery callback; undeclared hosted Auth/MFA/pooler settings were left unchanged.
 - Vercel's GitHub App is connected to `mairakhalid854-sebt/crewflow`. Ongoing work is pushed to the `staging` branch for protected Preview deployments; `main` is reserved for reviewed production promotion.
 - A custom domain is optional for staging; the generated Vercel hostname is sufficient.
+- The Dispatcher provider-review migration and `dispatcher-openai-proposal`
+  Edge Function are deployed to staging. The function is active, rejects
+  unauthenticated requests, and retains deterministic proposals when the model
+  credential is absent. `CREWFLOW_AI_PROVIDER_API_KEY` is not yet present in
+  Supabase Secrets, so hosted provider review and acceptance remain pending.
