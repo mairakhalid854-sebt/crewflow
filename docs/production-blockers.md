@@ -19,3 +19,5 @@ These do not block local Phase 0 development, but they block claims of productio
 10. Mapping/geocoding provider and budget if travel estimates are required.
 11. Exact approved job state machine and cancellation/refund policy.
 12. Public review destination and provider rules.
+13. Production backup plan/retention, approved RPO and RTO, private Storage
+    export, and a completed isolated restore drill with sanitized evidence.

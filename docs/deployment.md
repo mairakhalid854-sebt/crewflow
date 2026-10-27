@@ -95,6 +95,14 @@ secret. Route failed-workflow notifications to the approved shared on-call
 destination before launch; default personal GitHub notifications do not meet
 the production alerting gate.
 
+## Backup and restore
+
+Follow `docs/backup-restore.md` for database plus private Storage backups,
+off-provider encrypted retention, isolated restoration, verification, and drill
+evidence. A Supabase database backup does not contain Storage object bytes, and
+a CI database reset is not a restore drill. Never run a drill over staging or
+production, and keep all outbound integrations disabled in the restored target.
+
 ## Secrets
 
 The Supabase access token, database password, service-role key, Paddle webhook/API credentials, SMTP credentials, Vercel token, and AI provider keys belong only in the relevant platform secret store. They must never be pasted into source files, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, build logs, or Git history. A Vercel secret is not automatically available to a Supabase Edge Function; configure each runtime independently.
