@@ -35,6 +35,10 @@ production environment.
 - The incident runbook defines severity, containment, evidence handling,
   credential/tenant-isolation response, recovery verification, and the two
   drills required before launch.
+- A read-only GitHub uptime workflow can run the public web health/security
+  smoke every 30 minutes without installing application dependencies. It is
+  inert until an exact HTTPS monitor URL is configured and supports a dedicated
+  Vercel automation bypass secret for protected staging.
 - A centralized log destination, named responders, alert routing, provider
   monitors, and completed drill records remain external release gates.
 
