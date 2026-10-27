@@ -3,7 +3,7 @@
 Updated: 2026-10-27
 
 Phase 6 began with a provider-neutral governance boundary. The evaluated OpenAI
-candidate is now connected only to the bounded staging Dispatcher review path;
+candidate is now connected to bounded Dispatcher and Intake review paths;
 autonomous customer actions and production AI remain disabled.
 
 ## Delivered in this slice
@@ -11,8 +11,8 @@ autonomous customer actions and production AI remain disabled.
 - Tenant-scoped run records cover Intake, Dispatcher, Report, and Follow-Up
   agent kinds without enabling any of those agents yet.
 - Provider/model identity is constrained to the deterministic development stub
-  or the evaluated OpenAI model. Only the Dispatcher review path can record the
-  latter, through a service-role-only bounded recorder.
+  or the evaluated OpenAI model. Dispatcher and Intake review paths can record
+  the latter only through service-role-only bounded recorders.
 - New AI work is blocked unless an owner has enabled AI operations and a
   positive monthly budget remains.
 - The effective monthly budget respects both the tenant setting and the active
@@ -349,19 +349,29 @@ autonomous customer actions and production AI remain disabled.
   and a redacted immutable review step to an authorized Dispatcher run. Browser
   clients cannot forge provider/model/cost records, and every changed assignment
   still enters the existing human approval and guarded execution path.
+- On 2026-10-27 a hosted Dispatcher escalation completed with `gpt-6-luna` in
+  1.6 seconds using 311 total tokens and a conservative one-cent recorded cost.
+  The model preserved the authoritative no-candidate result, created no
+  approval or mutation, and added only the redacted provider-review trace.
+- The Intake proposal action now follows the same fail-closed provider boundary.
+  The authoritative database result is created first; the model may only return
+  a strict grounded explanation with the conversation and existing approval IDs.
+  Missing credentials, provider failure, output drift, invented IDs, tools, or
+  usage overruns retain the deterministic result. The provider cannot create a
+  customer, job, quote, assignment, slot reservation, or booking.
 
 ## Next Phase 6 slices
 
-1. Run the controlled staging Intake acceptance path through public chat,
-   authoritative proposal, office approval, guarded draft creation, and audit
+1. Deploy the Intake provider recorder and Edge Function, then run the
+   controlled staging path through public chat, authoritative proposal, bounded
+   provider review, office approval, guarded draft creation, and audit
    verification.
 2. Configure a private HTTPS malware-scanner endpoint and bearer credential,
    deploy the delivered worker, enable its Vault-backed cron, and run the TXT,
    DOCX, PDF, infected-file, and retry-exhaustion staging acceptance matrix.
-3. Run the deployed Dispatcher staging proposal, fallback, approval, guarded
-   execution, and audit acceptance path with the provider key now stored in
-   Supabase Secrets.
-4. Apply the same bounded review pattern to Intake, Report, and Follow-Up.
+3. Run the Dispatcher proposed-candidate, fallback, approval, guarded execution,
+   and audit acceptance cases; the hosted no-candidate escalation is accepted.
+4. Apply the same bounded review pattern to Report and Follow-Up.
 5. Run end-to-end staging acceptance for Intake, Dispatcher, Report, and
    Follow-Up before any production activation decision.
 6. Keep production live mode disabled until an explicit owner decision records
@@ -374,7 +384,8 @@ autonomous customer actions and production AI remain disabled.
   approval persistence, guarded draft execution, public slot preference, and
   guarded office booking confirmation are delivered. Bounded customer/office
   replacement generations after expiry or changed eligibility are delivered
-  without weakening the final confirmation boundary.
+  without weakening the final confirmation boundary. The bounded OpenAI review
+  source integration is delivered and awaits hosted staging acceptance.
 - FR-061: Deterministic proposal policy, authorized data loading, governed
   persistence, UI invocation, human approval, and guarded execution are
   delivered. The bounded OpenAI review path is delivered for staging without
@@ -392,8 +403,9 @@ autonomous customer actions and production AI remain disabled.
   execution are delivered. Actual provider delivery remains pending production
   email configuration.
 - FR-064: Foundation delivered for settings/plan budget enforcement and bounded
-  usage metadata. Dispatcher provider usage/cost recording is delivered;
-  equivalent live accounting for the other three agents remains pending.
+  usage metadata. Dispatcher and Intake provider usage/cost recording are
+  delivered; equivalent live accounting for Report and Follow-Up remains
+  pending.
 - FR-065: Inspectable, expiring, role-controlled, single-use approvals and the
   human decision UI are delivered. All currently implemented side-effecting
   agent actions use typed guarded executors with current-state revalidation.
@@ -413,6 +425,7 @@ autonomous customer actions and production AI remain disabled.
   provider-neutral live evaluation harness now enforces all-agent quality,
   safety, latency, and cost thresholds. The OpenAI Responses adapter and eight
   synthetic `gpt-6-luna` staging fixtures are delivered. The hosted run passed
-  8/8 cases at 2,645 ms p95 and $0.08 estimated total cost. Dispatcher staging
-  proposal integration is delivered; hosted acceptance and the remaining three
-  agent integrations are pending.
+  8/8 cases at 2,645 ms p95 and $0.08 estimated total cost. Dispatcher hosted
+  escalation acceptance passed on 2026-10-27. Intake source integration is
+  delivered; its hosted acceptance plus Report and Follow-Up integrations are
+  pending.
