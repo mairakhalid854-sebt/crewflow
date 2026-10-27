@@ -79,6 +79,22 @@ workspace access. A successful smoke check is evidence for that exact URL and
 commit only; it is not a substitute for database, mobile, billing, email, or
 tenant-isolation acceptance.
 
+## Scheduled uptime smoke
+
+The `Web uptime smoke` GitHub workflow runs at minutes 17 and 47 when the
+repository variable `CREWFLOW_MONITOR_URL` contains the exact HTTPS deployment
+origin. It uses only Node's built-in runtime, has read-only repository
+permissions, and executes the same four public smoke checks. The job safely
+skips while the variable is absent; a skipped workflow is not uptime evidence.
+
+For a Vercel-protected staging target, create a dedicated automation bypass
+secret in Vercel and store it as the GitHub Actions secret
+`VERCEL_AUTOMATION_BYPASS_SECRET`. Do not reuse an account password, Supabase
+key, or Vercel access token. A public production target should not need this
+secret. Route failed-workflow notifications to the approved shared on-call
+destination before launch; default personal GitHub notifications do not meet
+the production alerting gate.
+
 ## Secrets
 
 The Supabase access token, database password, service-role key, Paddle webhook/API credentials, SMTP credentials, Vercel token, and AI provider keys belong only in the relevant platform secret store. They must never be pasted into source files, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, build logs, or Git history. A Vercel secret is not automatically available to a Supabase Edge Function; configure each runtime independently.
