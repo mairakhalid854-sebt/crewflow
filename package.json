@@ -8,6 +8,9 @@
     "node": ">=22.0.0"
   },
   "overrides": {
+    "@expo/cli": {
+      "zod": "4.6.7"
+    },
     "@nestjs/platform-express": {
       "multer": "2.5.0"
     },

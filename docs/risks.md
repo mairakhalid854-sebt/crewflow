@@ -2,13 +2,15 @@
 
 ## R-001: Stable Expo toolchain dependency advisories
 
-- Status: Open; blocks mobile deployment and release
+- Status: Open; one reviewed low-severity build-time advisory remains
 - Observed: 2026-10-12
 - Scope: Expo SDK 57 / Metro transitive build tooling
 
 The 2026-10-27 review upgraded transitive `node-forge` from 1.4.0 to its compatible patched 1.4.1 release. `npm audit --omit=dev --workspace @crewflow/mobile` now reports one underlying high-severity advisory in transitive `zod` 3.25.76 through `@expo/cli` 57.0.32. Expo 57.0.31 is the latest SDK 57 release and its CLI requires `zod ^3.25.76`; npm's suggested remediation is a breaking downgrade to Expo 54, which is not acceptable. The vulnerable code is in the native build CLI rather than the shipped web, API, or worker services. No production mobile build or deployment is authorized while this high finding remains.
 
-The 2026-10-28 review added low-severity GHSA-gcqx-w48m-w2h4 (prototype poisoning in `deepmerge` `mergeObject()`), reached only through `@expo/config` 57.0.10, Expo's build-time configuration loader. `deepmerge` 4.3.1 is the latest release and is affected, so no compatible patch exists; npm again proposes the breaking Expo 54 downgrade. It carries the same 2026-11-10 review date.
+The 2026-10-28 review removed the `zod` finding without changing Expo: a scoped npm override gives `@expo/cli` the patched `zod` 4.6.7 (GHSA-mrhx-c7xc-m3w5 is fixed only in 4.6.6+). No Expo release, including SDK 58 and canary, has moved off `zod` 3, and 3.x has no patch. The CLI uses `zod` only for DevTools plugin and optional MCP extension schemas (`object`, `string`, `enum`, `array`, `union`, `literal`, `strict`, `safeParse`, `error.issues`), all present in v4; those schemas, `expo config`, and a full `expo export --platform android` were verified under 4.6.7. Remove the override once Expo depends on a patched `zod` directly.
+
+The same review added low-severity GHSA-gcqx-w48m-w2h4 (prototype poisoning in `deepmerge` `mergeObject()`), reached only through `@expo/config` 57.0.10, Expo's build-time configuration loader. `deepmerge` 4.3.1 is the latest release and is affected, so no compatible patch exists; npm again proposes the breaking Expo 54 downgrade. It carries the same 2026-11-10 review date.
 
 Mitigation:
 
