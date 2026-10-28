@@ -309,6 +309,15 @@ export function CompanySettingsForm({
           </label>
           <label>
             <input
+              defaultChecked={settings.customer_appointment_emails_enabled}
+              name="customerAppointmentEmailsEnabled"
+              type="checkbox"
+            />
+            Email customers when appointments are scheduled, changed, or
+            cancelled
+          </label>
+          <label>
+            <input
               defaultChecked={settings.ai_operations_enabled}
               name="aiOperationsEnabled"
               type="checkbox"

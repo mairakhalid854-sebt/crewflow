@@ -219,6 +219,14 @@ describe('transactional email links', () => {
     ).toBeNull();
   });
 
+  it('passes link-free job emails through unchanged', () => {
+    const origin = 'https://app.crewflow.example';
+    expect(
+      renderLinkedBody('Your appointment is confirmed.', origin, null),
+    ).toBe('Your appointment is confirmed.');
+    expect(renderLinkedBody('Open {{link}}', origin, null)).toBeNull();
+  });
+
   it('prefixes idempotency keys per queue', () => {
     expect(idempotencyKey(delivery, 'transactional')).toBe(
       'transactional-77000000-0000-4000-8000-000000000001',

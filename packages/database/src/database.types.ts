@@ -2475,6 +2475,7 @@ export type Database = {
           ai_monthly_budget_cents: number;
           ai_operations_enabled: boolean;
           created_at: string;
+          customer_appointment_emails_enabled: boolean;
           id: string;
           intake_widget_enabled: boolean;
           intake_widget_key: string;
@@ -2486,6 +2487,7 @@ export type Database = {
           ai_monthly_budget_cents?: number;
           ai_operations_enabled?: boolean;
           created_at?: string;
+          customer_appointment_emails_enabled?: boolean;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -2497,6 +2499,7 @@ export type Database = {
           ai_monthly_budget_cents?: number;
           ai_operations_enabled?: boolean;
           created_at?: string;
+          customer_appointment_emails_enabled?: boolean;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -3518,7 +3521,13 @@ export type Database = {
         'trialing' | 'active' | 'past_due' | 'paused' | 'canceled';
       tax_behavior: 'exclusive' | 'inclusive' | 'non_taxable';
       transactional_email_kind:
-        'team_invitation' | 'quote' | 'invoice' | 'work_report';
+        | 'team_invitation'
+        | 'quote'
+        | 'invoice'
+        | 'work_report'
+        | 'job_scheduled'
+        | 'job_rescheduled'
+        | 'job_cancelled';
       work_report_status: 'draft' | 'sent' | 'void';
     };
     CompositeTypes: {
@@ -3775,6 +3784,9 @@ export const Constants = {
         'quote',
         'invoice',
         'work_report',
+        'job_scheduled',
+        'job_rescheduled',
+        'job_cancelled',
       ],
       work_report_status: ['draft', 'sent', 'void'],
     },
