@@ -131,12 +131,15 @@
   padding-left: 22px;
 }
 
-.privacy-card footer {
-  color: #7b5b17;
-  font-size: 12px;
-  line-height: 1.6;
-  margin-top: 34px;
-  padding-top: 20px;
+.privacy-card p.privacy-related {
+  margin-top: 18px;
+}
+
+.privacy-card p a,
+.privacy-summary a {
+  /* Darker than the brand blue so links pass WCAG AA on the summary tint. */
+  color: #0f5ad8;
+  font-weight: 700;
 }
 
 @media (max-width: 600px) {

@@ -154,7 +154,14 @@
   margin: 20px 0 0;
   text-align: center;
 }
+.auth-consent {
+  color: #596a80;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 4px 0 12px;
+}
 .auth-switch a,
+.auth-consent a,
 .label-link a {
   color: var(--cf-primary);
   font-weight: 700;

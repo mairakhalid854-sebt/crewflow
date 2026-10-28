@@ -6,6 +6,7 @@ const publicRoutes = [
   { name: 'signup', path: '/signup' },
   { name: 'password recovery', path: '/forgot-password' },
   { name: 'privacy notice', path: '/privacy' },
+  { name: 'terms of service', path: '/terms' },
 ] as const;
 
 for (const route of publicRoutes) {
