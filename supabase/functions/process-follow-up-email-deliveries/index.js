@@ -8,7 +8,9 @@ import {
   buildResendEmail,
   classifyResendResponse,
   idempotencyKey,
+  parseAppOrigin,
   parseSenderAddress,
+  prepareMarketingEmail,
 } from '../_shared/email-delivery.ts';
 
 // Resend's default account limit is two requests per second.
@@ -63,7 +65,7 @@ async function isAuthorized(suppliedKey, secretKeys) {
   return false;
 }
 
-async function send(delivery, apiKey, senderAddress) {
+async function send(delivery, apiKey, senderAddress, category, headers) {
   let response;
   try {
     response = await fetch(RESEND_EMAILS_URL, {
@@ -73,7 +75,9 @@ async function send(delivery, apiKey, senderAddress) {
         'content-type': 'application/json',
         'idempotency-key': idempotencyKey(delivery),
       },
-      body: JSON.stringify(buildResendEmail(delivery, senderAddress)),
+      body: JSON.stringify(
+        buildResendEmail(delivery, senderAddress, category, headers),
+      ),
     });
   } catch {
     return { outcome: 'retry', errorCode: 'resend_network_error' };
@@ -120,12 +124,23 @@ Deno.serve(async (request) => {
     });
   }
 
+  // Marketing review requests need counsel-approved CAN-SPAM handling, so
+  // they stay held unless an operator sets this switch and a trusted origin
+  // exists for unsubscribe links.
+  const origin = parseAppOrigin(Deno.env.get('CREWFLOW_WEB_APP_URL'));
+  const includeMarketing =
+    Deno.env.get('CREWFLOW_MARKETING_EMAIL_ENABLED') === 'true' &&
+    origin !== null;
+
   const admin = createClient(supabaseUrl, adminKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const { data: claimed, error: claimError } = await admin.rpc(
     'claim_follow_up_email_deliveries',
-    { target_batch_size: EMAIL_BATCH_SIZE },
+    {
+      target_batch_size: EMAIL_BATCH_SIZE,
+      include_marketing: includeMarketing,
+    },
   );
 
   if (claimError) {
@@ -145,7 +160,30 @@ Deno.serve(async (request) => {
       await new Promise((resolve) => setTimeout(resolve, SEND_SPACING_MS));
     }
 
-    const result = await send(delivery, apiKey, senderAddress);
+    let result;
+    if (delivery.category === 'marketing') {
+      const marketing = origin
+        ? prepareMarketingEmail(
+            delivery.body,
+            origin,
+            delivery.unsubscribe_token,
+            delivery.postal_address,
+            delivery.sender_name,
+          )
+        : null;
+      result = marketing
+        ? await send(
+            { ...delivery, body: marketing.text },
+            apiKey,
+            senderAddress,
+            'follow_up_marketing',
+            marketing.headers,
+          )
+        : { outcome: 'failed', errorCode: 'marketing_footer_unavailable' };
+    } else {
+      result = await send(delivery, apiKey, senderAddress);
+    }
+
     if (result.outcome === 'sent') {
       const { error } = await admin.rpc('complete_follow_up_email_delivery', {
         target_message_id: delivery.message_id,

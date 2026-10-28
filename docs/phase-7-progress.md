@@ -115,8 +115,11 @@ production.
 - Opt-in invitation, quote, and invoice link emails use a token-verified,
   server-rendered queue whose links are joined to a trusted origin at send
   time and scrubbed at every terminal state.
-- Delivery is never scheduled by migration. Live sending, job-status and
-  work-report emails, and review-request unsubscribe remain open.
+- Review-request (marketing) email has signed one-click unsubscribe links,
+  a postal-address footer, and RFC 8058 headers, held behind an operator
+  switch until counsel approves.
+- Delivery is never scheduled by migration. Live sending and job-status
+  emails remain open.
 
 ## Remaining Phase 7 gates
 

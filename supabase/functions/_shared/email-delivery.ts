@@ -20,6 +20,7 @@ export interface ResendEmailPayload {
   readonly subject: string;
   readonly text: string;
   readonly reply_to?: string;
+  readonly headers?: Readonly<Record<string, string>>;
   readonly tags: readonly { readonly name: string; readonly value: string }[];
 }
 
@@ -64,6 +65,7 @@ export function buildResendEmail(
   delivery: ClaimedEmailDelivery,
   senderAddress: string,
   category = 'follow_up_transactional',
+  headers?: Readonly<Record<string, string>>,
 ): ResendEmailPayload {
   const replyTo = delivery.reply_to_email?.trim().toLowerCase();
   return {
@@ -72,7 +74,59 @@ export function buildResendEmail(
     subject: delivery.subject,
     text: delivery.body,
     ...(validEmail(replyTo) ? { reply_to: replyTo } : {}),
+    ...(headers ? { headers } : {}),
     tags: [{ name: 'category', value: category }],
+  };
+}
+
+const UNSUBSCRIBE_TOKEN_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[0-9a-f]{64}$/;
+
+function singleLine(value: string | null, maximum: number): string {
+  return Array.from(value ?? '', (character) => {
+    const code = character.charCodeAt(0);
+    return code < 0x20 || code === 0x7f ? ' ' : character;
+  })
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maximum)
+    .trim();
+}
+
+/**
+ * Adds the CAN-SPAM footer (opt-out link and the business's postal address)
+ * and RFC 8058 one-click unsubscribe headers to a marketing message. Returns
+ * null when any required element is missing, so the message is never sent
+ * without them.
+ */
+export function prepareMarketingEmail(
+  body: string,
+  origin: string,
+  unsubscribeToken: string | null,
+  postalAddress: string | null,
+  businessName: string | null,
+): {
+  readonly text: string;
+  readonly headers: Readonly<Record<string, string>>;
+} | null {
+  const address = singleLine(postalAddress, 300);
+  const business = singleLine(businessName, 120) || 'this business';
+  if (!unsubscribeToken || !UNSUBSCRIBE_TOKEN_PATTERN.test(unsubscribeToken)) {
+    return null;
+  }
+  if (address.length < 10) return null;
+
+  return {
+    text:
+      `${body}\n\n--\n` +
+      `You are receiving this because you agreed to hear from ${business}.\n` +
+      `Unsubscribe: ${origin}/unsubscribe/${unsubscribeToken}\n` +
+      `${business}, ${address}`,
+    headers: {
+      'List-Unsubscribe': `<${origin}/api/unsubscribe/${unsubscribeToken}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
   };
 }
 

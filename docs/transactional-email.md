@@ -20,9 +20,8 @@ Git, Vercel, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, logs, or chat.
 - Contact and invoice state are revalidated when each message is claimed.
   Suppressed, archived, opted-out, or changed contacts, and invoices that are
   paid or no longer open, are cancelled with `stale_follow_up_state`.
-- Only `transactional` messages are claimed. Marketing review requests stay
-  `ready` and unsent until an unsubscribe flow exists and counsel approves
-  CAN-SPAM behavior.
+- Marketing review requests stay `ready` and unsent unless the marketing
+  switch below is on.
 - Each send uses the Resend idempotency key `follow-up-<message id>`, so a
   retry after a crash cannot send twice within Resend's idempotency window.
 - Leases last two minutes. Failures retry with exponential backoff (5 minutes
@@ -36,6 +35,29 @@ Git, Vercel, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, logs, or chat.
   tenant (all tenants share the CrewFlow sending domain).
 - Emails are sent as `"<Business name> via CrewFlow" <sender address>` with
   `Reply-To` set to the tenant's business email.
+
+## Review requests (marketing)
+
+Review requests are marketing email under CAN-SPAM. The code is ready, but
+sending stays off until counsel approves the wording, consent capture, and
+opt-out handling. When approved, set the Edge Function secret
+`CREWFLOW_MARKETING_EMAIL_ENABLED=true` (with `CREWFLOW_WEB_APP_URL` set).
+
+- Only customers with recorded marketing opt-in, a fully paid invoice,
+  and no suppression are claimed, rechecked at send time.
+- A message is held until the business has a complete street address, city,
+  state, and ZIP in company settings; CAN-SPAM requires a postal address.
+- Every message gets a footer with the business name, postal address, and an
+  unsubscribe link, plus RFC 8058 `List-Unsubscribe` and
+  `List-Unsubscribe-Post` headers for one-click unsubscribe in Gmail and
+  Yahoo. A message missing any of these fails instead of sending.
+- Links are `<customer id>.<HMAC>` signed with the Vault secret
+  `crewflow_unsubscribe_signing_key` (created by migration); no token is
+  stored. Opening `/unsubscribe/<token>` only shows a confirmation; the
+  opt-out happens on the button press or a one-click POST to
+  `/api/unsubscribe/<token>`, so link scanners cannot unsubscribe people.
+- Unsubscribing clears marketing consent for that customer, cancels their
+  queued marketing mail, and leaves service email untouched.
 
 ## Invitation, quote, invoice, and work-report emails
 
@@ -81,6 +103,8 @@ box. Copying the link keeps working whether or not it is ticked.
    - `RESEND_WEBHOOK_SECRET`: from step 6.
    - `CREWFLOW_WEB_APP_URL`: the exact HTTPS web origin, such as
      `https://app.<domain>`, with no path.
+   - `CREWFLOW_MARKETING_EMAIL_ENABLED`: leave unset until counsel approves
+     review-request email.
 5. Push migrations and deploy both functions:
 
    ```powershell
@@ -119,7 +143,9 @@ without harming sender reputation: `delivered@resend.dev`,
   customer, and cancels their other ready messages.
 - `complained@resend.dev` suppresses the same way.
 - A reminder whose invoice is paid after approval is cancelled, not sent.
-- A review request stays `ready` and is never sent.
+- With the marketing switch off, a review request stays `ready` and is never
+  sent. With it on, the email has the footer and headers, and the
+  unsubscribe link opts the customer out after confirmation.
 - Removing `RESEND_API_KEY` makes the worker report `configured: false` with no
   attempt consumed.
 - A webhook with a modified body or stale timestamp returns 401.
@@ -132,5 +158,5 @@ without harming sender reputation: `delivered@resend.dev`,
 ## Not yet delivered
 
 Job-status emails are not yet delivered; they can reuse the transactional
-queue. Review-request sending needs an
-unsubscribe link, a suppression endpoint, and counsel sign-off.
+queue. Review-request sending needs counsel sign-off before the marketing
+switch is turned on.
