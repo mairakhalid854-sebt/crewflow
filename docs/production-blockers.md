@@ -24,11 +24,12 @@ These do not block local Phase 0 development, but they block claims of productio
 8. Contact consent, reminder, review solicitation, privacy, and cross-border processing policies approved by counsel.
    On 2026-10-28 the owner reported counsel approval for review-request
    (marketing) email, so `CREWFLOW_MARKETING_EMAIL_ENABLED=true` is set during
-   email setup. Keep the written approval with company records. Confirm
-   whether that approval also covers the privacy notice, terms, and
-   cross-border processing before removing the privacy notice's pre-launch
-   draft label.
-9. Final brand/domain clearance, privacy policy, and terms.
+   email setup. The owner also reported counsel approval of the privacy
+   notice and terms; the published notice names the operator, Digital Media
+   360 LLC, and its contact details. Keep the written approvals with company
+   records. Cross-border processing approval is not yet confirmed.
+9. Final brand/domain clearance. The approved terms text must still be
+   published in the app; no terms page exists yet.
 10. Mapping/geocoding provider and budget if travel estimates are required.
 11. Exact approved job state machine and cancellation/refund policy.
 12. Public review destination and provider rules.

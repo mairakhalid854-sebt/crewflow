@@ -131,14 +131,6 @@
   padding-left: 22px;
 }
 
-.privacy-card footer {
-  color: #7b5b17;
-  font-size: 12px;
-  line-height: 1.6;
-  margin-top: 34px;
-  padding-top: 20px;
-}
-
 @media (max-width: 600px) {
   .privacy-shell {
     padding: 0 14px 36px;

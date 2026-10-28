@@ -36,9 +36,10 @@ export default function PrivacyPage() {
         <section>
           <h2>Who is responsible for the information</h2>
           <p>
-            Each service business controls the customer, job, and workforce
-            information placed in its CrewFlow workspace. CrewFlow processes
-            that information to provide the application. For questions about a
+            CrewFlow is a service of Digital Media 360 LLC. Each service
+            business controls the customer, job, and workforce information
+            placed in its CrewFlow workspace. CrewFlow processes that
+            information to provide the application. For questions about a
             specific job, quote, invoice, photo, signature, or customer record,
             contact the service business that created it.
           </p>
@@ -131,6 +132,8 @@ export default function PrivacyPage() {
         <section>
           <h2>Contact CrewFlow</h2>
           <address className="privacy-contact">
+            Digital Media 360 LLC
+            <br />
             30 N Gould St, Ste N
             <br />
             Sheridan, WY 82801
@@ -149,11 +152,6 @@ export default function PrivacyPage() {
             date above will be updated when a revised notice is published.
           </p>
         </section>
-
-        <footer>
-          This notice is a pre-launch operational draft and must receive legal
-          review before general availability.
-        </footer>
       </article>
     </main>
   );
