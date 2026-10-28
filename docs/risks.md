@@ -8,6 +8,8 @@
 
 The 2026-10-27 review upgraded transitive `node-forge` from 1.4.0 to its compatible patched 1.4.1 release. `npm audit --omit=dev --workspace @crewflow/mobile` now reports one underlying high-severity advisory in transitive `zod` 3.25.76 through `@expo/cli` 57.0.32. Expo 57.0.31 is the latest SDK 57 release and its CLI requires `zod ^3.25.76`; npm's suggested remediation is a breaking downgrade to Expo 54, which is not acceptable. The vulnerable code is in the native build CLI rather than the shipped web, API, or worker services. No production mobile build or deployment is authorized while this high finding remains.
 
+The 2026-10-28 review added low-severity GHSA-gcqx-w48m-w2h4 (prototype poisoning in `deepmerge` `mergeObject()`), reached only through `@expo/config` 57.0.10, Expo's build-time configuration loader. `deepmerge` 4.3.1 is the latest release and is affected, so no compatible patch exists; npm again proposes the breaking Expo 54 downgrade. It carries the same 2026-11-10 review date.
+
 Mitigation:
 
 1. Keep a strict blocking audit for the deployable web, API, and worker workspaces.
