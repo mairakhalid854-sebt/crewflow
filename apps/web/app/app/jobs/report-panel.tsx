@@ -113,6 +113,10 @@ export function WorkReportPanel({
                 Approval locks this snapshot and creates a secure customer link.
                 Review every statement before continuing.
               </p>
+              <label className="checkbox-field">
+                <input name="emailLink" type="checkbox" />
+                Also email the link to the customer
+              </label>
               <button
                 className="primary-button"
                 disabled={pending}

@@ -37,9 +37,9 @@ Git, Vercel, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, logs, or chat.
 - Emails are sent as `"<Business name> via CrewFlow" <sender address>` with
   `Reply-To` set to the tenant's business email.
 
-## Invitation, quote, and invoice emails
+## Invitation, quote, invoice, and work-report emails
 
-The invite, quote, and invoice forms show an unchecked **Also email the link**
+The invite, quote, invoice, and work-report forms show an unchecked **Also email the link**
 box. Copying the link keeps working whether or not it is ticked.
 
 - The web action sends only the entity id and the one-time token it just
@@ -123,7 +123,7 @@ without harming sender reputation: `delivered@resend.dev`,
 - Removing `RESEND_API_KEY` makes the worker report `configured: false` with no
   attempt consumed.
 - A webhook with a modified body or stale timestamp returns 401.
-- A ticked invitation, quote, and invoice each arrive once with a working
+- A ticked invitation, quote, invoice, and work report each arrive once with a working
   link on the configured origin.
 - Revoking an invitation before the worker runs cancels its email.
 - A quote or invoice for a customer without transactional email permission
@@ -131,6 +131,6 @@ without harming sender reputation: `delivered@resend.dev`,
 
 ## Not yet delivered
 
-Job-status and work-report emails are not yet delivered; they can reuse the
-transactional queue. Review-request sending needs an
+Job-status emails are not yet delivered; they can reuse the transactional
+queue. Review-request sending needs an
 unsubscribe link, a suppression endpoint, and counsel sign-off.

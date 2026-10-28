@@ -111,7 +111,7 @@ export function parseAppOrigin(value: string | undefined): string | null {
 }
 
 const LINK_PATH_PATTERN =
-  /^\/(quote\/|invoice\/|signup\?next=%2Finvite%2F)[0-9a-f]{64}$/;
+  /^\/(quote\/|invoice\/|report\/|signup\?next=%2Finvite%2F)[0-9a-f]{64}$/;
 
 /** Substitutes the single `{{link}}` placeholder with an absolute URL. */
 export function renderLinkedBody(
