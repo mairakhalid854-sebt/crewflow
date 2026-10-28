@@ -9,14 +9,15 @@ production environment.
   vulnerabilities for the web, API, and worker workspaces.
 - The compatible `node-forge` 1.4.1 patch removed one Expo CLI advisory without
   changing Expo SDK 57.
-- Mobile release remains blocked by one underlying high-severity transitive
-  `zod` advisory in `@expo/cli` 57.0.32. Expo 57.0.31 is the latest SDK 57
-  release; npm's proposed fix is an incompatible downgrade to Expo 54. The
-  reviewed exception expires on 2026-11-10 and does not authorize a production
-  mobile release.
-- On 2026-10-28 a low-severity `deepmerge` advisory (GHSA-gcqx-w48m-w2h4)
-  appeared through Expo's build-time `@expo/config`. No patched `deepmerge`
-  release exists, so it shares the same reviewed, expiring exception.
+- On 2026-10-28 a scoped npm override moved `@expo/cli` to the patched `zod`
+  4.6.7, clearing the high-severity GHSA-mrhx-c7xc-m3w5 finding without an
+  Expo SDK change. No Expo release (SDK 58 or canary) has left `zod` 3, which
+  has no patch. CLI schemas, `expo config`, and an Android export were verified
+  under the override.
+- One low-severity `deepmerge` advisory (GHSA-gcqx-w48m-w2h4) remains through
+  Expo's build-time `@expo/config`. No patched `deepmerge` release exists; its
+  reviewed exception expires on 2026-11-10. A production mobile release still
+  needs installed-device acceptance and store prerequisites.
 
 ## AI staging baseline
 

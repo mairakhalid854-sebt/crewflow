@@ -3,15 +3,6 @@ import process from 'node:process';
 
 const reviewedAdvisories = new Map([
   [
-    'https://github.com/advisories/GHSA-mrhx-c7xc-m3w5',
-    {
-      packageName: 'zod',
-      reviewBy: '2026-11-10',
-      severity: 'high',
-      source: 1243066,
-    },
-  ],
-  [
     'https://github.com/advisories/GHSA-gcqx-w48m-w2h4',
     {
       packageName: 'deepmerge',
