@@ -112,6 +112,18 @@
   margin: 0;
 }
 
+.privacy-contact {
+  color: #53657d;
+  font-size: 15px;
+  font-style: normal;
+  line-height: 1.75;
+}
+
+.privacy-contact a {
+  color: #1769f4;
+  font-weight: 700;
+}
+
 .privacy-card ul {
   display: grid;
   gap: 10px;
