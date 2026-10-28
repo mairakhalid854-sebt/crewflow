@@ -3113,6 +3113,13 @@ export type Database = {
         Args: { session_token: string; target_widget_key: string };
         Returns: string;
       };
+      preview_marketing_unsubscribe: {
+        Args: { unsubscribe_token: string };
+        Returns: {
+          already_unsubscribed: boolean;
+          company_name: string;
+        }[];
+      };
       publish_job_invoice: {
         Args: { target_invoice_id: string };
         Returns: string;
@@ -3368,6 +3375,10 @@ export type Database = {
       take_over_intake_conversation: {
         Args: { takeover_reason: string; target_conversation_id: string };
         Returns: number;
+      };
+      unsubscribe_marketing_email: {
+        Args: { unsubscribe_token: string };
+        Returns: boolean;
       };
       update_company_settings: {
         Args: {

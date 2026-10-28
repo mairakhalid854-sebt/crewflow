@@ -9,6 +9,7 @@ import {
   idempotencyKey,
   parseAppOrigin,
   parseSenderAddress,
+  prepareMarketingEmail,
   renderLinkedBody,
   suppressionsFromWebhookEvent,
   verifyResendWebhook,
@@ -222,5 +223,75 @@ describe('transactional email links', () => {
     expect(idempotencyKey(delivery, 'transactional')).toBe(
       'transactional-77000000-0000-4000-8000-000000000001',
     );
+  });
+});
+
+describe('marketing email compliance', () => {
+  const origin = 'https://app.crewflow.example';
+  const token = `44000000-0000-4000-8000-000000000002.${'f'.repeat(64)}`;
+  const address = '12 Main St, Austin, TX 78701, US';
+
+  it('adds the opt-out link, postal address, and one-click headers', () => {
+    const prepared = prepareMarketingEmail(
+      'Please review us.',
+      origin,
+      token,
+      address,
+      'Sparkle Cleaning',
+    );
+    expect(prepared?.text).toBe(
+      'Please review us.\n\n--\n' +
+        'You are receiving this because you agreed to hear from Sparkle Cleaning.\n' +
+        `Unsubscribe: ${origin}/unsubscribe/${token}\n` +
+        `Sparkle Cleaning, ${address}`,
+    );
+    expect(prepared?.headers).toEqual({
+      'List-Unsubscribe': `<${origin}/api/unsubscribe/${token}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    });
+  });
+
+  it('refuses to build a marketing email without its required parts', () => {
+    expect(
+      prepareMarketingEmail('x', origin, null, address, 'Sparkle'),
+    ).toBeNull();
+    expect(
+      prepareMarketingEmail('x', origin, 'not-a-token', address, 'Sparkle'),
+    ).toBeNull();
+    expect(
+      prepareMarketingEmail('x', origin, token, null, 'Sparkle'),
+    ).toBeNull();
+    expect(
+      prepareMarketingEmail('x', origin, token, 'TX', 'Sparkle'),
+    ).toBeNull();
+  });
+
+  it('flattens control characters in footer values', () => {
+    const prepared = prepareMarketingEmail(
+      'x',
+      origin,
+      token,
+      '12 Main St\r\nBcc: victim@example.com',
+      'Sparkle\nCleaning',
+    );
+    expect(prepared?.text).toContain(
+      'Sparkle Cleaning, 12 Main St Bcc: victim@example.com',
+    );
+    expect(prepared?.text.split('\n')).toHaveLength(6);
+  });
+
+  it('passes custom headers through to the provider payload', () => {
+    const payload = buildResendEmail(
+      delivery,
+      'notify@send.example.com',
+      'follow_up_marketing',
+      { 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+    );
+    expect(payload.headers).toEqual({
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    });
+    expect(payload.tags).toEqual([
+      { name: 'category', value: 'follow_up_marketing' },
+    ]);
   });
 });
