@@ -82,6 +82,11 @@ export function SignupForm({
       </p>
       <FieldError errors={state.fieldErrors?.password} />
       <StatusMessage state={state} />
+      <p className="auth-consent">
+        By creating an account, you agree to the{' '}
+        <Link href="/terms">Terms of Service</Link> and acknowledge the{' '}
+        <Link href="/privacy">Privacy Notice</Link>.
+      </p>
       <SubmitButton
         label={joiningTeam ? 'Create team account' : 'Create owner account'}
         pendingLabel="Creating account…"

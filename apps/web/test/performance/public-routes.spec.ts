@@ -12,6 +12,7 @@ const budgets = {
 const publicRoutes = [
   { name: 'login', path: '/login' },
   { name: 'privacy notice', path: '/privacy' },
+  { name: 'terms of service', path: '/terms' },
 ] as const;
 
 for (const route of publicRoutes) {
