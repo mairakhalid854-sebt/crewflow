@@ -440,6 +440,10 @@ entrypoint = './functions/process-follow-up-email-deliveries/index.js'
 verify_jwt = false
 entrypoint = './functions/resend-email-webhook/index.js'
 
+[functions.process-transactional-emails]
+verify_jwt = false
+entrypoint = './functions/process-transactional-emails/index.js'
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

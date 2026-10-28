@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { appUrl } from '../../../lib/app-url';
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
 import { localDateTimeToIso } from '../../../lib/date-time';
+import { requestLinkEmail } from '../../../lib/email/link-email';
 import { createClient } from '../../../lib/supabase/server';
 
 export interface QuoteFormState {
@@ -166,11 +167,16 @@ export async function publishQuoteAction(
     return { message: databaseMessage(error.message), status: 'error' };
   }
 
+  const emailMessage =
+    formData.get('emailLink') === 'on'
+      ? ` ${await requestLinkEmail(supabase, 'quote', parsed.data.quoteId, token)}`
+      : '';
+
   revalidatePath('/app');
   revalidatePath('/app/jobs');
   revalidatePath(`/app/jobs/${parsed.data.jobId}`);
   return {
-    message: 'Quote sent state recorded. Copy this secure link now.',
+    message: `Quote sent state recorded. Copy this secure link now.${emailMessage}`,
     shareUrl: `${appUrl()}/quote/${token}`,
     status: 'success',
   };

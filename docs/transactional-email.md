@@ -4,8 +4,11 @@ CrewFlow uses Resend for two separate paths:
 
 1. **Supabase Auth email** (signup confirmation, password reset, invites) via
    Resend SMTP, configured in the Supabase dashboard.
-2. **Application email** (approved Follow-Up payment reminders) via the
-   `process-follow-up-email-deliveries` Edge Function and Resend's HTTP API.
+2. **Application email** via Resend's HTTP API:
+   - approved Follow-Up payment reminders through
+     `process-follow-up-email-deliveries`;
+   - opt-in team invitation, quote, and invoice link emails through
+     `process-transactional-emails`.
 
 Live sending stays off until a sending domain is owned and verified. All
 credentials live only in the Supabase dashboard or Supabase Secrets, never in
@@ -34,6 +37,27 @@ Git, Vercel, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, logs, or chat.
 - Emails are sent as `"<Business name> via CrewFlow" <sender address>` with
   `Reply-To` set to the tenant's business email.
 
+## Invitation, quote, and invoice emails
+
+The invite, quote, and invoice forms show an unchecked **Also email the link**
+box. Copying the link keeps working whether or not it is ticked.
+
+- The web action sends only the entity id and the one-time token it just
+  received. `enqueue_transactional_email` verifies the token against the
+  stored hash, requires owner/office (owner for invitations), derives the
+  recipient from the customer or invitation record, and renders the subject
+  and body itself. Callers cannot choose recipients or content.
+- Each issued link is emailed at most once; repeating the request returns the
+  same queue row and is not audited again.
+- Stored bodies contain a `{{link}}` placeholder and a relative path. The
+  worker joins that path to `CREWFLOW_WEB_APP_URL` at send time, so a stored
+  row can never point recipients at another host.
+- Before each send the worker cancels mail for a revoked, accepted, or expired
+  invitation, a quote no longer `sent`, an invoice no longer open, or a
+  customer who is suppressed, archived, or opted out.
+- The link path is scrubbed when the email is delivered, fails, or is
+  cancelled. The queue table is not readable by browser roles.
+
 ## Setup (once a domain is owned)
 
 1. In Resend, add the subdomain `send.<domain>` (keeps the root domain's
@@ -55,12 +79,15 @@ Git, Vercel, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, logs, or chat.
    - `CREWFLOW_EMAIL_FROM_ADDRESS`: a bare address such as
      `notifications@send.<domain>`.
    - `RESEND_WEBHOOK_SECRET`: from step 6.
+   - `CREWFLOW_WEB_APP_URL`: the exact HTTPS web origin, such as
+     `https://app.<domain>`, with no path.
 5. Push migrations and deploy both functions:
 
    ```powershell
    npx.cmd supabase db push
    npx.cmd supabase functions deploy process-follow-up-email-deliveries --no-verify-jwt
    npx.cmd supabase functions deploy resend-email-webhook --no-verify-jwt
+   npx.cmd supabase functions deploy process-transactional-emails --no-verify-jwt
    ```
 
 6. In Resend → Webhooks, add
@@ -71,10 +98,12 @@ Git, Vercel, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, logs, or chat.
 
    ```sql
    SELECT public.configure_follow_up_email_delivery_cron();
+   SELECT public.configure_transactional_email_cron();
    ```
 
-   To pause delivery, unschedule the `crewflow-deliver-follow-up-email` cron
-   job; ready messages wait safely.
+   To pause delivery, unschedule the `crewflow-deliver-follow-up-email` or
+   `crewflow-deliver-transactional-email` cron job; ready messages wait
+   safely.
 
 ## Acceptance
 
@@ -94,10 +123,14 @@ without harming sender reputation: `delivered@resend.dev`,
 - Removing `RESEND_API_KEY` makes the worker report `configured: false` with no
   attempt consumed.
 - A webhook with a modified body or stale timestamp returns 401.
+- A ticked invitation, quote, and invoice each arrive once with a working
+  link on the configured origin.
+- Revoking an invitation before the worker runs cancels its email.
+- A quote or invoice for a customer without transactional email permission
+  shows the opt-out message and still offers the copyable link.
 
 ## Not yet delivered
 
-FR-080 also lists invite, quote, invoice, and job-status emails. Those flows
-currently share links in the UI; they need templates and enqueue points on
-the same queue pattern before production. Review-request sending needs an
+Job-status and work-report emails are not yet delivered; they can reuse the
+transactional queue. Review-request sending needs an
 unsubscribe link, a suppression endpoint, and counsel sign-off.

@@ -87,6 +87,10 @@ export function QuotePanel({
               <p className="form-help">
                 Sending locks this snapshot and advances a new job to Quoted.
               </p>
+              <label className="checkbox-field">
+                <input name="emailLink" type="checkbox" />
+                Also email the link to the customer
+              </label>
               <button
                 className="primary-button"
                 disabled={pending}

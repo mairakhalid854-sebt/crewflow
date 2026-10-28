@@ -2896,6 +2896,14 @@ export type Database = {
         Args: { target_device_id: string };
         Returns: undefined;
       };
+      enqueue_transactional_email: {
+        Args: {
+          link_token: string;
+          target_entity_id: string;
+          target_kind: Database['public']['Enums']['transactional_email_kind'];
+        };
+        Returns: string;
+      };
       enqueue_push_notification_event: {
         Args: {
           target_body: string;
@@ -3498,6 +3506,7 @@ export type Database = {
       subscription_status:
         'trialing' | 'active' | 'past_due' | 'paused' | 'canceled';
       tax_behavior: 'exclusive' | 'inclusive' | 'non_taxable';
+      transactional_email_kind: 'team_invitation' | 'quote' | 'invoice';
       work_report_status: 'draft' | 'sent' | 'void';
     };
     CompositeTypes: {
@@ -3749,6 +3758,7 @@ export const Constants = {
         'canceled',
       ],
       tax_behavior: ['exclusive', 'inclusive', 'non_taxable'],
+      transactional_email_kind: ['team_invitation', 'quote', 'invoice'],
       work_report_status: ['draft', 'sent', 'void'],
     },
   },

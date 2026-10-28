@@ -159,6 +159,10 @@ export function InvoicePanel({
                 {lines.length === 1 ? '' : 's'} and creates a secure customer
                 link.
               </p>
+              <label className="checkbox-field">
+                <input name="emailLink" type="checkbox" />
+                Also email the link to the customer
+              </label>
               <button
                 className="primary-button"
                 disabled={publishing}

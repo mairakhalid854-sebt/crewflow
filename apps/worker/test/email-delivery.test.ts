@@ -7,7 +7,9 @@ import {
   buildResendEmail,
   classifyResendResponse,
   idempotencyKey,
+  parseAppOrigin,
   parseSenderAddress,
+  renderLinkedBody,
   suppressionsFromWebhookEvent,
   verifyResendWebhook,
 } from '../../../supabase/functions/_shared/email-delivery.js';
@@ -173,5 +175,49 @@ describe('webhook suppression mapping', () => {
         data: { to: ['d@example.com'] },
       }),
     ).toEqual([]);
+  });
+});
+
+describe('transactional email links', () => {
+  const token = 'a'.repeat(64);
+
+  it('accepts only a bare HTTPS origin', () => {
+    expect(parseAppOrigin('https://app.crewflow.example/')).toBe(
+      'https://app.crewflow.example',
+    );
+    expect(parseAppOrigin('http://app.crewflow.example')).toBeNull();
+    expect(parseAppOrigin('https://app.crewflow.example/path')).toBeNull();
+    expect(parseAppOrigin('https://user:pass@app.crewflow.example')).toBeNull();
+    expect(parseAppOrigin('https://app.crewflow.example/?next=x')).toBeNull();
+    expect(parseAppOrigin('not a url')).toBeNull();
+    expect(parseAppOrigin(undefined)).toBeNull();
+  });
+
+  it('joins only known link paths to the trusted origin', () => {
+    const origin = 'https://app.crewflow.example';
+    expect(
+      renderLinkedBody('Open {{link}} now.', origin, `/quote/${token}`),
+    ).toBe(`Open ${origin}/quote/${token} now.`);
+    expect(
+      renderLinkedBody('{{link}}', origin, `/signup?next=%2Finvite%2F${token}`),
+    ).toBe(`${origin}/signup?next=%2Finvite%2F${token}`);
+    expect(
+      renderLinkedBody('{{link}}', origin, `//evil.example/${token}`),
+    ).toBeNull();
+    expect(renderLinkedBody('{{link}}', origin, '/quote/short')).toBeNull();
+  });
+
+  it('requires exactly one placeholder', () => {
+    const origin = 'https://app.crewflow.example';
+    expect(renderLinkedBody('no link', origin, `/invoice/${token}`)).toBeNull();
+    expect(
+      renderLinkedBody('{{link}} {{link}}', origin, `/invoice/${token}`),
+    ).toBeNull();
+  });
+
+  it('prefixes idempotency keys per queue', () => {
+    expect(idempotencyKey(delivery, 'transactional')).toBe(
+      'transactional-77000000-0000-4000-8000-000000000001',
+    );
   });
 });

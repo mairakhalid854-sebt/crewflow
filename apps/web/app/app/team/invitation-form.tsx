@@ -42,6 +42,10 @@ export function InvitationForm() {
       <button className="primary-button" disabled={pending} type="submit">
         {pending ? 'Creating link…' : 'Create invitation link'}
       </button>
+      <label className="checkbox-field">
+        <input name="emailLink" type="checkbox" />
+        Also email the link to this person
+      </label>
 
       {state.message ? (
         <p

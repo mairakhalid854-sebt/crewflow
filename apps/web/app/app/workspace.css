@@ -835,8 +835,14 @@
 }
 
 .invite-team-form .form-status,
+.invite-team-form .checkbox-field,
 .invite-link-result {
   grid-column: 1 / -1;
+}
+
+.invite-team-form .checkbox-field input {
+  width: 18px;
+  padding: 0;
 }
 
 .invite-link-result {
@@ -1463,6 +1469,7 @@
   }
 
   .invite-team-form .form-status,
+  .invite-team-form .checkbox-field,
   .invite-link-result {
     grid-column: auto;
   }

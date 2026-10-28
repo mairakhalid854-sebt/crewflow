@@ -3,7 +3,11 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 function read(path: string): string {
-  return readFileSync(new URL(`../../../${path}`, import.meta.url), 'utf8');
+  // Windows checkouts may use CRLF; assertions are written against LF.
+  return readFileSync(
+    new URL(`../../../${path}`, import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
 }
 
 const migration = read(
