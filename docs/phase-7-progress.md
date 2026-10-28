@@ -108,8 +108,11 @@ production.
   with idempotency keys, two-minute leases, and five bounded attempts.
 - `resend-email-webhook` verifies Svix signatures and suppresses permanently
   bounced or complaining recipients across tenants.
-- Delivery is never scheduled by migration. Live sending, invite/quote/
-  invoice/status templates, and review-request unsubscribe remain open.
+- Opt-in invitation, quote, and invoice link emails use a token-verified,
+  server-rendered queue whose links are joined to a trusted origin at send
+  time and scrubbed at every terminal state.
+- Delivery is never scheduled by migration. Live sending, job-status and
+  work-report emails, and review-request unsubscribe remain open.
 
 ## Remaining Phase 7 gates
 

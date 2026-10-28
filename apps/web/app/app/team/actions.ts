@@ -8,6 +8,7 @@ import type { Json } from '@crewflow/database';
 import { appUrl } from '../../../lib/app-url';
 import { invitationSignupUrl } from '../../../lib/auth/invitation-url';
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
+import { requestLinkEmail } from '../../../lib/email/link-email';
 import { createClient } from '../../../lib/supabase/server';
 
 export interface TeamActionState {
@@ -72,12 +73,21 @@ export async function createInvitationAction(
     );
   }
 
+  const emailMessage =
+    formData.get('emailLink') === 'on'
+      ? ` ${await requestLinkEmail(
+          supabase,
+          'team_invitation',
+          invitation.invitation_id,
+          invitation.invitation_token,
+        )}`
+      : '';
+
   revalidatePath('/app/team');
   return {
     expiresAt: invitation.invitation_expires_at,
     inviteUrl: invitationSignupUrl(appUrl(), invitation.invitation_token),
-    message:
-      'Team signup link created. The invitee will choose a password, verify their email, and accept the invitation.',
+    message: `Team signup link created. The invitee will choose a password, verify their email, and accept the invitation.${emailMessage}`,
     status: 'success',
   };
 }

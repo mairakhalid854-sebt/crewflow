@@ -63,6 +63,7 @@ function displayName(value: string | null): string {
 export function buildResendEmail(
   delivery: ClaimedEmailDelivery,
   senderAddress: string,
+  category = 'follow_up_transactional',
 ): ResendEmailPayload {
   const replyTo = delivery.reply_to_email?.trim().toLowerCase();
   return {
@@ -71,13 +72,57 @@ export function buildResendEmail(
     subject: delivery.subject,
     text: delivery.body,
     ...(validEmail(replyTo) ? { reply_to: replyTo } : {}),
-    tags: [{ name: 'category', value: 'follow_up_transactional' }],
+    tags: [{ name: 'category', value: category }],
   };
 }
 
 /** Resend retries are safe because every send carries this idempotency key. */
-export function idempotencyKey(delivery: ClaimedEmailDelivery): string {
-  return `follow-up-${delivery.message_id}`;
+export function idempotencyKey(
+  delivery: ClaimedEmailDelivery,
+  prefix = 'follow-up',
+): string {
+  return `${prefix}-${delivery.message_id}`;
+}
+
+/**
+ * Returns the trusted HTTPS origin from `CREWFLOW_WEB_APP_URL`. Links in
+ * queued email are relative paths joined to this origin at send time, so
+ * stored content can never point recipients at another host.
+ */
+export function parseAppOrigin(value: string | undefined): string | null {
+  if (!value) return null;
+  let url: URL;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    return null;
+  }
+  if (
+    url.protocol !== 'https:' ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash ||
+    (url.pathname !== '/' && url.pathname !== '')
+  ) {
+    return null;
+  }
+  return url.origin;
+}
+
+const LINK_PATH_PATTERN =
+  /^\/(quote\/|invoice\/|signup\?next=%2Finvite%2F)[0-9a-f]{64}$/;
+
+/** Substitutes the single `{{link}}` placeholder with an absolute URL. */
+export function renderLinkedBody(
+  body: string,
+  origin: string,
+  linkPath: string,
+): string | null {
+  if (!LINK_PATH_PATTERN.test(linkPath)) return null;
+  const parts = body.split('{{link}}');
+  if (parts.length !== 2) return null;
+  return `${parts[0]}${origin}${linkPath}${parts[1]}`;
 }
 
 export function classifyResendResponse(

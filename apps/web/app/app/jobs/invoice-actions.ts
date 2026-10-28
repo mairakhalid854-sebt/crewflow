@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { appUrl } from '../../../lib/app-url';
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
 import { localDateTimeToIso } from '../../../lib/date-time';
+import { requestLinkEmail } from '../../../lib/email/link-email';
 import { normalizeExternalPaymentUrl } from '../../../lib/invoices/public-invoice';
 import { createClient } from '../../../lib/supabase/server';
 
@@ -262,10 +263,15 @@ export async function publishInvoiceAction(
   });
   if (error) return { message: invoiceError(error.message), status: 'error' };
 
+  const emailMessage =
+    formData.get('emailLink') === 'on'
+      ? ` ${await requestLinkEmail(supabase, 'invoice', parsed.data.invoiceId, token)}`
+      : '';
+
   revalidatePath('/app/invoices');
   revalidatePath(`/app/jobs/${parsed.data.jobId}`);
   return {
-    message: 'Invoice sent state recorded. Copy this secure link now.',
+    message: `Invoice sent state recorded. Copy this secure link now.${emailMessage}`,
     shareUrl: `${appUrl()}/invoice/${token}`,
     status: 'success',
   };
