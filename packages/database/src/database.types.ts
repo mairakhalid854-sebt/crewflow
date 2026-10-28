@@ -625,6 +625,8 @@ export type Database = {
           invoice_id: string;
           kind: Database['public']['Enums']['follow_up_message_kind'];
           last_error_code: string | null;
+          lease_expires_at: string | null;
+          lease_token: string | null;
           milestone_day: number | null;
           next_attempt_at: string | null;
           payment_state_source: Database['public']['Enums']['payment_source'];
@@ -651,6 +653,8 @@ export type Database = {
           invoice_id: string;
           kind: Database['public']['Enums']['follow_up_message_kind'];
           last_error_code?: string | null;
+          lease_expires_at?: string | null;
+          lease_token?: string | null;
           milestone_day?: number | null;
           next_attempt_at?: string | null;
           payment_state_source: Database['public']['Enums']['payment_source'];
@@ -677,6 +681,8 @@ export type Database = {
           invoice_id?: string;
           kind?: Database['public']['Enums']['follow_up_message_kind'];
           last_error_code?: string | null;
+          lease_expires_at?: string | null;
+          lease_token?: string | null;
           milestone_day?: number | null;
           next_attempt_at?: string | null;
           payment_state_source?: Database['public']['Enums']['payment_source'];

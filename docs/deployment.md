@@ -67,7 +67,11 @@ The native app owns the `crewflow` URL scheme with Android package and iOS bundl
     configure the two Supabase scanner secrets, then enable the processing cron
     and complete the malware/document acceptance matrix in
     `docs/phase-6-knowledge-processing-runbook.md`.
-16. Promote the same reviewed commit to production only after all release blockers are closed.
+16. After a sending domain is verified in Resend, follow
+    `docs/transactional-email.md` to configure Auth SMTP, the two email
+    secrets, both email functions, the bounce/complaint webhook, and the
+    delivery cron, then run its acceptance list.
+17. Promote the same reviewed commit to production only after all release blockers are closed.
 
 ## Web smoke check
 
