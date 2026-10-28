@@ -3,7 +3,12 @@
 These do not block local Phase 0 development, but they block claims of production readiness or relevant live integrations.
 
 1. Legal entity/person registration, tax advice, Paddle seller approval, and Pakistan payout verification.
-2. Subscription plans, monthly/annual prices, trials, grace behavior, seat limits, and AI budgets.
+2. Subscription plans, monthly/annual prices, grace behavior, seat limits, and AI budgets.
+   Trial decided by the owner on 2026-10-28: 7 days for new subscriptions.
+   The sandbox catalog script and `billing_plans` use 7 days; rerun
+   `scripts/configure-paddle-sandbox.mjs` to update the Paddle sandbox prices
+   in place. "One trial per business" is stated in the terms but not yet
+   enforced at checkout.
 3. Transactional email sending domain and deliverability setup. Resend is the
    chosen provider and the Follow-Up delivery worker, bounce/complaint
    suppression webhook, and Auth SMTP runbook are delivered

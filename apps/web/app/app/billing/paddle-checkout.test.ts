@@ -14,7 +14,7 @@ const plan: SandboxCheckoutPlan = {
   currencyCode: 'USD',
   billingInterval: 'month',
   seatLimit: 3,
-  trialDays: 14,
+  trialDays: 7,
 };
 
 describe('Paddle sandbox checkout guards', () => {

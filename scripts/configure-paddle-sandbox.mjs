@@ -19,7 +19,7 @@ const plans = [
     description: 'CrewFlow subscription for small field-service teams.',
     amountCents: 2900,
     seatLimit: 3,
-    trialDays: 14,
+    trialDays: 7,
   },
   {
     code: 'growth_monthly_sandbox',
@@ -28,7 +28,7 @@ const plans = [
     description: 'CrewFlow subscription for growing field-service teams.',
     amountCents: 7900,
     seatLimit: 10,
-    trialDays: 14,
+    trialDays: 7,
   },
   {
     code: 'pro_monthly_sandbox',
@@ -37,7 +37,7 @@ const plans = [
     description: 'CrewFlow subscription for established field-service teams.',
     amountCents: 14900,
     seatLimit: 30,
-    trialDays: 14,
+    trialDays: 7,
   },
 ];
 
@@ -174,19 +174,36 @@ async function ensurePrice(apiKey, plan, productId) {
   );
 
   if (existing) {
-    const correctShape =
+    const correctCharge =
       existing.unit_price?.amount === String(plan.amountCents) &&
       existing.unit_price?.currency_code === 'USD' &&
       existing.billing_cycle?.interval === 'month' &&
-      existing.billing_cycle?.frequency === 1 &&
-      existing.trial_period?.interval === 'day' &&
-      existing.trial_period?.frequency === plan.trialDays;
-    if (!correctShape) {
+      existing.billing_cycle?.frequency === 1;
+    if (!correctCharge) {
       throw new Error(
         `Existing Paddle price for ${plan.code} does not match the approved CrewFlow terms. Archive it before rerunning.`,
       );
     }
-    return existing;
+
+    const correctTrial =
+      existing.trial_period?.interval === 'day' &&
+      existing.trial_period?.frequency === plan.trialDays;
+    if (correctTrial) return existing;
+
+    // A trial-length change keeps the price ID; Paddle applies it to new
+    // subscriptions only, so existing subscribers keep their current trial.
+    const updated = await paddleRequest(
+      apiKey,
+      `/prices/${encodeURIComponent(existing.id)}`,
+      {
+        method: 'PATCH',
+        body: {
+          description: `${plan.displayName} monthly with ${plan.trialDays}-day trial`,
+          trial_period: { interval: 'day', frequency: plan.trialDays },
+        },
+      },
+    );
+    return updated.data;
   }
 
   const payload = await paddleRequest(apiKey, '/prices', {

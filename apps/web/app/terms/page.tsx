@@ -73,6 +73,13 @@ export default function TermsPage() {
             changes, which take effect at your next renewal.
           </p>
           <p>
+            New subscriptions include a 7-day free trial, limited to one trial
+            per business. You will not be charged during the trial. A payment
+            method may be required at checkout, and your paid subscription
+            begins and is charged automatically when the trial ends unless you
+            cancel before then.
+          </p>
+          <p>
             You can cancel at any time, and cancellation takes effect at the end
             of the current billing period. If you are not satisfied with your
             first paid subscription, you may request a full refund within 14
