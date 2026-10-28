@@ -11,6 +11,15 @@ const reviewedAdvisories = new Map([
       source: 1243066,
     },
   ],
+  [
+    'https://github.com/advisories/GHSA-gcqx-w48m-w2h4',
+    {
+      packageName: 'deepmerge',
+      reviewBy: '2026-11-10',
+      severity: 'low',
+      source: 1243505,
+    },
+  ],
 ]);
 
 function fail(message) {
