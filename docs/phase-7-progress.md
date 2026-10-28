@@ -14,6 +14,9 @@ production environment.
   release; npm's proposed fix is an incompatible downgrade to Expo 54. The
   reviewed exception expires on 2026-11-10 and does not authorize a production
   mobile release.
+- On 2026-10-28 a low-severity `deepmerge` advisory (GHSA-gcqx-w48m-w2h4)
+  appeared through Expo's build-time `@expo/config`. No patched `deepmerge`
+  release exists, so it shares the same reviewed, expiring exception.
 
 ## AI staging baseline
 
