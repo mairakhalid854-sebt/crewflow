@@ -3123,6 +3123,7 @@ export type Database = {
           company_name: string;
         }[];
       };
+      product_brand_name: { Args: never; Returns: string };
       publish_job_invoice: {
         Args: { target_invoice_id: string };
         Returns: string;
