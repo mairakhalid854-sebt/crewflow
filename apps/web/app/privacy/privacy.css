@@ -137,7 +137,8 @@
 
 .privacy-card p a,
 .privacy-summary a {
-  color: #1769f4;
+  /* Darker than the brand blue so links pass WCAG AA on the summary tint. */
+  color: #0f5ad8;
   font-weight: 700;
 }
 
