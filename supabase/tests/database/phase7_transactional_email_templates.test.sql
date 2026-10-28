@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(24);
+SELECT plan(25);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -291,6 +291,13 @@ SELECT ok(
      AND position((current_setting('crewflow.invite')::jsonb ->> 'invitation_token') IN body) = 0
    FROM public.transactional_emails WHERE kind = 'team_invitation'),
   'Stored bodies hold a placeholder, never the raw token'
+);
+SELECT ok(
+  (SELECT subject = 'Follow Up invited you to CrewFlow'
+     AND position('join their CrewFlow workspace' IN body) > 0
+     AND body LIKE E'%\n\nSent by CrewFlow on behalf of Follow Up.'
+   FROM public.transactional_emails WHERE kind = 'team_invitation'),
+  'The invitation names the product in the subject, body, and footer'
 );
 SELECT is(
   (SELECT subject || ' -> ' || to_email FROM public.transactional_emails

@@ -66,5 +66,6 @@ No live payment provider, email provider, AI provider, cloud storage, deployment
 - [`docs/phase-0-handoff.md`](docs/phase-0-handoff.md)
 - [`docs/phase-1-progress.md`](docs/phase-1-progress.md)
 - [`docs/production-blockers.md`](docs/production-blockers.md)
+- [`docs/launch-day-checklist.md`](docs/launch-day-checklist.md)
 - [`docs/deployment.md`](docs/deployment.md)
 - [`docs/risks.md`](docs/risks.md)

@@ -25,7 +25,10 @@ These do not block local Phase 0 development, but they block claims of productio
    On 2026-10-28 the owner reported counsel approval for review-request
    (marketing) email, so `CREWFLOW_MARKETING_EMAIL_ENABLED=true` is set during
    email setup. Keep the written approval with company records.
-9. Final brand/domain clearance. At the owner's request, the published
+9. Final brand/domain clearance. `crewflow.com` is not available, so the
+   product is being renamed; the rename and domain steps are in
+   `docs/launch-day-checklist.md`, and server-rendered text already reads the
+   name from `public.product_brand_name()`. At the owner's request, the published
    privacy notice (`/privacy`) and terms of service (`/terms`) were drafted by
    Claude on 2026-10-28 without counsel-provided text and present CrewFlow as
    an independent brand. Have counsel review the final wording before general

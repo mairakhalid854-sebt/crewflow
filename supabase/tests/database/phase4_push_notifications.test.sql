@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(26);
+SELECT plan(28);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -187,6 +187,16 @@ SELECT is(
   'Assigning a job creates one event for the assigned technician'
 );
 SELECT is(
+  (
+    SELECT title || ' | ' || body
+    FROM public.push_notification_events
+    WHERE notification_kind = 'job_assigned'
+      AND target_membership_id = '39000000-0000-4000-8000-000000000002'
+  ),
+  'New CrewFlow assignment | Open CrewFlow to review your new job assignment.',
+  'The assignment alert names the product'
+);
+SELECT is(
   (SELECT count(*) FROM public.claim_push_notification_deliveries(10)),
   1::bigint,
   'The delivery worker claims the assignment alert'
@@ -290,6 +300,16 @@ SELECT is(
   ),
   1::bigint,
   'A draft customer document alerts the tenant approval role'
+);
+SELECT is(
+  (
+    SELECT body
+    FROM public.push_notification_events
+    WHERE notification_kind = 'approval_requested'
+      AND target_membership_id = '39000000-0000-4000-8000-000000000001'
+  ),
+  'A customer document is ready for review in CrewFlow.',
+  'The approval alert names the product'
 );
 
 UPDATE public.push_notification_deliveries

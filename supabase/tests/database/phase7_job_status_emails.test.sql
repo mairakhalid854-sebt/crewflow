@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(12);
+SELECT plan(13);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -239,6 +239,13 @@ SELECT ok(
    WHERE kind = 'job_scheduled'
      AND entity_id = '55000000-0000-4000-8000-000000000010'),
   'The confirmation states the time in the business time zone without a link'
+);
+SELECT ok(
+  (SELECT body LIKE E'%\n\nSent by CrewFlow on behalf of Follow Up.'
+   FROM public.transactional_emails
+   WHERE kind = 'job_scheduled'
+     AND entity_id = '55000000-0000-4000-8000-000000000010'),
+  'The confirmation footer names the product'
 );
 
 UPDATE public.jobs
