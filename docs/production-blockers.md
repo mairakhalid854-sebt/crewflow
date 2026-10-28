@@ -22,6 +22,12 @@ These do not block local Phase 0 development, but they block claims of productio
    ClamAV signature operations, runtime credentials, and staging malware/file
    acceptance remain external rollout work.
 8. Contact consent, reminder, review solicitation, privacy, and cross-border processing policies approved by counsel.
+   On 2026-10-28 the owner reported counsel approval for review-request
+   (marketing) email, so `CREWFLOW_MARKETING_EMAIL_ENABLED=true` is set during
+   email setup. Keep the written approval with company records. Confirm
+   whether that approval also covers the privacy notice, terms, and
+   cross-border processing before removing the privacy notice's pre-launch
+   draft label.
 9. Final brand/domain clearance, privacy policy, and terms.
 10. Mapping/geocoding provider and budget if travel estimates are required.
 11. Exact approved job state machine and cancellation/refund policy.

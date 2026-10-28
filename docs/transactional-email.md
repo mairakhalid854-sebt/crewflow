@@ -38,10 +38,11 @@ Git, Vercel, `NEXT_PUBLIC_*`/`EXPO_PUBLIC_*` variables, logs, or chat.
 
 ## Review requests (marketing)
 
-Review requests are marketing email under CAN-SPAM. The code is ready, but
-sending stays off until counsel approves the wording, consent capture, and
-opt-out handling. When approved, set the Edge Function secret
-`CREWFLOW_MARKETING_EMAIL_ENABLED=true` (with `CREWFLOW_WEB_APP_URL` set).
+Review requests are marketing email under CAN-SPAM. Sending is controlled by
+the Edge Function secret `CREWFLOW_MARKETING_EMAIL_ENABLED=true` (with
+`CREWFLOW_WEB_APP_URL` set). The owner reported counsel approval on
+2026-10-28, so the secret is set during email setup; unset it to pause review
+requests at any time.
 
 - Only customers with recorded marketing opt-in, a fully paid invoice,
   and no suppression are claimed, rechecked at send time.
@@ -103,8 +104,8 @@ box. Copying the link keeps working whether or not it is ticked.
    - `RESEND_WEBHOOK_SECRET`: from step 6.
    - `CREWFLOW_WEB_APP_URL`: the exact HTTPS web origin, such as
      `https://app.<domain>`, with no path.
-   - `CREWFLOW_MARKETING_EMAIL_ENABLED`: leave unset until counsel approves
-     review-request email.
+   - `CREWFLOW_MARKETING_EMAIL_ENABLED`: `true` (counsel approval reported by
+     the owner on 2026-10-28).
 5. Push migrations and deploy both functions:
 
    ```powershell

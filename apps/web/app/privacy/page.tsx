@@ -25,7 +25,7 @@ export default function PrivacyPage() {
       <article className="privacy-card">
         <p className="privacy-kicker">PRIVACY NOTICE</p>
         <h1>How CrewFlow handles information</h1>
-        <p className="privacy-effective">Effective October 19, 2026</p>
+        <p className="privacy-effective">Effective October 28, 2026</p>
 
         <div className="privacy-summary">
           CrewFlow is currently in controlled testing. This notice describes the
@@ -123,10 +123,22 @@ export default function PrivacyPage() {
             Requests to access, correct, export, or delete customer or job
             information should first be sent to the service business that
             controls the workspace. Account and platform privacy requests can be
-            sent through the support contact shown on the CrewFlow app-store
-            listing. Identity and authority may be verified before a request is
-            completed.
+            sent to CrewFlow using the contact details below. Identity and
+            authority may be verified before a request is completed.
           </p>
+        </section>
+
+        <section>
+          <h2>Contact CrewFlow</h2>
+          <address className="privacy-contact">
+            30 N Gould St, Ste N
+            <br />
+            Sheridan, WY 82801
+            <br />
+            United States
+            <br />
+            <a href="tel:+13074002050">+1 307-400-2050</a>
+          </address>
         </section>
 
         <section>
