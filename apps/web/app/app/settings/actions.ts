@@ -136,7 +136,7 @@ export async function updateCompanySettingsAction(
     });
   }
 
-  await requireTenantContext(['owner']);
+  const context = await requireTenantContext(['owner']);
   const supabase = await createClient();
   const { error } = await supabase.rpc('update_company_settings', {
     input_ai_monthly_budget_cents: Math.round(
@@ -160,6 +160,18 @@ export async function updateCompanySettingsAction(
 
   if (error)
     return failure('Company settings could not be saved. Please try again.');
+
+  const { error: emailSettingError } = await supabase
+    .from('tenant_settings')
+    .update({
+      customer_appointment_emails_enabled:
+        formData.get('customerAppointmentEmailsEnabled') === 'on',
+    })
+    .eq('tenant_id', context.tenantId);
+  if (emailSettingError)
+    return failure(
+      'Company settings were saved, but the appointment email preference could not be updated.',
+    );
 
   revalidatePath('/app', 'layout');
   revalidatePath('/app/settings');

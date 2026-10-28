@@ -60,6 +60,25 @@ requests at any time.
 - Unsubscribing clears marketing consent for that customer, cancels their
   queued marketing mail, and leaves service email untouched.
 
+## Appointment emails
+
+When a job is scheduled, rescheduled, or cancelled, a database trigger queues
+a plain-text email to the customer on the transactional queue. Owners control
+this with **Email customers when appointments are scheduled, changed, or
+cancelled** in company settings (on by default).
+
+- Times are shown in the business time zone, for example "Tuesday,
+  January 5 from 9:00 AM to 10:00 AM".
+- Only customers with transactional email permission and no suppression are
+  emailed. Past appointments are not confirmed.
+- Each email is keyed to the job and appointment window. If the job is
+  rescheduled again before the worker runs, the older email is cancelled and
+  only the latest time is sent.
+- These emails have no link and cannot be requested through
+  `enqueue_transactional_email`.
+- Queuing is a side effect: a job update never fails because an email could
+  not be queued.
+
 ## Invitation, quote, invoice, and work-report emails
 
 The invite, quote, invoice, and work-report forms show an unchecked **Also email the link**
@@ -155,9 +174,3 @@ without harming sender reputation: `delivered@resend.dev`,
 - Revoking an invitation before the worker runs cancels its email.
 - A quote or invoice for a customer without transactional email permission
   shows the opt-out message and still offers the copyable link.
-
-## Not yet delivered
-
-Job-status emails are not yet delivered; they can reuse the transactional
-queue. Review-request sending needs counsel sign-off before the marketing
-switch is turned on.

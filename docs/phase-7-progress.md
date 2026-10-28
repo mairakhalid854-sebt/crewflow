@@ -118,8 +118,9 @@ production.
 - Review-request (marketing) email has signed one-click unsubscribe links,
   a postal-address footer, and RFC 8058 headers, held behind an operator
   switch until counsel approves.
-- Delivery is never scheduled by migration. Live sending and job-status
-  emails remain open.
+- Customers receive appointment confirmation, change, and cancellation
+  emails, controlled by a workspace setting.
+- Delivery is never scheduled by migration. Live sending remains open.
 
 ## Remaining Phase 7 gates
 

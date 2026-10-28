@@ -167,12 +167,16 @@ export function parseAppOrigin(value: string | undefined): string | null {
 const LINK_PATH_PATTERN =
   /^\/(quote\/|invoice\/|report\/|signup\?next=%2Finvite%2F)[0-9a-f]{64}$/;
 
-/** Substitutes the single `{{link}}` placeholder with an absolute URL. */
+/**
+ * Substitutes the single `{{link}}` placeholder with an absolute URL. Link-free
+ * messages (job-status emails) pass through only if they hold no placeholder.
+ */
 export function renderLinkedBody(
   body: string,
   origin: string,
-  linkPath: string,
+  linkPath: string | null,
 ): string | null {
+  if (linkPath === null) return body.includes('{{link}}') ? null : body;
   if (!LINK_PATH_PATTERN.test(linkPath)) return null;
   const parts = body.split('{{link}}');
   if (parts.length !== 2) return null;
