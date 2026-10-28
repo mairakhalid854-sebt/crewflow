@@ -66,6 +66,84 @@ npm.cmd test --workspace @crewflow/scanner
 npm.cmd run build --workspace @crewflow/scanner
 ```
 
+## Hosting options
+
+Two supported targets run the same image and ClamAV engine. Choose one per
+environment:
+
+- **Single VPS** (lowest cost, about one fixed small-server fee per month): the
+  operator owns OS patching, firewall, Docker updates, and monitoring.
+- **Railway** (managed, usage-billed): ClamAV's resident signature memory
+  dominates the bill, so expect a multiple of the VPS cost.
+
+## VPS hosting
+
+Use a VPS with at least 2 vCPU and 4 GB RAM (add 2 GB swap) running a
+supported Ubuntu LTS with Docker Engine and the Compose plugin.
+
+1. Allow only SSH, 80, and 443 inbound in the provider firewall and `ufw`.
+   Enable unattended security upgrades and key-only SSH login.
+2. Point a hostname at the server. Without an owned domain, the
+   `<ip-with-dashes>.sslip.io` form (for example `203-0-113-10.sslip.io`)
+   resolves to that IP and receives a normal Let's Encrypt certificate.
+3. Clone the repository, then in `apps/scanner/vps` copy `.env.example` to
+   `.env`, set `SCANNER_DOMAIN`, and set `SCANNER_AUTH_TOKEN` to a value
+   generated on the server (see the Railway steps for a generator). Restrict it
+   with `chmod 600 .env`.
+4. Run `docker compose up -d --build`. The first freshclam download can take
+   several minutes; `docker compose logs -f clamav` shows progress.
+5. Verify as in Railway step 5, and confirm from another machine that ports
+   3310 and 8080 are closed.
+6. Update with `git pull && docker compose up -d --build`, and run
+   `docker compose pull` monthly for patched Caddy/ClamAV images after bumping
+   pinned tags.
+
+## Railway hosting
+
+One Railway project environment holds two services built from this
+repository; both use config-as-code, so set each service's **Config file
+path** in its settings.
+
+| Service   | Config file path                    | Network exposure                             |
+| --------- | ----------------------------------- | -------------------------------------------- |
+| `scanner` | `/apps/scanner/railway.json`        | Railway-generated HTTPS domain only          |
+| `clamav`  | `/apps/scanner/clamav/railway.json` | Private network only; no domain or TCP proxy |
+
+1. Create the `clamav` service from the repository, set its config path, and
+   attach a volume mounted at `/var/lib/clamav` so signatures survive restarts
+   and freshclam does not re-download the full database. Give it at least
+   4 GB memory; clamd briefly holds two signature sets during reloads. Never
+   generate a domain or TCP proxy for it.
+2. Wait for the first deploy logs to show freshclam completing and clamd
+   listening on 3310. The first signature download can take several minutes.
+3. Create the `scanner` service from the repository and set its config path.
+   Add variables, marking the token as sealed:
+   - `SCANNER_AUTH_TOKEN`: a new random value of at least 32 characters,
+     generated locally (for example
+     `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`)
+     and pasted only into Railway and Supabase Secrets.
+   - `CLAMAV_HOST`: `${{clamav.RAILWAY_PRIVATE_DOMAIN}}`
+   - `CLAMAV_PORT`: `3310`
+     Railway injects `PORT`; do not override it.
+4. Generate a Railway public domain for `scanner` only. Deploys are gated on
+   `/ready`, so a successful deploy proves the gateway reached clamd over the
+   private network. If `/ready` fails while clamd is healthy, check that the
+   private-network address family resolved by `CLAMAV_HOST` is one clamd binds.
+5. From the operator shell, confirm `GET https://<domain>/health` and
+   `/ready` return 200, and that `POST /v1/scan` without a bearer token is
+   rejected. Confirm no public endpoint exists for `clamav`.
+6. Continue with Activation below using
+   `KNOWLEDGE_SCANNER_URL=https://<domain>/v1/scan`.
+
+Operations:
+
+- Watch `clamav` logs for freshclam failures; stale signatures are a security
+  incident under `docs/incident-response.md`, not a cosmetic warning.
+- Bump the pinned `clamav/clamav` engine tag deliberately after reviewing the
+  release notes; signature updates do not require an image change.
+- Rotate `SCANNER_AUTH_TOKEN` by updating Railway and the Supabase secret
+  `KNOWLEDGE_SCANNER_TOKEN` together; in-flight jobs retry with backoff.
+
 ## Activation
 
 1. Deploy the CrewFlow gateway plus a current ClamAV daemon on the same private
