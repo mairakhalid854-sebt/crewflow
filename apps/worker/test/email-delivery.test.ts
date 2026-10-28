@@ -201,6 +201,9 @@ describe('transactional email links', () => {
     expect(
       renderLinkedBody('{{link}}', origin, `/signup?next=%2Finvite%2F${token}`),
     ).toBe(`${origin}/signup?next=%2Finvite%2F${token}`);
+    expect(renderLinkedBody('{{link}}', origin, `/report/${token}`)).toBe(
+      `${origin}/report/${token}`,
+    );
     expect(
       renderLinkedBody('{{link}}', origin, `//evil.example/${token}`),
     ).toBeNull();

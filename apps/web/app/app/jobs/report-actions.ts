@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { appUrl } from '../../../lib/app-url';
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
+import { requestLinkEmail } from '../../../lib/email/link-email';
 import { createClient } from '../../../lib/supabase/server';
 
 export interface WorkReportActionState {
@@ -193,9 +194,14 @@ export async function publishWorkReportAction(
     return { message: databaseMessage(error.message), status: 'error' };
   }
 
+  const emailMessage =
+    formData.get('emailLink') === 'on'
+      ? ` ${await requestLinkEmail(supabase, 'work_report', parsed.data.reportId, token)}`
+      : '';
+
   revalidatePath(`/app/jobs/${parsed.data.jobId}`);
   return {
-    message: 'Report approved. Copy this secure customer link now.',
+    message: `Report approved. Copy this secure customer link now.${emailMessage}`,
     shareUrl: `${appUrl()}/report/${token}`,
     status: 'success',
   };

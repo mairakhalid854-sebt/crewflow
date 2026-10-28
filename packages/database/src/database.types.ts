@@ -3506,7 +3506,8 @@ export type Database = {
       subscription_status:
         'trialing' | 'active' | 'past_due' | 'paused' | 'canceled';
       tax_behavior: 'exclusive' | 'inclusive' | 'non_taxable';
-      transactional_email_kind: 'team_invitation' | 'quote' | 'invoice';
+      transactional_email_kind:
+        'team_invitation' | 'quote' | 'invoice' | 'work_report';
       work_report_status: 'draft' | 'sent' | 'void';
     };
     CompositeTypes: {
@@ -3758,7 +3759,12 @@ export const Constants = {
         'canceled',
       ],
       tax_behavior: ['exclusive', 'inclusive', 'non_taxable'],
-      transactional_email_kind: ['team_invitation', 'quote', 'invoice'],
+      transactional_email_kind: [
+        'team_invitation',
+        'quote',
+        'invoice',
+        'work_report',
+      ],
       work_report_status: ['draft', 'sent', 'void'],
     },
   },
