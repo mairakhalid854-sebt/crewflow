@@ -58,7 +58,7 @@ function displayName(value: string | null): string {
     .trim()
     .slice(0, 60)
     .trim();
-  return cleaned.length > 0 ? `${cleaned} via CrewFlow` : 'CrewFlow';
+  return cleaned.length > 0 ? `${cleaned} via CrewFlow360` : 'CrewFlow360';
 }
 
 export function buildResendEmail(

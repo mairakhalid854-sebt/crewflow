@@ -24,7 +24,7 @@ Supabase staging and production must be separate projects before real customer d
   remain external rollout steps.
 - Mobile: Expo EAS internal builds first; store submission remains blocked until mobile security advisories and store prerequisites are cleared.
 
-The native app owns the `crewflow` URL scheme with Android package and iOS bundle identifier `com.crewflow.mobile`. Supabase Auth must allow the exact `crewflow://auth/reset` redirect before testing password recovery in an installed development or internal build. Expo Go does not provide a stable custom-scheme callback and is not the acceptance-test target for this flow.
+The native app owns the `crewflow` URL scheme with Android package and iOS bundle identifier `com.crewflow360.mobile`. Supabase Auth must allow the exact `crewflow://auth/reset` redirect before testing password recovery in an installed development or internal build. Expo Go does not provide a stable custom-scheme callback and is not the acceptance-test target for this flow.
 
 ## Runtime guardrails
 

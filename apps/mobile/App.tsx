@@ -841,7 +841,7 @@ export default function App() {
             <View style={styles.card}>
               <Text style={styles.title}>Sign in to your crew</Text>
               <Text style={styles.body}>
-                Use the same verified account as the CrewFlow web app.
+                Use the same verified account as the CrewFlow360 web app.
               </Text>
               <Text style={styles.label}>Work email</Text>
               <TextInput
@@ -1028,7 +1028,7 @@ function AuthenticatedView({
         <Text style={styles.noticeTitle}>Access unavailable</Text>
         <Text style={styles.noticeBody}>
           {accessState.access.reason === 'inactive'
-            ? 'This account has no active CrewFlow membership. Ask an owner to restore access or finish onboarding on the web app.'
+            ? 'This account has no active CrewFlow360 membership. Ask an owner to restore access or finish onboarding on the web app.'
             : 'Access is paused because this account has multiple active workspaces. Contact support before continuing.'}
         </Text>
       </View>
@@ -1124,7 +1124,7 @@ function AuthenticatedView({
           <Text style={styles.mobileBrandLetter}>C</Text>
         </View>
         <View style={styles.flex}>
-          <Text style={styles.mobileHeaderTitle}>CrewFlow</Text>
+          <Text style={styles.mobileHeaderTitle}>CrewFlow360</Text>
           <Text numberOfLines={1} style={styles.mobileHeaderSubtitle}>
             {email}
           </Text>
@@ -1165,12 +1165,12 @@ function AuthenticatedView({
         ) : (
           <View style={styles.mobileSurface}>
             <Text style={styles.jobsEyebrow}>ACCOUNT</Text>
-            <Text style={styles.jobsTitle}>Your CrewFlow account</Text>
+            <Text style={styles.jobsTitle}>Your CrewFlow360 account</Text>
             <Text style={styles.body}>{email}</Text>
             <View style={styles.accountNotice}>
               <Text style={styles.noticeTitle}>Secure workspace access</Text>
               <Text style={styles.noticeBody}>
-                Your role and company access are managed by your CrewFlow
+                Your role and company access are managed by your CrewFlow360
                 workspace.
               </Text>
             </View>
@@ -1485,7 +1485,7 @@ function OperationsOverviewView({
             {approvalResult.label} approved
           </Text>
           <Text style={styles.noticeBody}>
-            The customer link is ready. Share it now; CrewFlow does not display
+            The customer link is ready. Share it now; CrewFlow360 does not display
             the secure token again after this message is dismissed.
           </Text>
           <Text selectable style={styles.customerLink}>
@@ -1592,7 +1592,7 @@ function OperationsOverviewView({
         <Text style={styles.noticeTitle}>Guarded mobile oversight</Text>
         <Text style={styles.noticeBody}>
           Review and approve draft customer documents above. Job editing,
-          scheduling, and reassignment remain in the CrewFlow web app.
+          scheduling, and reassignment remain in the CrewFlow360 web app.
         </Text>
       </View>
     </View>
@@ -2707,7 +2707,7 @@ function AssignedJobDetail({
           </Text>
           <Text style={styles.noticeBody}>
             {progressDraftConflict
-              ? 'The job status, schedule, or intended action changed after this note was saved. CrewFlow will not submit it automatically.'
+              ? 'The job status, schedule, or intended action changed after this note was saved. CrewFlow360 will not submit it automatically.'
               : 'This note has not changed the job yet. Tap the status action below when you are online and ready.'}
           </Text>
           <View style={styles.photoRetryActions}>
@@ -3075,7 +3075,7 @@ function ForgotPasswordView({
     <View style={styles.card}>
       <Text style={styles.title}>Reset your password</Text>
       <Text style={styles.body}>
-        We’ll email a secure link that opens the installed CrewFlow app.
+        We’ll email a secure link that opens the installed CrewFlow360 app.
       </Text>
       <Text style={styles.label}>Account email</Text>
       <TextInput

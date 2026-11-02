@@ -11,7 +11,7 @@ export default async function LoginPage({
   return (
     <div className="auth-card">
       <p className="step-label">WELCOME BACK</p>
-      <h2>Sign in to CrewFlow</h2>
+      <h2>Sign in to CrewFlow360</h2>
       <p className="auth-intro">Pick up where your crew left off.</p>
       <LoginForm nextPath={nextPath} />
     </div>

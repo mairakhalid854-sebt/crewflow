@@ -34,7 +34,7 @@ describe('Paddle sandbox checkout guards', () => {
       crewflow_tenant_id: 'fdda765f-fc57-5604-a269-52a7df8164ec',
     });
     expect(() => checkoutCustomData('tenant-from-query-string')).toThrow(
-      'A valid CrewFlow tenant is required for checkout.',
+      'A valid CrewFlow360 tenant is required for checkout.',
     );
   });
 });

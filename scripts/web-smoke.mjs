@@ -116,6 +116,6 @@ if (invokedPath === import.meta.url) {
     bypassSecret: process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
   });
   process.stdout.write(
-    `CrewFlow web smoke passed ${result.checks} checks against ${result.target}.\n`,
+    `CrewFlow360 web smoke passed ${result.checks} checks against ${result.target}.\n`,
   );
 }

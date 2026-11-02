@@ -158,7 +158,7 @@ export async function updatePasswordAction(
   }
 
   return {
-    message: 'Password updated. You can continue to CrewFlow.',
+    message: 'Password updated. You can continue to CrewFlow360.',
     status: 'success',
   };
 }

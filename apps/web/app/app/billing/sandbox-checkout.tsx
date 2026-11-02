@@ -66,7 +66,7 @@ export function SandboxCheckout({
     <section className="billing-plan-panel" aria-labelledby="sandbox-plans">
       <div>
         <p className="workspace-kicker">Sandbox catalog</p>
-        <h2 id="sandbox-plans">Test a CrewFlow subscription</h2>
+        <h2 id="sandbox-plans">Test a CrewFlow360 subscription</h2>
         <p>
           These checkouts use Paddle test mode. No real card is charged and no
           live subscription is created.

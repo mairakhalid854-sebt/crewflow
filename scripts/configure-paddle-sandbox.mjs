@@ -15,8 +15,8 @@ const plans = [
   {
     code: 'starter_monthly_sandbox',
     displayName: 'Starter',
-    productName: 'CrewFlow Starter',
-    description: 'CrewFlow subscription for small field-service teams.',
+    productName: 'CrewFlow360 Starter',
+    description: 'CrewFlow360 subscription for small field-service teams.',
     amountCents: 2900,
     seatLimit: 3,
     trialDays: 14,
@@ -24,8 +24,8 @@ const plans = [
   {
     code: 'growth_monthly_sandbox',
     displayName: 'Growth',
-    productName: 'CrewFlow Growth',
-    description: 'CrewFlow subscription for growing field-service teams.',
+    productName: 'CrewFlow360 Growth',
+    description: 'CrewFlow360 subscription for growing field-service teams.',
     amountCents: 7900,
     seatLimit: 10,
     trialDays: 14,
@@ -33,8 +33,8 @@ const plans = [
   {
     code: 'pro_monthly_sandbox',
     displayName: 'Pro',
-    productName: 'CrewFlow Pro',
-    description: 'CrewFlow subscription for established field-service teams.',
+    productName: 'CrewFlow360 Pro',
+    description: 'CrewFlow360 subscription for established field-service teams.',
     amountCents: 14900,
     seatLimit: 30,
     trialDays: 14,
@@ -131,7 +131,7 @@ function oneMatch(items, predicate, entityName) {
   const matches = items.filter(predicate);
   if (matches.length > 1) {
     throw new Error(
-      `More than one active Paddle ${entityName} matches CrewFlow. Archive duplicates in the dashboard and rerun.`,
+      `More than one active Paddle ${entityName} matches CrewFlow360. Archive duplicates in the dashboard and rerun.`,
     );
   }
   return matches[0];
@@ -183,7 +183,7 @@ async function ensurePrice(apiKey, plan, productId) {
       existing.trial_period?.frequency === plan.trialDays;
     if (!correctShape) {
       throw new Error(
-        `Existing Paddle price for ${plan.code} does not match the approved CrewFlow terms. Archive it before rerunning.`,
+        `Existing Paddle price for ${plan.code} does not match the approved CrewFlow360 terms. Archive it before rerunning.`,
       );
     }
     return existing;
@@ -210,7 +210,7 @@ async function ensurePrice(apiKey, plan, productId) {
 }
 
 async function ensureClientToken(apiKey) {
-  const tokenName = 'CrewFlow sandbox web checkout';
+  const tokenName = 'CrewFlow360 sandbox web checkout';
   const tokens = await listAll(
     apiKey,
     '/client-tokens?status=active&per_page=200',
@@ -227,7 +227,7 @@ async function ensureClientToken(apiKey) {
     body: {
       name: tokenName,
       description:
-        'Used only by the CrewFlow web app to open sandbox checkout.',
+        'Used only by the CrewFlow360 web app to open sandbox checkout.',
     },
   });
   return payload.data;
@@ -281,7 +281,7 @@ async function main() {
     });
   }
 
-  console.log('Checking CrewFlow sandbox client-side token...');
+  console.log('Checking CrewFlow360 sandbox client-side token...');
   const clientToken = await ensureClientToken(apiKey);
   if (!/^test_[a-zA-Z\d]+$/.test(clientToken?.token ?? '')) {
     throw new Error('Paddle did not return a sandbox client-side token.');

@@ -31,7 +31,7 @@ export default async function PublicInvoicePage({
       <section className="public-quote-card">
         <header className="public-quote-header">
           <div className="public-quote-brand">
-            <span>C</span> CrewFlow
+            <span>C</span> CrewFlow360
           </div>
           <p>Prepared by {invoice.company_name}</p>
         </header>
@@ -119,7 +119,7 @@ export default async function PublicInvoicePage({
               Open {invoice.company_name}&apos;s payment page
             </a>
             <p>
-              You will leave CrewFlow. The service business—not CrewFlow—is the
+              You will leave CrewFlow360. The service business—not CrewFlow360—is the
               payee and controls that page.
             </p>
           </div>
@@ -131,7 +131,7 @@ export default async function PublicInvoicePage({
 
         <p className="public-quote-security">
           Opening an external payment page never marks this invoice paid.
-          CrewFlow updates the balance only after the business records or
+          CrewFlow360 updates the balance only after the business records or
           verifies receipt.
         </p>
       </section>

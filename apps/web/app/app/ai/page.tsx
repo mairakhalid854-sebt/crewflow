@@ -389,7 +389,7 @@ export default async function AiOperationsPage() {
           <div className={styles.emptyPanel}>
             <h3>No AI runs yet</h3>
             <p>
-              Manual CrewFlow remains available. Governed agent runs will appear
+              Manual CrewFlow360 remains available. Governed agent runs will appear
               here when an agent is enabled.
             </p>
           </div>

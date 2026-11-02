@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "CrewFlow",
+    "name": "CrewFlow360",
     "slug": "crewflow",
     "scheme": "crewflow",
     "description": "Field service operations for owners, office teams, and technicians.",
@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "ios": {
-      "bundleIdentifier": "com.crewflow.mobile",
+      "bundleIdentifier": "com.crewflow360.mobile",
       "buildNumber": "1",
       "icon": "./assets/icon.png",
       "supportsTablet": true
@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "monochromeImage": "./assets/adaptive-monochrome.png"
       },
-      "package": "com.crewflow.mobile",
+      "package": "com.crewflow360.mobile",
       "icon": "./assets/icon.png",
       "versionCode": 1
     },
@@ -37,9 +37,9 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Allow CrewFlow to capture before and after photos for your assigned jobs.",
+          "cameraPermission": "Allow CrewFlow360 to capture before and after photos for your assigned jobs.",
           "microphonePermission": false,
-          "photosPermission": "Allow CrewFlow to select job photos when you choose to upload them."
+          "photosPermission": "Allow CrewFlow360 to select job photos when you choose to upload them."
         }
       ],
       [

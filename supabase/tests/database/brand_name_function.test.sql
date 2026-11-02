@@ -5,7 +5,7 @@ SELECT plan(4);
 
 SELECT is(
   public.product_brand_name(),
-  'CrewFlow',
+  'CrewFlow360',
   'The product brand name comes from one function'
 );
 SELECT ok(

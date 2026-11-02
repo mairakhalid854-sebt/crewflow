@@ -328,7 +328,7 @@ export async function recordPaymentAction(
   revalidatePath('/app/invoices');
   revalidatePath(`/app/jobs/${parsed.data.jobId}`);
   return {
-    message: 'Manual payment recorded. No funds moved through CrewFlow.',
+    message: 'Manual payment recorded. No funds moved through CrewFlow360.',
     status: 'success',
   };
 }

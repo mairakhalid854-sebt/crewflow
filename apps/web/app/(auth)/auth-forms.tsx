@@ -135,7 +135,7 @@ export function LoginForm({ nextPath }: Readonly<{ nextPath?: string }>) {
       <StatusMessage state={state} />
       <SubmitButton label="Sign in" pendingLabel="Signing in…" />
       <p className="auth-switch">
-        New to CrewFlow?{' '}
+        New to CrewFlow360?{' '}
         <Link
           href={
             nextPath
@@ -207,7 +207,7 @@ export function UpdatePasswordForm() {
       <SubmitButton label="Update password" pendingLabel="Updating…" />
       {state.status === 'success' ? (
         <p className="auth-switch">
-          <Link href="/app">Continue to CrewFlow</Link>
+          <Link href="/app">Continue to CrewFlow360</Link>
         </p>
       ) : null}
     </form>

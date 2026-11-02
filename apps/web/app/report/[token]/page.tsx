@@ -48,7 +48,7 @@ export default async function PublicWorkReportPage({
       <section className="public-quote-card public-report-card">
         <header className="public-quote-header">
           <div className="public-quote-brand">
-            <span>C</span> CrewFlow
+            <span>C</span> CrewFlow360
           </div>
           <p>Prepared by {report.company_name}</p>
         </header>

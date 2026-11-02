@@ -5,8 +5,8 @@ import './privacy.css';
 
 export const metadata: Metadata = {
   description:
-    'How CrewFlow handles account, workspace, job, device, and field-service information.',
-  title: 'Privacy notice | CrewFlow',
+    'How CrewFlow360 handles account, workspace, job, device, and field-service information.',
+  title: 'Privacy notice | CrewFlow360',
 };
 
 export default function PrivacyPage() {
@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       <header className="privacy-header">
         <Link className="privacy-brand" href="/login">
           <span aria-hidden="true">C</span>
-          CrewFlow
+          CrewFlow360
         </Link>
         <Link className="privacy-login" href="/login">
           Sign in
@@ -24,11 +24,11 @@ export default function PrivacyPage() {
 
       <article className="privacy-card">
         <p className="privacy-kicker">PRIVACY NOTICE</p>
-        <h1>How CrewFlow handles information</h1>
+        <h1>How CrewFlow360 handles information</h1>
         <p className="privacy-effective">Effective October 28, 2026</p>
 
         <div className="privacy-summary">
-          CrewFlow is software that field-service businesses use to manage
+          CrewFlow360 is software that field-service businesses use to manage
           customers, jobs, schedules, quotes, invoices, and their crews. This
           notice explains what information the service processes, why, who
           receives it, and the choices available to businesses, their team
@@ -38,13 +38,13 @@ export default function PrivacyPage() {
         <section>
           <h2>Who is responsible for the information</h2>
           <p>
-            Each service business that uses CrewFlow controls the customer, job,
+            Each service business that uses CrewFlow360 controls the customer, job,
             and workforce information placed in its workspace and decides how it
-            is used. For that information, CrewFlow acts as a service provider
+            is used. For that information, CrewFlow360 acts as a service provider
             that processes it on the business&apos;s behalf and under its
             instructions. For questions about a specific job, quote, invoice,
             photo, signature, or customer record, contact the service business
-            that created it. CrewFlow is responsible for account, billing,
+            that created it. CrewFlow360 is responsible for account, billing,
             security, and operational information it collects to run the
             service.
           </p>
@@ -67,14 +67,14 @@ export default function PrivacyPage() {
               records, customer signatures, and consent records.
             </li>
             <li>
-              Conversations a customer has with a business through the CrewFlow
+              Conversations a customer has with a business through the CrewFlow360
               booking chat, and documents a business uploads to its knowledge
               library.
             </li>
             <li>
               Subscription details for the business account, such as plan,
               status, and billing history. Card and bank details are collected
-              by our payment reseller, not stored by CrewFlow.
+              by our payment reseller, not stored by CrewFlow360.
             </li>
             <li>
               Device and operational data: push-notification tokens, app
@@ -92,7 +92,7 @@ export default function PrivacyPage() {
             share business documents; send the emails and notifications a
             business requests; provide AI-assisted features; manage
             subscriptions; protect and troubleshoot the service; and meet legal
-            obligations. CrewFlow does not sell personal information, does not
+            obligations. CrewFlow360 does not sell personal information, does not
             share it for cross-context behavioral advertising, and does not use
             workspace information for advertising.
           </p>
@@ -114,13 +114,13 @@ export default function PrivacyPage() {
         <section>
           <h2>Emails and your choices</h2>
           <p>
-            Businesses use CrewFlow to send service messages, such as
+            Businesses use CrewFlow360 to send service messages, such as
             invitations, quotes, invoices, work reports, and payment reminders,
             and, where a customer has agreed, review requests. Every review
             request includes an unsubscribe link that stops further marketing
             email from that business; service messages about active jobs and
             invoices continue. If an email address bounces or is reported as
-            spam, CrewFlow stops sending to it. Each business is responsible for
+            spam, CrewFlow360 stops sending to it. Each business is responsible for
             obtaining any consent its messages require.
           </p>
         </section>
@@ -130,7 +130,7 @@ export default function PrivacyPage() {
           <p>
             Information is visible to authorized members of the relevant
             workspace and, when a business shares a secure link, to the intended
-            recipient. CrewFlow uses these service providers, which may process
+            recipient. CrewFlow360 uses these service providers, which may process
             information only to provide their services to us:
           </p>
           <ul>
@@ -157,7 +157,7 @@ export default function PrivacyPage() {
         <section>
           <h2>Cookies</h2>
           <p>
-            CrewFlow uses only the cookies needed to keep you signed in and to
+            CrewFlow360 uses only the cookies needed to keep you signed in and to
             secure your session. We do not use advertising or third-party
             analytics cookies.
           </p>
@@ -181,7 +181,7 @@ export default function PrivacyPage() {
             restored, then deleted unless the business asks otherwise or we must
             keep it to meet legal, tax, security, or dispute-resolution
             obligations. Backups are kept for a limited period and then
-            overwritten. CrewFlow uses access controls, workspace isolation,
+            overwritten. CrewFlow360 uses access controls, workspace isolation,
             encryption in transit, private file storage, malware scanning of
             uploaded documents, and audit trails, but no system can guarantee
             absolute security. If a security incident affects your personal
@@ -193,7 +193,7 @@ export default function PrivacyPage() {
         <section>
           <h2>International processing</h2>
           <p>
-            CrewFlow and its service providers may process information in the
+            CrewFlow360 and its service providers may process information in the
             United States and other countries where they operate. We take steps
             to keep information protected wherever it is processed.
           </p>
@@ -208,7 +208,7 @@ export default function PrivacyPage() {
             of certain uses. Requests about customer or job information should
             be sent to the service business that controls the workspace; we will
             help that business respond. Account and platform requests can be
-            sent to CrewFlow using the contact details below. We may need to
+            sent to CrewFlow360 using the contact details below. We may need to
             verify your identity and authority before completing a request, and
             we will not discriminate against you for exercising your rights.
             Team members can change notification preferences in the app.
@@ -218,7 +218,7 @@ export default function PrivacyPage() {
         <section>
           <h2>Children</h2>
           <p>
-            CrewFlow is a business service and is not directed to children under
+            CrewFlow360 is a business service and is not directed to children under
             13. We do not knowingly collect personal information from children.
           </p>
         </section>
@@ -233,7 +233,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2>Contact CrewFlow</h2>
+          <h2>Contact CrewFlow360</h2>
           <address className="privacy-contact">
             30 N Gould St, Ste N
             <br />

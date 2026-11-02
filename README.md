@@ -1,6 +1,6 @@
-# CrewFlow
+# CrewFlow360
 
-CrewFlow is a multi-tenant field-service-management platform for US home-service businesses. The repository contains the Phase 0 foundation and the first Phase 1 identity/tenancy slice described in `CrewFlow_PRD.md`; it is not production-ready.
+CrewFlow360 (crewflow360.com) is a multi-tenant field-service-management platform for US home-service businesses. The repository contains the Phase 0 foundation and the first Phase 1 identity/tenancy slice described in `CrewFlow_PRD.md`; it is not production-ready.
 
 ## Prerequisites
 

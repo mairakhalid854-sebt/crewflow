@@ -241,7 +241,7 @@ SELECT ok(
   'The confirmation states the time in the business time zone without a link'
 );
 SELECT ok(
-  (SELECT body LIKE E'%\n\nSent by CrewFlow on behalf of Follow Up.'
+  (SELECT body LIKE E'%\n\nSent by CrewFlow360 on behalf of Follow Up.'
    FROM public.transactional_emails
    WHERE kind = 'job_scheduled'
      AND entity_id = '55000000-0000-4000-8000-000000000010'),

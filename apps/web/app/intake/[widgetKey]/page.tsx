@@ -3,9 +3,9 @@ import type { Metadata } from 'next';
 import { IntakeChat } from './intake-chat';
 
 export const metadata: Metadata = {
-  description: 'Request service from a CrewFlow business.',
+  description: 'Request service from a CrewFlow360 business.',
   robots: { follow: false, index: false },
-  title: 'Request service | CrewFlow',
+  title: 'Request service | CrewFlow360',
 };
 
 type IntakePageProps = {

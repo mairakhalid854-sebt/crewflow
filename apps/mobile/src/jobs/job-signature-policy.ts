@@ -1,5 +1,5 @@
 export const CUSTOMER_SIGNATURE_CONSENT =
-  'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow job.';
+  'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow360 job.';
 
 export const MAX_SIGNATURE_STROKES = 40;
 export const MAX_SIGNATURE_POINTS_PER_STROKE = 500;

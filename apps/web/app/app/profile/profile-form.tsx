@@ -29,7 +29,7 @@ export function PersonalProfileForm({
       <form action={action} className="resource-form profile-form">
         <div className="settings-section-heading">
           <h2>Personal details</h2>
-          <p>Your name is shown in CrewFlow and the team directory.</p>
+          <p>Your name is shown in CrewFlow360 and the team directory.</p>
         </div>
         <div className="form-grid">
           <label className="form-span-2">

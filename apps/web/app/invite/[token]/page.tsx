@@ -24,7 +24,7 @@ export default async function InvitationPage({
       <section className="invite-card">
         <Link className="invite-brand" href="/">
           <span>C</span>
-          CrewFlow
+          CrewFlow360
         </Link>
         <p className="invite-kicker">TEAM INVITATION</p>
         <h1>Join your crew’s workspace</h1>
@@ -55,13 +55,13 @@ export default async function InvitationPage({
               Sign in to accept
             </Link>
             <Link href={`/signup?next=${encodeURIComponent(nextPath)}`}>
-              New to CrewFlow? Choose a password and create an account
+              New to CrewFlow360? Choose a password and create an account
             </Link>
           </div>
         )}
 
         <p className="invite-security">
-          CrewFlow checks both your verified email and the secure invitation
+          CrewFlow360 checks both your verified email and the secure invitation
           token before granting access.
         </p>
       </section>

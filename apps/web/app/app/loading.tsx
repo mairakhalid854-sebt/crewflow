@@ -4,7 +4,7 @@ export default function WorkspaceLoading() {
       <p className="workspace-kicker">Loading</p>
       <h1>Preparing your workspace...</h1>
       <div className="loading-block" />
-      <span className="sr-only">CrewFlow workspace is loading.</span>
+      <span className="sr-only">CrewFlow360 workspace is loading.</span>
     </div>
   );
 }

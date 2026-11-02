@@ -149,7 +149,7 @@ export function NotificationSettingsView({
       </Pressable>
       <Text style={styles.title}>Notification settings</Text>
       <Text style={styles.body}>
-        Choose which operational alerts CrewFlow may send to this device.
+        Choose which operational alerts CrewFlow360 may send to this device.
       </Text>
 
       {loading ? (
@@ -240,7 +240,7 @@ export function NotificationSettingsView({
         <Text style={styles.disableText}>Disable this device</Text>
       </Pressable>
       <Text style={styles.helpText}>
-        Remote push alerts require an installed CrewFlow development or
+        Remote push alerts require an installed CrewFlow360 development or
         production build. Expo Go cannot receive them.
       </Text>
     </View>

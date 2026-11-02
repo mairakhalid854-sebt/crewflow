@@ -16,8 +16,8 @@ export default async function SignupPage({
       </p>
       <h2>
         {joiningTeam
-          ? 'Create your CrewFlow account'
-          : 'Start your CrewFlow workspace'}
+          ? 'Create your CrewFlow360 account'
+          : 'Start your CrewFlow360 workspace'}
       </h2>
       <p className="auth-intro">
         {joiningTeam

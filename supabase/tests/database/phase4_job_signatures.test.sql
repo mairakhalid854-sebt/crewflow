@@ -105,7 +105,7 @@ SELECT throws_ok(
   $$SELECT public.record_assigned_job_signature(
     '66000000-0000-4000-8000-000000000001',
     'Jamie Customer',
-    'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow job.',
+    'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow360 job.',
     '[[{"x":0.1,"y":0.2},{"x":0.8,"y":0.7}]]'::jsonb
   )$$,
   '22023',
@@ -122,7 +122,7 @@ SELECT throws_ok(
   $$SELECT public.record_assigned_job_signature(
     '66000000-0000-4000-8000-000000000001',
     'Jamie Customer',
-    'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow job.',
+    'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow360 job.',
     '[[{"x":-0.1,"y":0.2},{"x":0.8,"y":0.7}]]'::jsonb
   )$$,
   '22023',
@@ -149,7 +149,7 @@ SELECT throws_ok(
   $$SELECT public.record_assigned_job_signature(
     '66000000-0000-4000-8000-000000000001',
     'Jamie Customer',
-    'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow job.',
+    'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow360 job.',
     '[[{"x":0.1,"y":0.2},{"x":0.8,"y":0.7}]]'::jsonb
   )$$,
   '42501',
@@ -171,7 +171,7 @@ SELECT lives_ok(
   FROM public.record_assigned_job_signature(
     '66000000-0000-4000-8000-000000000001',
     '  Jamie Customer  ',
-    'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow job.',
+    'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow360 job.',
     '[[{"x":0.1,"y":0.2},{"x":0.45,"y":0.75},{"x":0.8,"y":0.3}]]'::jsonb
   ) AS result$$,
   'Assigned technician can record a valid signature'
@@ -207,7 +207,7 @@ SELECT throws_ok(
   $$SELECT public.record_assigned_job_signature(
     '66000000-0000-4000-8000-000000000001',
     'Jamie Customer',
-    'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow job.',
+    'I confirm that the work described above was completed and authorize this electronic signature to be attached to this CrewFlow360 job.',
     '[[{"x":0.1,"y":0.2},{"x":0.8,"y":0.7}]]'::jsonb
   )$$,
   '23505',
