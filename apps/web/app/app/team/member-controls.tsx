@@ -61,7 +61,7 @@ export function MemberControls({
           onSubmit={(event) => {
             if (
               !window.confirm(
-                'Deactivate this team member now? Their CrewFlow access will stop immediately.',
+                'Deactivate this team member now? Their CrewFlow360 access will stop immediately.',
               )
             ) {
               event.preventDefault();

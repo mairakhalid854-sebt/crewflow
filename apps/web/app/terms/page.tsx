@@ -5,8 +5,8 @@ import '../privacy/privacy.css';
 
 export const metadata: Metadata = {
   description:
-    'The terms that govern access to and use of the CrewFlow field-service platform.',
-  title: 'Terms of Service | CrewFlow',
+    'The terms that govern access to and use of the CrewFlow360 field-service platform.',
+  title: 'Terms of Service | CrewFlow360',
 };
 
 export default function TermsPage() {
@@ -15,7 +15,7 @@ export default function TermsPage() {
       <header className="privacy-header">
         <Link className="privacy-brand" href="/login">
           <span aria-hidden="true">C</span>
-          CrewFlow
+          CrewFlow360
         </Link>
         <Link className="privacy-login" href="/login">
           Sign in
@@ -24,13 +24,13 @@ export default function TermsPage() {
 
       <article className="privacy-card">
         <p className="privacy-kicker">TERMS OF SERVICE</p>
-        <h1>Terms for using CrewFlow</h1>
+        <h1>Terms for using CrewFlow360</h1>
         <p className="privacy-effective">Effective October 28, 2026</p>
 
         <div className="privacy-summary">
-          These terms are an agreement between CrewFlow (&quot;CrewFlow,&quot;
+          These terms are an agreement between CrewFlow360 (&quot;CrewFlow360,&quot;
           &quot;we,&quot; or &quot;us&quot;) and the business that creates a
-          CrewFlow account (&quot;Customer&quot; or &quot;you&quot;). By
+          CrewFlow360 account (&quot;Customer&quot; or &quot;you&quot;). By
           creating an account, accepting an invitation, or using the service,
           you agree to these terms and acknowledge the{' '}
           <Link href="/privacy">Privacy Notice</Link>.
@@ -39,7 +39,7 @@ export default function TermsPage() {
         <section>
           <h2>1. Eligibility and accounts</h2>
           <p>
-            CrewFlow is for business use. You must be at least 18 years old and
+            CrewFlow360 is for business use. You must be at least 18 years old and
             have authority to bind the business you register. You are
             responsible for the accuracy of your account information, for
             keeping credentials secure, for the members you invite and the roles
@@ -51,7 +51,7 @@ export default function TermsPage() {
         <section>
           <h2>2. The service</h2>
           <p>
-            CrewFlow provides tools to manage customers, jobs, schedules,
+            CrewFlow360 provides tools to manage customers, jobs, schedules,
             quotes, invoices, work reports, team members, customer messages, and
             AI-assisted suggestions. We may improve, change, or retire features
             over time and will give reasonable notice before removing a feature
@@ -92,7 +92,7 @@ export default function TermsPage() {
         <section>
           <h2>4. Your data</h2>
           <p>
-            You own the information you and your team put into CrewFlow
+            You own the information you and your team put into CrewFlow360
             (&quot;Customer Data&quot;). You grant us the rights needed to host,
             process, display, transmit, and back up Customer Data to provide,
             secure, and support the service, as described in the Privacy Notice.
@@ -108,19 +108,19 @@ export default function TermsPage() {
             <li>
               You are responsible for having the rights, notices, and consents
               needed to collect and use your customers&apos; and team
-              members&apos; information in CrewFlow.
+              members&apos; information in CrewFlow360.
             </li>
             <li>
-              You are responsible for the messages you send through CrewFlow,
+              You are responsible for the messages you send through CrewFlow360,
               including complying with email and marketing laws such as
               CAN-SPAM, honoring opt-outs, and keeping your business postal
               address current.
             </li>
             <li>
               Quotes, invoices, prices, taxes, work reports, and other documents
-              you send are your own. CrewFlow does not collect or hold payments
+              you send are your own. CrewFlow360 does not collect or hold payments
               for your services; payments between you and your customers happen
-              outside CrewFlow.
+              outside CrewFlow360.
             </li>
             <li>
               You will review AI-assisted suggestions before approving them. AI
@@ -135,7 +135,7 @@ export default function TermsPage() {
           <p>You will not, and will not let others:</p>
           <ul>
             <li>
-              use CrewFlow for unlawful, fraudulent, deceptive, or harassing
+              use CrewFlow360 for unlawful, fraudulent, deceptive, or harassing
               purposes, or to send unsolicited bulk messages;
             </li>
             <li>
@@ -164,7 +164,7 @@ export default function TermsPage() {
         <section>
           <h2>7. Third-party services</h2>
           <p>
-            CrewFlow relies on third-party providers, such as hosting, email,
+            CrewFlow360 relies on third-party providers, such as hosting, email,
             notification, AI, and payment providers listed in the Privacy
             Notice. Links or integrations you choose to use, such as external
             payment links on invoices, are governed by those third parties&apos;
@@ -175,7 +175,7 @@ export default function TermsPage() {
         <section>
           <h2>8. Intellectual property and feedback</h2>
           <p>
-            CrewFlow and its software, design, and content are owned by us and
+            CrewFlow360 and its software, design, and content are owned by us and
             our licensors. We grant you a limited, non-exclusive,
             non-transferable right to use the service during your subscription
             under these terms. If you give us feedback, we may use it without
@@ -196,7 +196,7 @@ export default function TermsPage() {
         <section>
           <h2>10. Term, suspension, and termination</h2>
           <p>
-            These terms apply while you use CrewFlow. You may stop using the
+            These terms apply while you use CrewFlow360. You may stop using the
             service and cancel at any time. We may suspend or end your access if
             you materially breach these terms and do not fix the breach within
             15 days of notice, immediately for serious misuse or legal risk, or
@@ -209,7 +209,7 @@ export default function TermsPage() {
         <section>
           <h2>11. Disclaimers</h2>
           <p>
-            Except as expressly stated in these terms, CrewFlow is provided
+            Except as expressly stated in these terms, CrewFlow360 is provided
             &quot;as is&quot; and &quot;as available.&quot; To the fullest
             extent permitted by law, we disclaim all implied warranties,
             including merchantability, fitness for a particular purpose, and
@@ -234,7 +234,7 @@ export default function TermsPage() {
         <section>
           <h2>13. Indemnity</h2>
           <p>
-            You will defend and indemnify CrewFlow against third-party claims
+            You will defend and indemnify CrewFlow360 against third-party claims
             arising from your Customer Data, the messages and documents you
             send, or your violation of these terms or the law.
           </p>
@@ -257,7 +257,7 @@ export default function TermsPage() {
           <p>
             We may update these terms and will notify account owners of material
             changes at least 30 days before they take effect; continuing to use
-            CrewFlow after that means you accept them. These terms, together
+            CrewFlow360 after that means you accept them. These terms, together
             with the Privacy Notice and any order details, are the entire
             agreement about the service. If any part is unenforceable, the rest
             remains in effect. You may not assign these terms without our

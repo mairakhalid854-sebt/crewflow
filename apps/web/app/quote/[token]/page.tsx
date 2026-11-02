@@ -34,7 +34,7 @@ export default async function PublicQuotePage({
       <section className="public-quote-card">
         <header className="public-quote-header">
           <div className="public-quote-brand">
-            <span>C</span> CrewFlow
+            <span>C</span> CrewFlow360
           </div>
           <p>Prepared by {quote.company_name}</p>
         </header>
@@ -91,7 +91,7 @@ export default async function PublicQuotePage({
         {feedback.result ? (
           <p className="public-quote-success" role="status">
             Quote {feedback.result}. {quote.company_name} has been notified in
-            CrewFlow.
+            CrewFlow360.
           </p>
         ) : null}
         {feedback.error ? (
@@ -123,7 +123,7 @@ export default async function PublicQuotePage({
         )}
 
         <p className="public-quote-security">
-          This secure link is only for this quote. CrewFlow does not collect
+          This secure link is only for this quote. CrewFlow360 does not collect
           your payment.
         </p>
       </section>

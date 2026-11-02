@@ -21,7 +21,7 @@ export function signInErrorMessage(error: SignInErrorLike): string {
   }
 
   if (error.status !== undefined && error.status >= 500) {
-    return 'CrewFlow sign-in is temporarily unavailable. Try again shortly.';
+    return 'CrewFlow360 sign-in is temporarily unavailable. Try again shortly.';
   }
 
   return 'Sign-in failed. Check your connection and try again.';

@@ -103,7 +103,7 @@ export async function completeOnboardingAction(
     return {
       message:
         error.code === '23505'
-          ? 'This account already belongs to an active CrewFlow workspace.'
+          ? 'This account already belongs to an active CrewFlow360 workspace.'
           : 'Company setup could not be completed. Please review the details and try again.',
       status: 'error',
     };

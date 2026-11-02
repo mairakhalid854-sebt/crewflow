@@ -32,7 +32,7 @@ export default async function PersonalProfilePage() {
         <div>
           <p className="workspace-kicker">Your account</p>
           <h1>My profile</h1>
-          <p>Manage the identity attached to your CrewFlow account.</p>
+          <p>Manage the identity attached to your CrewFlow360 account.</p>
         </div>
       </header>
       <PersonalProfileForm

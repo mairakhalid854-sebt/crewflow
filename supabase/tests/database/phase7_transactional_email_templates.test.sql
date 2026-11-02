@@ -293,9 +293,9 @@ SELECT ok(
   'Stored bodies hold a placeholder, never the raw token'
 );
 SELECT ok(
-  (SELECT subject = 'Follow Up invited you to CrewFlow'
-     AND position('join their CrewFlow workspace' IN body) > 0
-     AND body LIKE E'%\n\nSent by CrewFlow on behalf of Follow Up.'
+  (SELECT subject = 'Follow Up invited you to CrewFlow360'
+     AND position('join their CrewFlow360 workspace' IN body) > 0
+     AND body LIKE E'%\n\nSent by CrewFlow360 on behalf of Follow Up.'
    FROM public.transactional_emails WHERE kind = 'team_invitation'),
   'The invitation names the product in the subject, body, and footer'
 );

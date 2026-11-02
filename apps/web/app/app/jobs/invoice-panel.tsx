@@ -194,7 +194,7 @@ export function InvoicePanel({
               <h3>Record payment received</h3>
               <p className="form-help">
                 Use only after the business verifies funds received outside
-                CrewFlow.
+                CrewFlow360.
               </p>
               <div className="form-grid">
                 <label>

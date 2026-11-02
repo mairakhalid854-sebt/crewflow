@@ -40,7 +40,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   ]);
 
   if (error || !data?.[0]) {
-    throw new Error('CrewFlow billing details could not be loaded.');
+    throw new Error('CrewFlow360 billing details could not be loaded.');
   }
 
   const billing = data[0];
@@ -67,7 +67,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
       <header className="workspace-heading">
         <div>
           <p className="workspace-kicker">Owner controls</p>
-          <h1>CrewFlow billing</h1>
+          <h1>CrewFlow360 billing</h1>
           <p>
             Review the subscription entitlement for this workspace. Customer
             invoice payments remain separate and always go directly to your
@@ -165,7 +165,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
             <p className="workspace-kicker">Sandbox catalog</p>
             <h2>Checkout setup pending</h2>
             <p>
-              CrewFlow needs active Paddle sandbox price IDs and a sandbox
+              CrewFlow360 needs active Paddle sandbox price IDs and a sandbox
               client-side token before test checkout can be opened.
             </p>
           </div>
@@ -209,7 +209,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           </h2>
           <p>
             {isStub
-              ? 'This price-free development entitlement keeps CrewFlow test workflows available. It cannot create a checkout or charge a card.'
+              ? 'This price-free development entitlement keeps CrewFlow360 test workflows available. It cannot create a checkout or charge a card.'
               : 'Verified Paddle sandbox events can update this entitlement, but no live Paddle provider exists in the application.'}
           </p>
           <p>

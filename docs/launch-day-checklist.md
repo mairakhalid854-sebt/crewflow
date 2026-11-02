@@ -1,5 +1,9 @@
 # Launch-day checklist: domain, brand, and email
 
+> **Status (2026-11-02):** the name is **CrewFlow360** and `crewflow360.com` is
+> bought (steps 1 and 2 done). In the steps below, `<name>.com` means
+> `crewflow360.com` and `<Name>` means `CrewFlow360`. Next: step 3.
+
 The order to follow once the final product name is chosen and its `.com` is
 bought. Each step names the runbook that holds the detail. Nothing here costs
 money beyond the domain itself; Resend's free tier covers launch volume.

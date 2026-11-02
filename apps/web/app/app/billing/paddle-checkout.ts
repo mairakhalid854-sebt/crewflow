@@ -34,7 +34,7 @@ export function checkoutCustomData(tenantId: string): {
   crewflow_tenant_id: string;
 } {
   if (!TENANT_ID.test(tenantId)) {
-    throw new Error('A valid CrewFlow tenant is required for checkout.');
+    throw new Error('A valid CrewFlow360 tenant is required for checkout.');
   }
   return { crewflow_tenant_id: tenantId };
 }

@@ -205,7 +205,7 @@ export function InvoiceForm({
           type="url"
         />
         <small className="form-help">
-          Must use HTTPS and a public domain. CrewFlow does not process or
+          Must use HTTPS and a public domain. CrewFlow360 does not process or
           confirm payments from this link.
         </small>
       </label>

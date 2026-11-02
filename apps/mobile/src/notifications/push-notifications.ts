@@ -163,7 +163,7 @@ export async function synchronizeMobilePushToken(
   if (isExpoGo()) {
     return {
       message:
-        'Remote push notifications require a CrewFlow development build, not Expo Go.',
+        'Remote push notifications require a CrewFlow360 development build, not Expo Go.',
       status: 'development_build_required',
     };
   }
@@ -171,7 +171,7 @@ export async function synchronizeMobilePushToken(
   const easProjectId = projectId();
   if (!easProjectId) {
     return {
-      message: 'The CrewFlow EAS project ID is not configured in this build.',
+      message: 'The CrewFlow360 EAS project ID is not configured in this build.',
       status: 'configuration_required',
     };
   }
@@ -189,7 +189,7 @@ export async function synchronizeMobilePushToken(
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(NOTIFICATION_CHANNEL_ID, {
-      name: 'CrewFlow operations',
+      name: 'CrewFlow360 operations',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
     });

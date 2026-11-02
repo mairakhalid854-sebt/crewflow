@@ -66,7 +66,7 @@ const navItems: readonly {
   },
   {
     href: '/app/billing',
-    label: 'CrewFlow billing',
+    label: 'CrewFlow360 billing',
     roles: ['owner'],
   },
 ];
@@ -92,7 +92,7 @@ export default async function AuthenticatedAppLayout({
       <aside className="authenticated-sidebar" aria-label="Primary navigation">
         <Link className="workspace-brand" href="/app">
           <span aria-hidden="true">C</span>
-          CrewFlow
+          CrewFlow360
         </Link>
         <nav>
           {navItems
@@ -136,8 +136,8 @@ export default async function AuthenticatedAppLayout({
             </strong>
             <span>
               {accessMode === 'read_only'
-                ? 'Your data remains available, but business records cannot be changed. Ask the owner to review CrewFlow billing.'
-                : 'Core work remains available during the billing grace state. The owner should review CrewFlow billing.'}
+                ? 'Your data remains available, but business records cannot be changed. Ask the owner to review CrewFlow360 billing.'
+                : 'Core work remains available during the billing grace state. The owner should review CrewFlow360 billing.'}
             </span>
           </div>
         ) : null}

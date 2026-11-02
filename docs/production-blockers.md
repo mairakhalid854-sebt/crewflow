@@ -25,13 +25,15 @@ These do not block local Phase 0 development, but they block claims of productio
    On 2026-10-28 the owner reported counsel approval for review-request
    (marketing) email, so `CREWFLOW_MARKETING_EMAIL_ENABLED=true` is set during
    email setup. Keep the written approval with company records.
-9. Final brand/domain clearance. `crewflow.com` is not available, so the
-   product is being renamed; the rename and domain steps are in
-   `docs/launch-day-checklist.md`, and server-rendered text already reads the
-   name from `public.product_brand_name()`. At the owner's request, the published
-   privacy notice (`/privacy`) and terms of service (`/terms`) were drafted by
-   Claude on 2026-10-28 without counsel-provided text and present CrewFlow as
-   an independent brand. Have counsel review the final wording before general
+9. Final brand/domain clearance. `crewflow.com` is not available, so on
+   2026-11-02 the owner bought `crewflow360.com` and the product was renamed
+   to CrewFlow360 (visible text, `public.product_brand_name()`, and the mobile
+   identifier `com.crewflow360.mobile`). Trademark clearance of the new name
+   is not done. The remaining domain steps (Vercel, Supabase Auth URLs,
+   Resend) are in `docs/launch-day-checklist.md`. At the owner's request, the
+   published privacy notice (`/privacy`) and terms of service (`/terms`) were
+   drafted by Claude on 2026-10-28 without counsel-provided text and present
+   CrewFlow360 as an independent brand. Have counsel review the final wording before general
    availability, including the contracting entity, Wyoming governing law, the
    14-day first-charge refund, and the 30-day change notices.
 10. Mapping/geocoding provider and budget if travel estimates are required.

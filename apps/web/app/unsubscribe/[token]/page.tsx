@@ -34,7 +34,7 @@ export default async function UnsubscribePage({
       <section className="public-quote-card">
         <header className="public-quote-header">
           <div className="public-quote-brand">
-            <span>C</span> CrewFlow
+            <span>C</span> CrewFlow360
           </div>
           <p>Email preferences for {preview.company_name}</p>
         </header>
@@ -46,7 +46,7 @@ export default async function UnsubscribePage({
           </h1>
           <p>
             {unsubscribed
-              ? `${preview.company_name} will no longer send you review requests or other marketing email through CrewFlow.`
+              ? `${preview.company_name} will no longer send you review requests or other marketing email through CrewFlow360.`
               : `You will stop receiving review requests and other marketing email from ${preview.company_name}. Service messages about your jobs and invoices are not affected.`}
           </p>
         </div>

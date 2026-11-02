@@ -475,12 +475,12 @@ export function IntakeChat({ endpoint, widgetKey }: IntakeChatProps) {
               } ${item.validation ? styles.validation : ''}`}
               key={item.id}
             >
-              <span>{item.sender === 'customer' ? 'You' : 'CrewFlow'}</span>
+              <span>{item.sender === 'customer' ? 'You' : 'CrewFlow360'}</span>
               <p>{item.text}</p>
             </div>
           ))}
           {sending ? (
-            <p className={styles.typing}>CrewFlow is checking…</p>
+            <p className={styles.typing}>CrewFlow360 is checking…</p>
           ) : null}
           <div ref={endRef} />
         </div>

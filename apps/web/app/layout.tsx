@@ -6,7 +6,7 @@ import './styles.css';
 
 export const metadata: Metadata = {
   description: 'Field service operations, clearly in motion.',
-  title: 'CrewFlow',
+  title: 'CrewFlow360',
 };
 
 export default function RootLayout({

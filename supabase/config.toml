@@ -164,6 +164,7 @@ site_url = "http://127.0.0.1:3000"
 additional_redirect_urls = [
   "http://localhost:3000/**",
   "http://127.0.0.1:3000/**",
+  "https://crewflow360.com/**",
   "https://*-saas-team-crew-flow.vercel.app/**",
   "crewflow://auth/reset",
 ]

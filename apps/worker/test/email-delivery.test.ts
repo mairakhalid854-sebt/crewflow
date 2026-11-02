@@ -39,13 +39,13 @@ describe('Resend email payloads', () => {
     expect(parseSenderAddress(' Notifications@Send.Example.com ')).toBe(
       'notifications@send.example.com',
     );
-    expect(parseSenderAddress('CrewFlow <a@b.com>')).toBeNull();
+    expect(parseSenderAddress('CrewFlow360 <a@b.com>')).toBeNull();
     expect(parseSenderAddress(undefined)).toBeNull();
   });
 
   it('sanitizes the tenant display name and sets the business reply-to', () => {
     expect(buildResendEmail(delivery, 'notify@send.example.com')).toEqual({
-      from: '"Sparkle Cleaning Co via CrewFlow" <notify@send.example.com>',
+      from: '"Sparkle Cleaning Co via CrewFlow360" <notify@send.example.com>',
       to: ['customer@example.com'],
       subject: 'Invoice 1 is overdue',
       text: 'Your invoice is three days past due.',
@@ -54,12 +54,12 @@ describe('Resend email payloads', () => {
     });
   });
 
-  it('falls back to the CrewFlow name and omits an invalid reply-to', () => {
+  it('falls back to the CrewFlow360 name and omits an invalid reply-to', () => {
     const payload = buildResendEmail(
       { ...delivery, sender_name: '\r\n', reply_to_email: 'not-an-email' },
       'notify@send.example.com',
     );
-    expect(payload.from).toBe('"CrewFlow" <notify@send.example.com>');
+    expect(payload.from).toBe('"CrewFlow360" <notify@send.example.com>');
     expect(payload).not.toHaveProperty('reply_to');
   });
 

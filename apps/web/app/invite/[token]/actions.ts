@@ -34,7 +34,7 @@ export async function acceptInvitationAction(
   if (error) {
     const message =
       error.code === '23505'
-        ? 'This account already belongs to an active CrewFlow workspace.'
+        ? 'This account already belongs to an active CrewFlow360 workspace.'
         : 'This invitation is invalid, expired, revoked, or belongs to a different email address.';
 
     return { message, status: 'error' };

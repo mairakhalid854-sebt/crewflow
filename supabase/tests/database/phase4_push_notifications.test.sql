@@ -193,7 +193,7 @@ SELECT is(
     WHERE notification_kind = 'job_assigned'
       AND target_membership_id = '39000000-0000-4000-8000-000000000002'
   ),
-  'New CrewFlow assignment | Open CrewFlow to review your new job assignment.',
+  'New CrewFlow360 assignment | Open CrewFlow360 to review your new job assignment.',
   'The assignment alert names the product'
 );
 SELECT is(
@@ -308,7 +308,7 @@ SELECT is(
     WHERE notification_kind = 'approval_requested'
       AND target_membership_id = '39000000-0000-4000-8000-000000000001'
   ),
-  'A customer document is ready for review in CrewFlow.',
+  'A customer document is ready for review in CrewFlow360.',
   'The approval alert names the product'
 );
 

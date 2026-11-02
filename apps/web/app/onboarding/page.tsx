@@ -25,7 +25,7 @@ export default async function OnboardingPage() {
       <header className="onboarding-header">
         <a className="brand" href="/">
           <span className="brand-mark">C</span>
-          <span>CrewFlow</span>
+          <span>CrewFlow360</span>
         </a>
         <span>Company setup</span>
       </header>
@@ -41,7 +41,7 @@ export default async function OnboardingPage() {
           <div className="secure-note">
             <strong>Private by default</strong>
             <span>
-              Your workspace is isolated from every other CrewFlow company.
+              Your workspace is isolated from every other CrewFlow360 company.
             </span>
           </div>
         </div>
