@@ -34,7 +34,8 @@ const plans = [
     code: 'pro_monthly_sandbox',
     displayName: 'Pro',
     productName: 'CrewFlow360 Pro',
-    description: 'CrewFlow360 subscription for established field-service teams.',
+    description:
+      'CrewFlow360 subscription for established field-service teams.',
     amountCents: 14900,
     seatLimit: 30,
     trialDays: 14,

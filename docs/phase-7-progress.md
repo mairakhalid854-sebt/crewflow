@@ -18,6 +18,9 @@ production environment.
   Expo's build-time `@expo/config`. No patched `deepmerge` release exists; its
   reviewed exception expires on 2026-11-10. A production mobile release still
   needs installed-device acceptance and store prerequisites.
+- Moderate `glob` (GHSA-3g3m-2fjr-6pw4) and `minimatch` (GHSA-g3hv-75wg-m249)
+  advisories also remain through Expo's build-time tooling. Their fixes are only
+  in the next major releases; the reviewed exceptions share the 2026-11-10 expiry.
 
 ## AI staging baseline
 

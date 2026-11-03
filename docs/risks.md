@@ -12,6 +12,10 @@ The 2026-10-28 review removed the `zod` finding without changing Expo: a scoped 
 
 The same review added low-severity GHSA-gcqx-w48m-w2h4 (prototype poisoning in `deepmerge` `mergeObject()`), reached only through `@expo/config` 57.0.10, Expo's build-time configuration loader. `deepmerge` 4.3.1 is the latest release and is affected, so no compatible patch exists; npm again proposes the breaking Expo 54 downgrade. It carries the same 2026-11-10 review date.
 
+The 2026-11-02 review added moderate GHSA-3g3m-2fjr-6pw4 (`glob` AbortSignal cancellation bypass that lets a timed-out traversal keep reading the filesystem), reached only through `glob` 13.0.6 in Expo's build-time CLI and config packages. The app bundle does not ship `glob`, and Expo never relies on aborting a glob for a security boundary. The patch is only in `glob` 14.0.2, a major release Expo has not adopted, and npm again proposes the breaking Expo 51 downgrade. It carries the same 2026-11-10 review date.
+
+The same review added moderate GHSA-g3hv-75wg-m249 (`minimatch` denial of service through brace/globstar pattern amplification), reached only through `glob` and `@expo/fingerprint`, both build-time Expo tooling. The patterns they expand come from Expo and the repository, never from app users, so the app has no attacker-controlled input path. The fix is only in `minimatch` 11.0.1, a major release Expo has not adopted. It carries the same 2026-11-10 review date.
+
 Mitigation:
 
 1. Keep a strict blocking audit for the deployable web, API, and worker workspaces.

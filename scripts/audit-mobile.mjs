@@ -11,6 +11,24 @@ const reviewedAdvisories = new Map([
       source: 1243505,
     },
   ],
+  [
+    'https://github.com/advisories/GHSA-3g3m-2fjr-6pw4',
+    {
+      packageName: 'glob',
+      reviewBy: '2026-11-10',
+      severity: 'moderate',
+      source: 1244013,
+    },
+  ],
+  [
+    'https://github.com/advisories/GHSA-g3hv-75wg-m249',
+    {
+      packageName: 'minimatch',
+      reviewBy: '2026-11-10',
+      severity: 'moderate',
+      source: 1244012,
+    },
+  ],
 ]);
 
 function fail(message) {

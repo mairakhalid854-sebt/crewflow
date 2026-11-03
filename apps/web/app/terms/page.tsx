@@ -28,19 +28,19 @@ export default function TermsPage() {
         <p className="privacy-effective">Effective October 28, 2026</p>
 
         <div className="privacy-summary">
-          These terms are an agreement between CrewFlow360 (&quot;CrewFlow360,&quot;
-          &quot;we,&quot; or &quot;us&quot;) and the business that creates a
-          CrewFlow360 account (&quot;Customer&quot; or &quot;you&quot;). By
-          creating an account, accepting an invitation, or using the service,
-          you agree to these terms and acknowledge the{' '}
+          These terms are an agreement between CrewFlow360
+          (&quot;CrewFlow360,&quot; &quot;we,&quot; or &quot;us&quot;) and the
+          business that creates a CrewFlow360 account (&quot;Customer&quot; or
+          &quot;you&quot;). By creating an account, accepting an invitation, or
+          using the service, you agree to these terms and acknowledge the{' '}
           <Link href="/privacy">Privacy Notice</Link>.
         </div>
 
         <section>
           <h2>1. Eligibility and accounts</h2>
           <p>
-            CrewFlow360 is for business use. You must be at least 18 years old and
-            have authority to bind the business you register. You are
+            CrewFlow360 is for business use. You must be at least 18 years old
+            and have authority to bind the business you register. You are
             responsible for the accuracy of your account information, for
             keeping credentials secure, for the members you invite and the roles
             you give them, and for all activity in your workspace. Tell us
@@ -118,9 +118,9 @@ export default function TermsPage() {
             </li>
             <li>
               Quotes, invoices, prices, taxes, work reports, and other documents
-              you send are your own. CrewFlow360 does not collect or hold payments
-              for your services; payments between you and your customers happen
-              outside CrewFlow360.
+              you send are your own. CrewFlow360 does not collect or hold
+              payments for your services; payments between you and your
+              customers happen outside CrewFlow360.
             </li>
             <li>
               You will review AI-assisted suggestions before approving them. AI
@@ -175,8 +175,8 @@ export default function TermsPage() {
         <section>
           <h2>8. Intellectual property and feedback</h2>
           <p>
-            CrewFlow360 and its software, design, and content are owned by us and
-            our licensors. We grant you a limited, non-exclusive,
+            CrewFlow360 and its software, design, and content are owned by us
+            and our licensors. We grant you a limited, non-exclusive,
             non-transferable right to use the service during your subscription
             under these terms. If you give us feedback, we may use it without
             obligation to you.

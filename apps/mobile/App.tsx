@@ -1485,8 +1485,8 @@ function OperationsOverviewView({
             {approvalResult.label} approved
           </Text>
           <Text style={styles.noticeBody}>
-            The customer link is ready. Share it now; CrewFlow360 does not display
-            the secure token again after this message is dismissed.
+            The customer link is ready. Share it now; CrewFlow360 does not
+            display the secure token again after this message is dismissed.
           </Text>
           <Text selectable style={styles.customerLink}>
             {approvalResult.customerUrl}
