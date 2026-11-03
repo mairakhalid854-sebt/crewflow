@@ -2121,3 +2121,85 @@
   color: var(--cf-muted, #5b6b63);
   font-size: 0.78rem;
 }
+
+.skill-check {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+.skill-check p {
+  margin: 0;
+}
+
+.skill-check-warning {
+  border: 1px solid #f3c7a8;
+  background: #fff6ee;
+  color: #7a3b12;
+}
+
+.skill-check-ok {
+  background: #e9f8f0;
+  color: #12653f;
+}
+
+.skill-check-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.skill-check-actions a {
+  color: #12653f;
+  font-weight: 700;
+}
+
+.skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.skill-chips li {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e3cbb8;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.skill-suggestions {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: #5b6b63;
+}
+
+.skill-suggestions .skill-chips li {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.skill-suggestions button {
+  padding: 4px 10px;
+  border: 1px dashed #9cbcab;
+  border-radius: 999px;
+  background: #f4faf6;
+  color: #12653f;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skill-suggestions button:hover,
+.skill-suggestions button:focus-visible {
+  border-style: solid;
+  background: #e9f8f0;
+}

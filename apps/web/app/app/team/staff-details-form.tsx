@@ -4,6 +4,8 @@ import { useActionState } from 'react';
 
 import type { Tables } from '@crewflow/database';
 
+import { SkillListInput } from '../../../components/skill-list-input';
+
 import { type TeamActionState, updateStaffDetailsAction } from './actions';
 
 type StaffProfile = Tables<'staff_profiles'>;
@@ -27,9 +29,11 @@ function timeValue(value: string | null): string {
 export function StaffDetailsForm({
   availability,
   profile,
+  skillSuggestions = [],
 }: Readonly<{
   availability: readonly StaffAvailability[];
   profile: StaffProfile;
+  skillSuggestions?: readonly string[];
 }>) {
   const [state, action, pending] = useActionState(
     updateStaffDetailsAction,
@@ -54,10 +58,12 @@ export function StaffDetailsForm({
         </label>
         <label className="form-span-2">
           <span>Skills</span>
-          <input
-            defaultValue={profile.skills.join(', ')}
+          <SkillListInput
+            defaultSkills={profile.skills}
             name="skills"
             placeholder="HVAC repair, Installation, Diagnostics"
+            suggestionLabel="Skills your services require:"
+            suggestions={skillSuggestions}
           />
           <small>Separate up to 30 skills with commas.</small>
         </label>

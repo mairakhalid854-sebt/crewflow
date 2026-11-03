@@ -9,6 +9,7 @@ import { appUrl } from '../../../lib/app-url';
 import { invitationSignupUrl } from '../../../lib/auth/invitation-url';
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
 import { requestLinkEmail } from '../../../lib/email/link-email';
+import { mergeSkills, missingSkills } from '../../../lib/skills';
 import { createClient } from '../../../lib/supabase/server';
 
 export interface TeamActionState {
@@ -241,4 +242,116 @@ export async function updateStaffDetailsAction(
   revalidatePath('/app/team');
   revalidatePath(`/app/team/${membershipId.data}`);
   return { message: 'Staff details updated.', status: 'success' };
+}
+
+export interface AddServiceSkillsResult {
+  readonly addedSkills?: readonly string[];
+  readonly message: string;
+  readonly status: 'error' | 'success';
+}
+
+/**
+ * Gives a technician every skill the service requires that they lack. The
+ * rest of the staff profile (name, service area, notes, weekly schedule) is
+ * re-sent unchanged because update_staff_details replaces the whole profile.
+ */
+export async function addServiceSkillsToTechnicianAction(
+  membershipIdInput: string,
+  serviceIdInput: string,
+): Promise<AddServiceSkillsResult> {
+  const membershipId = membershipIdSchema.safeParse(membershipIdInput);
+  const serviceId = z.uuid().safeParse(serviceIdInput);
+  if (!membershipId.success || !serviceId.success) {
+    return { message: 'Select a service and technician.', status: 'error' };
+  }
+
+  const context = await requireTenantContext(['owner', 'office']);
+  const supabase = await createClient();
+  const [serviceResult, profileResult, availabilityResult] = await Promise.all([
+    supabase
+      .from('services')
+      .select('required_skills')
+      .eq('id', serviceId.data)
+      .eq('tenant_id', context.tenantId)
+      .maybeSingle(),
+    supabase
+      .from('staff_profiles')
+      .select(
+        'full_name, skills, service_area_postal_codes, availability_notes',
+      )
+      .eq('membership_id', membershipId.data)
+      .eq('tenant_id', context.tenantId)
+      .maybeSingle(),
+    supabase
+      .from('staff_availability')
+      .select('day_of_week, is_available, starts_at, ends_at')
+      .eq('membership_id', membershipId.data)
+      .eq('tenant_id', context.tenantId),
+  ]);
+
+  if (
+    serviceResult.error ||
+    profileResult.error ||
+    availabilityResult.error ||
+    !serviceResult.data ||
+    !profileResult.data
+  ) {
+    return { message: 'Technician or service was not found.', status: 'error' };
+  }
+
+  const profile = profileResult.data;
+  const toAdd = missingSkills(
+    serviceResult.data.required_skills,
+    profile.skills,
+  );
+  if (toAdd.length === 0) {
+    return {
+      addedSkills: [],
+      message: `${profile.full_name} already has every required skill.`,
+      status: 'success',
+    };
+  }
+
+  const skills = mergeSkills(profile.skills, toAdd);
+  if (skills.length > 30) {
+    return {
+      message: `${profile.full_name} would have more than 30 skills. Remove unused skills on their team page first.`,
+      status: 'error',
+    };
+  }
+
+  const weeklySchedule: Json[] = (availabilityResult.data ?? []).map((day) =>
+    day.is_available && day.starts_at && day.ends_at
+      ? {
+          dayOfWeek: day.day_of_week,
+          endsAt: day.ends_at.slice(0, 5),
+          isAvailable: true,
+          startsAt: day.starts_at.slice(0, 5),
+        }
+      : { dayOfWeek: day.day_of_week, isAvailable: false },
+  );
+
+  const { error } = await supabase.rpc('update_staff_details', {
+    staff_availability_notes: profile.availability_notes ?? '',
+    staff_full_name: profile.full_name,
+    staff_service_area_postal_codes: profile.service_area_postal_codes,
+    staff_skills: skills,
+    target_membership_id: membershipId.data,
+    weekly_schedule: weeklySchedule,
+  });
+  if (error) {
+    return {
+      message: 'Skills could not be added. Please try again.',
+      status: 'error',
+    };
+  }
+
+  revalidatePath('/app/team');
+  revalidatePath(`/app/team/${membershipId.data}`);
+  revalidatePath('/app/jobs');
+  return {
+    addedSkills: toAdd,
+    message: `Added ${toAdd.join(', ')} to ${profile.full_name}.`,
+    status: 'success',
+  };
 }
