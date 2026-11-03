@@ -1,0 +1,6 @@
+{$SCANNER_DOMAIN} {
+	request_body {
+		max_size 11MB
+	}
+	reverse_proxy scanner:8080
+}

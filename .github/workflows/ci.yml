@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, staging]
 
 permissions:
   contents: read
@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -27,8 +27,30 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Audit production dependencies
+      - name: Audit deployable production dependencies
         run: npm run audit:production
+
+      - name: Monitor blocked mobile advisories
+        run: npm run audit:mobile
+
+  scanner-container:
+    name: Knowledge scanner container build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build scanner image
+        run: docker build --file apps/scanner/Dockerfile --tag crewflow-scanner:ci .
+
+      - name: Verify image defaults fail closed without a secret
+        run: |
+          if docker run --rm crewflow-scanner:ci; then
+            echo "Scanner unexpectedly started without SCANNER_AUTH_TOKEN"
+            exit 1
+          fi
 
   quality:
     name: Format, lint, typecheck, test, build
@@ -37,10 +59,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -51,6 +73,34 @@ jobs:
       - name: Run quality gate
         run: npm run check
 
+  database-integration:
+    name: Supabase database integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Start local Supabase
+        run: npm run supabase:start
+
+      - name: Run pgTAP database tests
+        run: npm run supabase:test
+
+      - name: Stop local Supabase
+        if: always()
+        run: npm run supabase:stop
+
   secret-scan:
     name: Secret scan
     runs-on: ubuntu-latest
@@ -58,7 +108,7 @@ jobs:
 
     steps:
       - name: Checkout full history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -66,3 +116,30 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  accessibility:
+    name: Public web accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run automated accessibility checks
+        run: npm run test:a11y
+
+      - name: Enforce public web performance budgets
+        run: npm run test:performance

@@ -4,6 +4,8 @@ import { useActionState } from 'react';
 
 import type { Tables } from '@crewflow/database';
 
+import { UsLocationFields } from '../../../components/us-location-fields';
+
 import {
   type CustomerFormState,
   createCustomerAction,
@@ -104,28 +106,14 @@ export function CustomerForm({ customer }: Readonly<{ customer?: Customer }>) {
             name="addressLine2"
           />
         </label>
-        <label>
-          <span>City</span>
-          <input
-            defaultValue={customer?.city ?? ''}
-            maxLength={100}
-            name="city"
-          />
-        </label>
-        <label>
-          <span>State</span>
-          <input
-            aria-describedby="stateCode-error"
-            autoCapitalize="characters"
-            defaultValue={customer?.state_code ?? ''}
-            maxLength={2}
-            name="stateCode"
-          />
-          <FieldError
-            errors={state.fieldErrors?.stateCode}
-            id="stateCode-error"
-          />
-        </label>
+        <UsLocationFields
+          cityErrorId="city-error"
+          cityErrors={state.fieldErrors?.city}
+          initialCity={customer?.city}
+          initialStateCode={customer?.state_code}
+          stateErrorId="stateCode-error"
+          stateErrors={state.fieldErrors?.stateCode}
+        />
         <label>
           <span>ZIP code</span>
           <input

@@ -1,10 +1,12 @@
 {
   "extends": "../../packages/tsconfig/node.json",
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "module": "NodeNext",
-    "moduleResolution": "NodeNext"
+    "moduleResolution": "NodeNext",
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]
 }

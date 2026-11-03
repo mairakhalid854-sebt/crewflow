@@ -1,6 +1,7 @@
 {
   "extends": "../../packages/tsconfig/react.json",
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "incremental": true,
     "jsx": "preserve",
     "plugins": [{ "name": "next" }],

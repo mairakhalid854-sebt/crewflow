@@ -4,6 +4,7 @@ import type { Database } from '@crewflow/database';
 
 import { logoutAction } from '../(auth)/actions';
 import { requireTenantContext } from '../../lib/auth/tenant-context';
+import { createClient } from '../../lib/supabase/server';
 
 import './workspace.css';
 
@@ -15,18 +16,70 @@ const navItems: readonly {
   roles?: readonly MembershipRole[];
 }[] = [
   { href: '/app', label: 'Overview' },
+  { href: '/app/jobs', label: 'Jobs' },
+  {
+    href: '/app/invoices',
+    label: 'Invoices',
+    roles: ['owner', 'office'],
+  },
+  {
+    href: '/app/dispatch',
+    label: 'Dispatch',
+    roles: ['owner', 'office'],
+  },
   {
     href: '/app/customers',
     label: 'Customers',
     roles: ['owner', 'office'],
   },
   { href: '/app/services', label: 'Services' },
+  {
+    href: '/app/team',
+    label: 'Team',
+    roles: ['owner', 'office'],
+  },
+  {
+    href: '/app/audit',
+    label: 'Audit trail',
+    roles: ['owner', 'office'],
+  },
+  {
+    href: '/app/intake',
+    label: 'Intake',
+    roles: ['owner', 'office'],
+  },
+  {
+    href: '/app/ai',
+    label: 'AI operations',
+    roles: ['owner', 'office'],
+  },
+  {
+    href: '/app/knowledge',
+    label: 'Knowledge base',
+    roles: ['owner', 'office'],
+  },
+  { href: '/app/profile', label: 'My profile' },
+  {
+    href: '/app/settings',
+    label: 'Settings',
+    roles: ['owner'],
+  },
+  {
+    href: '/app/billing',
+    label: 'CrewFlow360 billing',
+    roles: ['owner'],
+  },
 ];
 
 export default async function AuthenticatedAppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const context = await requireTenantContext();
+  const supabase = await createClient();
+  const { data: accessMode, error: accessError } = await supabase.rpc(
+    'get_current_tenant_access_mode',
+  );
+  if (accessError) throw new Error('Workspace access could not be verified.');
   const initials = context.userName
     .split(' ')
     .slice(0, 2)
@@ -39,7 +92,7 @@ export default async function AuthenticatedAppLayout({
       <aside className="authenticated-sidebar" aria-label="Primary navigation">
         <Link className="workspace-brand" href="/app">
           <span aria-hidden="true">C</span>
-          CrewFlow
+          CrewFlow360
         </Link>
         <nav>
           {navItems
@@ -71,6 +124,23 @@ export default async function AuthenticatedAppLayout({
             </form>
           </div>
         </header>
+        {accessMode !== 'full' ? (
+          <div
+            className={`subscription-access-banner subscription-access-${accessMode}`}
+            role="status"
+          >
+            <strong>
+              {accessMode === 'read_only'
+                ? 'Workspace is read-only'
+                : 'Subscription needs attention'}
+            </strong>
+            <span>
+              {accessMode === 'read_only'
+                ? 'Your data remains available, but business records cannot be changed. Ask the owner to review CrewFlow360 billing.'
+                : 'Core work remains available during the billing grace state. The owner should review CrewFlow360 billing.'}
+            </span>
+          </div>
+        ) : null}
         {children}
       </section>
     </main>

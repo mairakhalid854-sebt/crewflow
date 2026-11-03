@@ -1,37 +1,3441 @@
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import type { Database } from '@crewflow/database';
+import type { Session, SupabaseClient } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  KeyboardAvoidingView,
+  PanResponder,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  RefreshControl,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+
+import {
+  type MembershipAccess,
+  resolveMembershipAccess,
+} from './src/auth/membership-access';
+import {
+  passwordRecoveryRedirectUrl,
+  parseRecoveryLink,
+  validateNewPassword,
+} from './src/auth/password-recovery';
+import { signInErrorMessage } from './src/auth/sign-in-error';
+import {
+  type AssignedJob,
+  type AssignedJobActivity,
+  type AssignedJobsSnapshot,
+  type TechnicianProgressStatus,
+  advanceAssignedJob,
+  buildJobTimeline,
+  formatCustomerAddress,
+  formatJobSchedule,
+  loadAssignedJobs,
+  partitionAssignedJobs,
+  technicianProgressAction,
+  validateProgressNote,
+} from './src/jobs/assigned-jobs';
+import {
+  type JobPhotoUploadPendingResult,
+  type JobPhotoUploadResult,
+  type PendingJobPhotoUpload,
+  captureAndUploadJobPhoto,
+  discardPendingJobPhoto,
+  restorePendingJobPhotos,
+  retryJobPhotoUpload,
+} from './src/jobs/job-media';
+import {
+  type JobMediaKind,
+  allowedJobPhotoKinds,
+} from './src/jobs/job-media-policy';
+import {
+  type JobProgressDraft,
+  jobProgressDraftStore,
+  progressDraftHasConflict,
+} from './src/jobs/job-progress-drafts';
+import { recordAssignedJobSignature } from './src/jobs/job-signature';
+import {
+  CUSTOMER_SIGNATURE_CONSENT,
+  MAX_SIGNATURE_POINTS_PER_STROKE,
+  MAX_SIGNATURE_STROKES,
+  signatureDraftError,
+  signaturePath,
+  type SignaturePoint,
+  type SignatureStroke,
+} from './src/jobs/job-signature-policy';
+import { getSupabaseClient } from './src/lib/supabase';
+import { approveOperationsItem } from './src/operations/approval-actions';
+import {
+  formatUsdCents,
+  loadMobileOperations,
+  type MobileOperationsSnapshot,
+  type OperationsApproval,
+  type OperationsInvoice,
+  type OperationsJob,
+} from './src/operations/mobile-operations';
+import { NotificationSettingsView } from './src/notifications/notification-settings-view';
+import {
+  addNotificationResponseListener,
+  addPushTokenRotationListener,
+  disableMobilePushToken,
+  getInitialNotificationDeepLink,
+  synchronizeMobilePushToken,
+} from './src/notifications/push-notifications';
+import {
+  type CrewFlowDeepLink,
+  parseCrewFlowDeepLink,
+} from './src/notifications/push-notification-policy';
+
+type AccessState =
+  | { readonly status: 'idle' }
+  | { readonly status: 'loading' }
+  | { readonly access: MembershipAccess; readonly status: 'loaded' }
+  | { readonly message: string; readonly status: 'error' };
+
+type RecoveryState =
+  | { readonly status: 'idle' }
+  | { readonly status: 'exchanging' }
+  | { readonly status: 'ready' }
+  | { readonly message: string; readonly status: 'error' }
+  | { readonly status: 'success' };
+
+type AssignedJobsState =
+  | { readonly status: 'idle' }
+  | { readonly status: 'loading' }
+  | {
+      readonly snapshot: AssignedJobsSnapshot;
+      readonly status: 'loaded';
+    }
+  | { readonly message: string; readonly status: 'error' };
+
+type MobileOperationsState =
+  | { readonly status: 'idle' }
+  | { readonly status: 'loading' }
+  | {
+      readonly snapshot: MobileOperationsSnapshot;
+      readonly status: 'loaded';
+    }
+  | { readonly message: string; readonly status: 'error' };
+
+const roleLabels = {
+  office: 'Office staff',
+  owner: 'Owner',
+  technician: 'Technician',
+} as const;
 
 export default function App() {
+  const linkedUrl = Linking.useLinkingURL();
+  const handledAppUrl = useRef<string | undefined>(undefined);
+  const handledRecoveryUrl = useRef<string | undefined>(undefined);
+  const [accessState, setAccessState] = useState<AccessState>({
+    status: 'idle',
+  });
+  const [authMode, setAuthMode] = useState<'forgot' | 'sign-in'>('sign-in');
+  const [authClient, setAuthClient] = useState<SupabaseClient<Database> | null>(
+    null,
+  );
+  const [configurationError, setConfigurationError] = useState<string>();
+  const [email, setEmail] = useState('');
+  const [formMessage, setFormMessage] = useState<string>();
+  const [assignedJobsRefreshKey, setAssignedJobsRefreshKey] = useState(0);
+  const [assignedJobsState, setAssignedJobsState] = useState<AssignedJobsState>(
+    { status: 'idle' },
+  );
+  const [operationsRefreshKey, setOperationsRefreshKey] = useState(0);
+  const [operationsState, setOperationsState] = useState<MobileOperationsState>(
+    { status: 'idle' },
+  );
+  const [password, setPassword] = useState('');
+  const [pendingDeepLink, setPendingDeepLink] = useState<CrewFlowDeepLink>();
+  const [deepLinkMessage, setDeepLinkMessage] = useState<string>();
+  const [pending, setPending] = useState(false);
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+  const [pendingPhotoState, setPendingPhotoState] = useState<{
+    readonly results: readonly JobPhotoUploadPendingResult[];
+    readonly userId?: string;
+  }>({ results: [] });
+  const [recoveryConfirmation, setRecoveryConfirmation] = useState('');
+  const [recoveryPassword, setRecoveryPassword] = useState('');
+  const [recoveryRequestSent, setRecoveryRequestSent] = useState(false);
+  const [recoveryState, setRecoveryState] = useState<RecoveryState>({
+    status: 'idle',
+  });
+  const [session, setSession] = useState<Session | null>();
+  const sessionUserId = session?.user.id;
+  const pendingPhotoResults =
+    pendingPhotoState.userId === sessionUserId ? pendingPhotoState.results : [];
+
+  useEffect(() => {
+    if (!pullRefreshing) return;
+    if (
+      assignedJobsState.status === 'loaded' ||
+      assignedJobsState.status === 'error' ||
+      operationsState.status === 'loaded' ||
+      operationsState.status === 'error'
+    ) {
+      setPullRefreshing(false);
+    }
+  }, [assignedJobsState, operationsState, pullRefreshing]);
+
+  useEffect(() => {
+    let active = true;
+
+    try {
+      const client = getSupabaseClient();
+      setAuthClient(client);
+
+      void client.auth.getSession().then(({ data }) => {
+        if (active) setSession(data.session);
+      });
+
+      const { data } = client.auth.onAuthStateChange((_event, nextSession) => {
+        if (active) setSession(nextSession);
+      });
+
+      return () => {
+        active = false;
+        data.subscription.unsubscribe();
+      };
+    } catch {
+      setConfigurationError(
+        'Mobile authentication is not configured on this build.',
+      );
+      setSession(null);
+      return () => {
+        active = false;
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    if (!sessionUserId) {
+      setPendingPhotoState({ results: [] });
+      return () => {
+        active = false;
+      };
+    }
+
+    setPendingPhotoState({ results: [], userId: sessionUserId });
+
+    void restorePendingJobPhotos(sessionUserId)
+      .then((results) => {
+        if (active) {
+          setPendingPhotoState((current) => ({
+            results: [
+              ...(current.userId === sessionUserId
+                ? current.results.filter(
+                    (item) =>
+                      !results.some(
+                        (restored) =>
+                          restored.upload.localUri === item.upload.localUri,
+                      ),
+                  )
+                : []),
+              ...results,
+            ],
+            userId: sessionUserId,
+          }));
+        }
+      })
+      .catch(() => {
+        if (active)
+          setPendingPhotoState({ results: [], userId: sessionUserId });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [sessionUserId]);
+
+  useEffect(() => {
+    let active = true;
+    if (!authClient || !linkedUrl || handledRecoveryUrl.current === linkedUrl) {
+      return () => {
+        active = false;
+      };
+    }
+
+    const recoveryLink = parseRecoveryLink(linkedUrl);
+    if (recoveryLink.status === 'ignored') {
+      return () => {
+        active = false;
+      };
+    }
+
+    handledRecoveryUrl.current = linkedUrl;
+    if (recoveryLink.status === 'invalid') {
+      setRecoveryState({
+        message: 'This password reset link is invalid or expired.',
+        status: 'error',
+      });
+      return () => {
+        active = false;
+      };
+    }
+
+    setRecoveryState({ status: 'exchanging' });
+    const credentials = recoveryLink.credentials;
+    void (
+      credentials.kind === 'pkce'
+        ? authClient.auth.exchangeCodeForSession(credentials.code)
+        : authClient.auth.setSession({
+            access_token: credentials.accessToken,
+            refresh_token: credentials.refreshToken,
+          })
+    ).then(({ error }) => {
+      if (!active) return;
+      setRecoveryState(
+        error
+          ? {
+              message: 'This password reset link is invalid or expired.',
+              status: 'error',
+            }
+          : { status: 'ready' },
+      );
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [authClient, linkedUrl]);
+
+  useEffect(() => {
+    if (!session || !linkedUrl || handledAppUrl.current === linkedUrl) return;
+    const deepLink = parseCrewFlowDeepLink(linkedUrl);
+    if (!deepLink) return;
+    handledAppUrl.current = linkedUrl;
+    setDeepLinkMessage(undefined);
+    setPendingDeepLink(deepLink);
+  }, [linkedUrl, session]);
+
+  useEffect(() => {
+    if (!authClient || !session) return;
+    let active = true;
+    const receive = (deepLink: CrewFlowDeepLink) => {
+      if (!active) return;
+      setDeepLinkMessage(undefined);
+      setPendingDeepLink(deepLink);
+    };
+    const responseSubscription = addNotificationResponseListener(receive);
+    const tokenSubscription = addPushTokenRotationListener(authClient);
+    void synchronizeMobilePushToken(authClient).catch(() => undefined);
+    void getInitialNotificationDeepLink()
+      .then((deepLink) => {
+        if (deepLink) receive(deepLink);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      responseSubscription.remove();
+      tokenSubscription.remove();
+    };
+  }, [authClient, session]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!authClient || !session) {
+      setAccessState({ status: 'idle' });
+      return () => {
+        active = false;
+      };
+    }
+
+    setAccessState({ status: 'loading' });
+    void authClient
+      .from('memberships')
+      .select('id, role, status, tenant_id, user_id')
+      .eq('user_id', session.user.id)
+      .limit(2)
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          setAccessState({
+            message: 'Crew access could not be verified. Try again shortly.',
+            status: 'error',
+          });
+          return;
+        }
+
+        setAccessState({
+          access: resolveMembershipAccess(data ?? []),
+          status: 'loaded',
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [authClient, session]);
+
+  useEffect(() => {
+    let active = true;
+    const access =
+      accessState.status === 'loaded' && accessState.access.allowed
+        ? accessState.access
+        : undefined;
+
+    if (!authClient || access?.membership.role !== 'technician') {
+      setAssignedJobsState({ status: 'idle' });
+      return () => {
+        active = false;
+      };
+    }
+
+    setAssignedJobsState((current) =>
+      current.status === 'loaded' ? current : { status: 'loading' },
+    );
+    void loadAssignedJobs(authClient, access.membership)
+      .then((snapshot) => {
+        if (active) setAssignedJobsState({ snapshot, status: 'loaded' });
+      })
+      .catch(() => {
+        if (!active) return;
+        setAssignedJobsState({
+          message: 'Assigned jobs could not be loaded. Check your connection.',
+          status: 'error',
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessState, assignedJobsRefreshKey, authClient]);
+
+  useEffect(() => {
+    let active = true;
+    const access =
+      accessState.status === 'loaded' && accessState.access.allowed
+        ? accessState.access
+        : undefined;
+
+    if (!authClient || !access || access.membership.role === 'technician') {
+      setOperationsState({ status: 'idle' });
+      return () => {
+        active = false;
+      };
+    }
+
+    setOperationsState((current) =>
+      current.status === 'loaded' ? current : { status: 'loading' },
+    );
+    void loadMobileOperations(authClient, access.membership)
+      .then((snapshot) => {
+        if (active) setOperationsState({ snapshot, status: 'loaded' });
+      })
+      .catch(() => {
+        if (!active) return;
+        setOperationsState({
+          message:
+            'Operations overview could not be loaded. Check your connection.',
+          status: 'error',
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessState, authClient, operationsRefreshKey]);
+
+  useEffect(() => {
+    if (!pendingDeepLink || accessState.status !== 'loaded') return;
+    const reject = () => {
+      setPendingDeepLink(undefined);
+      setDeepLinkMessage(
+        'That notification item is unavailable or you no longer have access.',
+      );
+    };
+    if (!accessState.access.allowed) {
+      reject();
+      return;
+    }
+    if (accessState.access.membership.role === 'technician') {
+      if (pendingDeepLink.kind !== 'job') {
+        reject();
+      } else if (assignedJobsState.status === 'loaded') {
+        if (
+          !assignedJobsState.snapshot.jobs.some(
+            (job) => job.id === pendingDeepLink.jobId,
+          )
+        ) {
+          reject();
+        }
+      }
+      return;
+    }
+    if (operationsState.status !== 'loaded') return;
+    const available =
+      pendingDeepLink.kind === 'job'
+        ? operationsState.snapshot.jobs.some(
+            (job) => job.id === pendingDeepLink.jobId,
+          )
+        : operationsState.snapshot.pendingApprovals.some(
+            (approval) =>
+              approval.id === pendingDeepLink.approvalId &&
+              approval.kind === pendingDeepLink.approvalKind,
+          );
+    if (!available) reject();
+  }, [accessState, assignedJobsState, operationsState, pendingDeepLink]);
+
+  async function signIn() {
+    if (!authClient || pending) return;
+
+    setFormMessage(undefined);
+    setPending(true);
+    const { error } = await authClient.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    setPending(false);
+
+    if (error) {
+      setFormMessage(signInErrorMessage(error));
+      return;
+    }
+
+    setPassword('');
+  }
+
+  async function sendPasswordReset() {
+    if (!authClient || pending) return;
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      setFormMessage('Enter a valid account email.');
+      return;
+    }
+
+    setFormMessage(undefined);
+    setPending(true);
+    const configuredWebAppUrl = process.env.EXPO_PUBLIC_WEB_APP_URL as unknown;
+    await authClient.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: passwordRecoveryRedirectUrl(
+        typeof configuredWebAppUrl === 'string'
+          ? configuredWebAppUrl
+          : undefined,
+      ),
+    });
+    setPending(false);
+    setRecoveryRequestSent(true);
+  }
+
+  async function updatePassword() {
+    if (!authClient || pending) return;
+
+    const validationMessage = validateNewPassword(
+      recoveryPassword,
+      recoveryConfirmation,
+    );
+    if (validationMessage) {
+      setFormMessage(validationMessage);
+      return;
+    }
+
+    setFormMessage(undefined);
+    setPending(true);
+    const { error } = await authClient.auth.updateUser({
+      password: recoveryPassword,
+    });
+    setPending(false);
+
+    if (error) {
+      setFormMessage('Password could not be updated. Request a new link.');
+      return;
+    }
+
+    setRecoveryPassword('');
+    setRecoveryConfirmation('');
+    setRecoveryState({ status: 'success' });
+  }
+
+  async function signOut() {
+    if (!authClient || pending) return;
+    setPending(true);
+    await disableMobilePushToken(authClient).catch(() => undefined);
+    await authClient.auth.signOut();
+    setPending(false);
+    setRecoveryState({ status: 'idle' });
+  }
+
+  async function progressAssignedJob(
+    jobId: string,
+    status: TechnicianProgressStatus,
+    note: string,
+  ) {
+    if (!authClient) throw new Error('Mobile client is unavailable.');
+    await advanceAssignedJob(authClient, jobId, status, note);
+    setAssignedJobsRefreshKey((key) => key + 1);
+  }
+
+  async function captureAssignedJobPhoto(
+    jobId: string,
+    mediaKind: JobMediaKind,
+  ): Promise<JobPhotoUploadResult> {
+    if (!authClient || !sessionUserId) {
+      throw new Error('Mobile client is unavailable.');
+    }
+    const result = await captureAndUploadJobPhoto(
+      authClient,
+      sessionUserId,
+      jobId,
+      mediaKind,
+    );
+    if (result === 'uploaded') {
+      setAssignedJobsRefreshKey((key) => key + 1);
+    } else if (result !== 'cancelled') {
+      setPendingPhotoState((current) => ({
+        results: [
+          ...(current.userId === sessionUserId ? current.results : []).filter(
+            (item) => item.upload.localUri !== result.upload.localUri,
+          ),
+          result,
+        ],
+        userId: sessionUserId,
+      }));
+    }
+    return result;
+  }
+
+  async function retryAssignedJobPhoto(
+    upload: PendingJobPhotoUpload,
+  ): Promise<Exclude<JobPhotoUploadResult, 'cancelled'>> {
+    if (!authClient || !sessionUserId) {
+      throw new Error('Mobile client is unavailable.');
+    }
+    const result = await retryJobPhotoUpload(authClient, sessionUserId, upload);
+    if (result === 'uploaded') {
+      setPendingPhotoState((current) => ({
+        results: (current.userId === sessionUserId
+          ? current.results
+          : []
+        ).filter((item) => item.upload.localUri !== upload.localUri),
+        userId: sessionUserId,
+      }));
+      setAssignedJobsRefreshKey((key) => key + 1);
+    } else {
+      setPendingPhotoState((current) => ({
+        results: [
+          ...(current.userId === sessionUserId ? current.results : []).filter(
+            (item) => item.upload.localUri !== result.upload.localUri,
+          ),
+          result,
+        ],
+        userId: sessionUserId,
+      }));
+    }
+    return result;
+  }
+
+  async function discardAssignedJobPhoto(upload: PendingJobPhotoUpload) {
+    if (!sessionUserId) throw new Error('Mobile session is unavailable.');
+    await discardPendingJobPhoto(sessionUserId, upload);
+    setPendingPhotoState((current) => ({
+      results: (current.userId === sessionUserId ? current.results : []).filter(
+        (item) => item.upload.localUri !== upload.localUri,
+      ),
+      userId: sessionUserId,
+    }));
+  }
+
+  async function signAssignedJob(
+    jobId: string,
+    signerName: string,
+    strokes: readonly SignatureStroke[],
+  ) {
+    if (!authClient) throw new Error('Mobile client is unavailable.');
+    await recordAssignedJobSignature(authClient, jobId, signerName, strokes);
+    setAssignedJobsRefreshKey((key) => key + 1);
+  }
+
+  if (
+    session &&
+    authClient &&
+    !configurationError &&
+    (recoveryState.status === 'idle' || recoveryState.status === 'success')
+  ) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.flex}
+        >
+          <AuthenticatedView
+            accessState={accessState}
+            assignedJobsState={assignedJobsState}
+            client={authClient}
+            deepLink={pendingDeepLink}
+            deepLinkMessage={deepLinkMessage}
+            email={session.user.email ?? 'Signed-in user'}
+            message={
+              recoveryState.status === 'success'
+                ? 'Your password has been updated securely.'
+                : undefined
+            }
+            onAdvanceJob={progressAssignedJob}
+            onCapturePhoto={captureAssignedJobPhoto}
+            onDeepLinkHandled={() => setPendingDeepLink(undefined)}
+            onDiscardPhoto={discardAssignedJobPhoto}
+            onPullRefresh={() => {
+              setPullRefreshing(true);
+              const role =
+                accessState.status === 'loaded' && accessState.access.allowed
+                  ? accessState.access.membership.role
+                  : undefined;
+              if (role === 'technician') {
+                setAssignedJobsRefreshKey((key) => key + 1);
+              } else {
+                setOperationsRefreshKey((key) => key + 1);
+              }
+            }}
+            onRecordSignature={signAssignedJob}
+            onRefreshJobs={() => setAssignedJobsRefreshKey((key) => key + 1)}
+            onRefreshOperations={() =>
+              setOperationsRefreshKey((key) => key + 1)
+            }
+            onRetryPhoto={retryAssignedJobPhoto}
+            onSignOut={signOut}
+            operationsState={operationsState}
+            pending={pending}
+            pendingPhotoResults={pendingPhotoResults}
+            refreshing={pullRefreshing}
+            userId={session.user.id}
+          />
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
+
+  if (session === undefined) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centered}>
+          <ActivityIndicator color="#1769F4" size="large" />
+          <Text style={styles.loadingText}>Restoring your secure session…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.brandMark}>
-          <Text style={styles.brandLetter}>C</Text>
-        </View>
-        <Text style={styles.eyebrow}>CREWFLOW MOBILE</Text>
-        <Text style={styles.title}>The field app foundation is ready.</Text>
-        <Text style={styles.body}>
-          Secure sign-in and assigned jobs arrive after the Phase 1 identity
-          boundary is tested.
-        </Text>
-        <View style={styles.notice}>
-          <Text style={styles.noticeTitle}>Phase 0 shell</Text>
-          <Text style={styles.noticeBody}>
-            No production data or provider credentials are connected.
-          </Text>
-        </View>
-      </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
+      >
+        <ScrollView
+          contentContainerStyle={[
+            styles.container,
+            session ? styles.authenticatedContainer : undefined,
+          ]}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            session ? (
+              <RefreshControl
+                colors={['#1769F4']}
+                onRefresh={() => {
+                  setPullRefreshing(true);
+                  const role =
+                    accessState.status === 'loaded' &&
+                    accessState.access.allowed
+                      ? accessState.access.membership.role
+                      : undefined;
+                  if (role === 'technician') {
+                    setAssignedJobsRefreshKey((key) => key + 1);
+                  } else {
+                    setOperationsRefreshKey((key) => key + 1);
+                  }
+                }}
+                refreshing={pullRefreshing}
+                tintColor="#1769F4"
+              />
+            ) : undefined
+          }
+        >
+          <View style={styles.brandMark}>
+            <Text style={styles.brandLetter}>C</Text>
+          </View>
+          <Text style={styles.eyebrow}>CREWFLOW MOBILE</Text>
+
+          {configurationError ? (
+            <View style={styles.card}>
+              <Text style={styles.title}>Configuration required</Text>
+              <Text style={styles.body}>{configurationError}</Text>
+              <Text style={styles.noticeBody}>
+                Add the public Expo Supabase URL and publishable key, then
+                rebuild the app. Never add a service-role key here.
+              </Text>
+            </View>
+          ) : recoveryState.status !== 'idle' &&
+            recoveryState.status !== 'success' ? (
+            <RecoveryView
+              confirmation={recoveryConfirmation}
+              formMessage={formMessage}
+              onBack={() => {
+                setFormMessage(undefined);
+                setRecoveryState({ status: 'idle' });
+              }}
+              onChangeConfirmation={setRecoveryConfirmation}
+              onChangePassword={setRecoveryPassword}
+              onSubmit={updatePassword}
+              password={recoveryPassword}
+              pending={pending}
+              state={recoveryState}
+            />
+          ) : session && authClient ? (
+            <AuthenticatedView
+              accessState={accessState}
+              assignedJobsState={assignedJobsState}
+              client={authClient}
+              deepLink={pendingDeepLink}
+              deepLinkMessage={deepLinkMessage}
+              email={session.user.email ?? 'Signed-in user'}
+              message={
+                recoveryState.status === 'success'
+                  ? 'Your password has been updated securely.'
+                  : undefined
+              }
+              onAdvanceJob={progressAssignedJob}
+              onCapturePhoto={captureAssignedJobPhoto}
+              onDiscardPhoto={discardAssignedJobPhoto}
+              onDeepLinkHandled={() => setPendingDeepLink(undefined)}
+              onRecordSignature={signAssignedJob}
+              onRetryPhoto={retryAssignedJobPhoto}
+              onRefreshOperations={() => {
+                setOperationsRefreshKey((key) => key + 1);
+              }}
+              onSignOut={signOut}
+              operationsState={operationsState}
+              onRefreshJobs={() => {
+                setAssignedJobsRefreshKey((key) => key + 1);
+              }}
+              pending={pending}
+              pendingPhotoResults={pendingPhotoResults}
+              userId={session.user.id}
+            />
+          ) : authMode === 'forgot' ? (
+            <ForgotPasswordView
+              email={email}
+              formMessage={formMessage}
+              onBack={() => {
+                setAuthMode('sign-in');
+                setFormMessage(undefined);
+                setRecoveryRequestSent(false);
+              }}
+              onChangeEmail={setEmail}
+              onSubmit={sendPasswordReset}
+              pending={pending}
+              sent={recoveryRequestSent}
+            />
+          ) : (
+            <View style={styles.card}>
+              <Text style={styles.title}>Sign in to your crew</Text>
+              <Text style={styles.body}>
+                Use the same verified account as the CrewFlow360 web app.
+              </Text>
+              <Text style={styles.label}>Work email</Text>
+              <TextInput
+                autoCapitalize="none"
+                autoComplete="email"
+                editable={!pending}
+                keyboardType="email-address"
+                onChangeText={setEmail}
+                placeholder="you@company.com"
+                style={styles.input}
+                value={email}
+              />
+              <Text style={styles.label}>Password</Text>
+              <PasswordInput
+                autoComplete="current-password"
+                editable={!pending}
+                onChangeText={setPassword}
+                onSubmitEditing={() => void signIn()}
+                placeholder="Your password"
+                value={password}
+              />
+              {formMessage ? (
+                <Text accessibilityRole="alert" style={styles.errorText}>
+                  {formMessage}
+                </Text>
+              ) : null}
+              <Pressable
+                accessibilityRole="button"
+                disabled={pending || !email.trim() || !password}
+                onPress={() => void signIn()}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  (pending || !email.trim() || !password) &&
+                    styles.buttonDisabled,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.primaryButtonText}>
+                  {pending ? 'Signing in…' : 'Sign in'}
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={pending}
+                onPress={() => {
+                  setAuthMode('forgot');
+                  setFormMessage(undefined);
+                }}
+                style={({ pressed }) => [
+                  styles.linkButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.linkButtonText}>Forgot password?</Text>
+              </Pressable>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+function AuthenticatedView({
+  accessState,
+  assignedJobsState,
+  client,
+  deepLink,
+  deepLinkMessage,
+  email,
+  message,
+  onAdvanceJob,
+  onCapturePhoto,
+  onDeepLinkHandled,
+  onDiscardPhoto,
+  onPullRefresh,
+  onRecordSignature,
+  onRetryPhoto,
+  onRefreshJobs,
+  onRefreshOperations,
+  onSignOut,
+  operationsState,
+  pending,
+  pendingPhotoResults,
+  refreshing = false,
+  userId,
+}: Readonly<{
+  accessState: AccessState;
+  assignedJobsState: AssignedJobsState;
+  client: SupabaseClient<Database>;
+  deepLink?: CrewFlowDeepLink;
+  deepLinkMessage?: string;
+  email: string;
+  message?: string;
+  onAdvanceJob: (
+    jobId: string,
+    status: TechnicianProgressStatus,
+    note: string,
+  ) => Promise<void>;
+  onCapturePhoto: (
+    jobId: string,
+    mediaKind: JobMediaKind,
+  ) => Promise<JobPhotoUploadResult>;
+  onDeepLinkHandled: () => void;
+  onDiscardPhoto: (upload: PendingJobPhotoUpload) => Promise<void>;
+  onPullRefresh?: () => void;
+  onRecordSignature: (
+    jobId: string,
+    signerName: string,
+    strokes: readonly SignatureStroke[],
+  ) => Promise<void>;
+  onRetryPhoto: (
+    upload: PendingJobPhotoUpload,
+  ) => Promise<Exclude<JobPhotoUploadResult, 'cancelled'>>;
+  onRefreshJobs: () => void;
+  onRefreshOperations: () => void;
+  onSignOut: () => Promise<void>;
+  operationsState: MobileOperationsState;
+  pending: boolean;
+  pendingPhotoResults: readonly JobPhotoUploadPendingResult[];
+  refreshing?: boolean;
+  userId: string;
+}>) {
+  const [activeTab, setActiveTab] = useState<'account' | 'alerts' | 'home'>(
+    'home',
+  );
+
+  useEffect(() => {
+    if (activeTab === 'home') return;
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        setActiveTab('home');
+        return true;
+      },
+    );
+    return () => subscription.remove();
+  }, [activeTab]);
+  let routableDeepLink: CrewFlowDeepLink | undefined;
+  if (
+    accessState.status === 'loaded' &&
+    accessState.access.allowed &&
+    deepLink
+  ) {
+    if (
+      accessState.access.membership.role === 'technician' &&
+      deepLink.kind === 'job' &&
+      assignedJobsState.status === 'loaded' &&
+      assignedJobsState.snapshot.jobs.some((job) => job.id === deepLink.jobId)
+    ) {
+      routableDeepLink = deepLink;
+    } else if (
+      accessState.access.membership.role !== 'technician' &&
+      operationsState.status === 'loaded' &&
+      (deepLink.kind === 'job'
+        ? operationsState.snapshot.jobs.some((job) => job.id === deepLink.jobId)
+        : operationsState.snapshot.pendingApprovals.some(
+            (approval) =>
+              approval.id === deepLink.approvalId &&
+              approval.kind === deepLink.approvalKind,
+          ))
+    ) {
+      routableDeepLink = deepLink;
+    }
+  }
+  let accessContent: React.ReactNode;
+
+  if (accessState.status === 'loading' || accessState.status === 'idle') {
+    accessContent = (
+      <View style={styles.inlineStatus}>
+        <ActivityIndicator color="#1769F4" />
+        <Text style={styles.noticeBody}>Verifying crew access…</Text>
+      </View>
+    );
+  } else if (accessState.status === 'error') {
+    accessContent = (
+      <Text accessibilityRole="alert" style={styles.errorText}>
+        {accessState.message}
+      </Text>
+    );
+  } else if (!accessState.access.allowed) {
+    accessContent = (
+      <View style={styles.notice}>
+        <Text style={styles.noticeTitle}>Access unavailable</Text>
+        <Text style={styles.noticeBody}>
+          {accessState.access.reason === 'inactive'
+            ? 'This account has no active CrewFlow360 membership. Ask an owner to restore access or finish onboarding on the web app.'
+            : 'Access is paused because this account has multiple active workspaces. Contact support before continuing.'}
+        </Text>
+      </View>
+    );
+  } else if (accessState.access.membership.role !== 'technician') {
+    if (
+      operationsState.status === 'loading' ||
+      operationsState.status === 'idle'
+    ) {
+      accessContent = (
+        <View style={styles.inlineStatus}>
+          <ActivityIndicator color="#1769F4" />
+          <Text style={styles.noticeBody}>Loading operations overview...</Text>
+        </View>
+      );
+    } else if (operationsState.status === 'error') {
+      accessContent = (
+        <View style={styles.notice}>
+          <Text accessibilityRole="alert" style={styles.errorTextCompact}>
+            {operationsState.message}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onRefreshOperations}
+            style={({ pressed }) => [
+              styles.compactButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.compactButtonText}>Try again</Text>
+          </Pressable>
+        </View>
+      );
+    } else {
+      accessContent = (
+        <OperationsOverviewView
+          deepLink={routableDeepLink}
+          onDeepLinkHandled={onDeepLinkHandled}
+          onRefresh={onRefreshOperations}
+          snapshot={operationsState.snapshot}
+        />
+      );
+    }
+  } else if (assignedJobsState.status === 'loading') {
+    accessContent = (
+      <View style={styles.inlineStatus}>
+        <ActivityIndicator color="#1769F4" />
+        <Text style={styles.noticeBody}>Loading assigned jobs...</Text>
+      </View>
+    );
+  } else if (assignedJobsState.status === 'error') {
+    accessContent = (
+      <View style={styles.notice}>
+        <Text accessibilityRole="alert" style={styles.errorTextCompact}>
+          {assignedJobsState.message}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onRefreshJobs}
+          style={({ pressed }) => [
+            styles.compactButton,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Text style={styles.compactButtonText}>Try again</Text>
+        </Pressable>
+      </View>
+    );
+  } else if (assignedJobsState.status === 'loaded') {
+    accessContent = (
+      <AssignedJobsView
+        deepLink={routableDeepLink}
+        onAdvanceJob={onAdvanceJob}
+        onCapturePhoto={onCapturePhoto}
+        onDiscardPhoto={onDiscardPhoto}
+        onDeepLinkHandled={onDeepLinkHandled}
+        onRecordSignature={onRecordSignature}
+        onRefresh={onRefreshJobs}
+        onRetryPhoto={onRetryPhoto}
+        pendingPhotoResults={pendingPhotoResults}
+        snapshot={assignedJobsState.snapshot}
+        userId={userId}
+      />
+    );
+  } else {
+    accessContent = null;
+  }
+
+  return (
+    <View style={styles.mobileShell}>
+      <View style={styles.mobileHeader}>
+        <View style={styles.mobileBrandMark}>
+          <Text style={styles.mobileBrandLetter}>C</Text>
+        </View>
+        <View style={styles.flex}>
+          <Text style={styles.mobileHeaderTitle}>CrewFlow360</Text>
+          <Text numberOfLines={1} style={styles.mobileHeaderSubtitle}>
+            {email}
+          </Text>
+        </View>
+      </View>
+      <ScrollView
+        contentContainerStyle={styles.mobileContent}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          onPullRefresh ? (
+            <RefreshControl
+              colors={['#1769F4']}
+              onRefresh={onPullRefresh}
+              refreshing={refreshing}
+              tintColor="#1769F4"
+            />
+          ) : undefined
+        }
+      >
+        {message ? <Text style={styles.successText}>{message}</Text> : null}
+        {deepLinkMessage ? (
+          <Text accessibilityRole="alert" style={styles.errorText}>
+            {deepLinkMessage}
+          </Text>
+        ) : null}
+        {activeTab === 'home' ? (
+          <View style={styles.mobileSurface}>{accessContent}</View>
+        ) : activeTab === 'alerts' &&
+          accessState.status === 'loaded' &&
+          accessState.access.allowed ? (
+          <View style={styles.mobileSurface}>
+            <NotificationSettingsView
+              client={client}
+              onBack={() => setActiveTab('home')}
+              role={accessState.access.membership.role}
+            />
+          </View>
+        ) : (
+          <View style={styles.mobileSurface}>
+            <Text style={styles.jobsEyebrow}>ACCOUNT</Text>
+            <Text style={styles.jobsTitle}>Your CrewFlow360 account</Text>
+            <Text style={styles.body}>{email}</Text>
+            <View style={styles.accountNotice}>
+              <Text style={styles.noticeTitle}>Secure workspace access</Text>
+              <Text style={styles.noticeBody}>
+                Your role and company access are managed by your CrewFlow360
+                workspace.
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              disabled={pending}
+              onPress={() => void onSignOut()}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pending && styles.buttonDisabled,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.secondaryButtonText}>
+                {pending ? 'Signing out…' : 'Sign out'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+      </ScrollView>
+      <View style={styles.bottomNavigation}>
+        <MobileTabButton
+          active={activeTab === 'home'}
+          label="Home"
+          name="home"
+          onPress={() => setActiveTab('home')}
+        />
+        <MobileTabButton
+          active={activeTab === 'alerts'}
+          label="Alerts"
+          name="alerts"
+          onPress={() => setActiveTab('alerts')}
+        />
+        <MobileTabButton
+          active={activeTab === 'account'}
+          label="Account"
+          name="account"
+          onPress={() => setActiveTab('account')}
+        />
+      </View>
+    </View>
+  );
+}
+
+function MobileTabButton({
+  active,
+  label,
+  name,
+  onPress,
+}: Readonly<{
+  active: boolean;
+  label: string;
+  name: 'account' | 'alerts' | 'home';
+  onPress: () => void;
+}>) {
+  const paths = {
+    account: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0',
+    alerts: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Zm-8 12h4',
+    home: 'M3 11 12 3l9 8v10h-6v-6H9v6H3V11Z',
+  } as const;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.bottomNavigationItem,
+        active && styles.bottomNavigationItemActive,
+        pressed && styles.buttonPressed,
+      ]}
+    >
+      <Svg height={22} viewBox="0 0 24 24" width={22}>
+        <Path
+          d={paths[name]}
+          fill={name === 'home' ? (active ? '#1769F4' : '#64748B') : 'none'}
+          stroke={active ? '#1769F4' : '#64748B'}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+        />
+      </Svg>
+      <Text
+        style={[
+          styles.bottomNavigationLabel,
+          active && styles.bottomNavigationLabelActive,
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function OperationsOverviewView({
+  deepLink,
+  onDeepLinkHandled,
+  onRefresh,
+  snapshot,
+}: Readonly<{
+  deepLink?: CrewFlowDeepLink;
+  onDeepLinkHandled: () => void;
+  onRefresh: () => void;
+  snapshot: MobileOperationsSnapshot;
+}>) {
+  const [selectedJobId, setSelectedJobId] = useState<string>();
+  const [selectedApprovalKey, setSelectedApprovalKey] = useState<string>();
+  const [approvalPending, setApprovalPending] = useState(false);
+  const [approvalError, setApprovalError] = useState<string>();
+  const [approvalResult, setApprovalResult] = useState<{
+    readonly approvalKey: string;
+    readonly customerUrl: string;
+    readonly label: string;
+  }>();
+  const selectedJob = snapshot.jobs.find((job) => job.id === selectedJobId);
+  const selectedApproval = snapshot.pendingApprovals.find(
+    (approval) => `${approval.kind}-${approval.id}` === selectedApprovalKey,
+  );
+
+  useEffect(() => {
+    if (!selectedJobId && !selectedApprovalKey) return;
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        setApprovalError(undefined);
+        setSelectedApprovalKey(undefined);
+        setSelectedJobId(undefined);
+        return true;
+      },
+    );
+    return () => subscription.remove();
+  }, [selectedApprovalKey, selectedJobId]);
+
+  useEffect(() => {
+    if (!deepLink) return;
+    if (deepLink.kind === 'job') {
+      setSelectedJobId(deepLink.jobId);
+    } else {
+      setApprovalError(undefined);
+      setSelectedApprovalKey(`${deepLink.approvalKind}-${deepLink.approvalId}`);
+    }
+    onDeepLinkHandled();
+  }, [deepLink, onDeepLinkHandled]);
+
+  async function approveSelectedItem(approval: OperationsApproval) {
+    if (approvalPending) return;
+    setApprovalError(undefined);
+    setApprovalPending(true);
+    try {
+      const configuredWebAppUrl = process.env
+        .EXPO_PUBLIC_WEB_APP_URL as unknown;
+      const result = await approveOperationsItem(
+        getSupabaseClient(),
+        snapshot.role,
+        approval,
+        typeof configuredWebAppUrl === 'string'
+          ? configuredWebAppUrl
+          : undefined,
+      );
+      setApprovalResult({
+        approvalKey: `${approval.kind}-${approval.id}`,
+        customerUrl: result.customerUrl,
+        label: approvalLabels[approval.kind],
+      });
+      setSelectedApprovalKey(undefined);
+    } catch (error) {
+      setApprovalError(
+        error instanceof Error
+          ? error.message
+          : 'This item could not be approved. Try again.',
+      );
+    } finally {
+      setApprovalPending(false);
+    }
+  }
+
+  function confirmApproval(approval: OperationsApproval) {
+    Alert.alert(
+      `Approve ${approvalLabels[approval.kind].toLowerCase()}?`,
+      'This publishes the document and creates a customer link. Review the details before continuing.',
+      [
+        { style: 'cancel', text: 'Cancel' },
+        {
+          onPress: () => void approveSelectedItem(approval),
+          text: 'Approve',
+        },
+      ],
+    );
+  }
+
+  async function shareApprovalResult() {
+    if (!approvalResult) return;
+    try {
+      await Share.share({
+        message: `${approvalResult.label}: ${approvalResult.customerUrl}`,
+        url: approvalResult.customerUrl,
+      });
+    } catch {
+      setApprovalError('The share sheet could not be opened. Try again.');
+    }
+  }
+
+  if (selectedApproval) {
+    return (
+      <OperationsApprovalDetail
+        approval={selectedApproval}
+        error={approvalError}
+        onApprove={() => confirmApproval(selectedApproval)}
+        onBack={() => {
+          setApprovalError(undefined);
+          setSelectedApprovalKey(undefined);
+        }}
+        pending={approvalPending}
+        timeZone={snapshot.timeZone}
+      />
+    );
+  }
+
+  if (selectedJob) {
+    return (
+      <OperationsJobDetail
+        job={selectedJob}
+        onBack={() => setSelectedJobId(undefined)}
+        timeZone={snapshot.timeZone}
+      />
+    );
+  }
+
+  const metrics = [
+    {
+      detail: 'scheduled jobs',
+      label: 'Today',
+      value: snapshot.metrics.todayCount.toString(),
+    },
+    {
+      detail: 'need a technician',
+      label: 'Unassigned',
+      value: snapshot.metrics.unassignedCount.toString(),
+    },
+    {
+      detail: 'scheduled or active',
+      label: 'Active',
+      value: snapshot.metrics.activeCount.toString(),
+    },
+    {
+      detail: 'sent invoices',
+      label: 'Unpaid',
+      value: snapshot.metrics.unpaidCount.toString(),
+    },
+    {
+      detail: 'draft items',
+      label: 'Approvals',
+      value: Math.max(
+        0,
+        snapshot.metrics.pendingApprovalCount - (approvalResult ? 1 : 0),
+      ).toString(),
+    },
+    {
+      detail: 'in the workflow',
+      label: 'Open',
+      value: snapshot.metrics.openCount.toString(),
+    },
+    ...(snapshot.metrics.monthlyReceivedCents === undefined
+      ? []
+      : [
+          {
+            detail: 'received this month',
+            label: 'Revenue',
+            value: formatUsdCents(snapshot.metrics.monthlyReceivedCents),
+          },
+        ]),
+  ];
+
+  return (
+    <View style={styles.operationsSection}>
+      <View style={styles.jobsHeader}>
+        <View style={styles.flex}>
+          <Text style={styles.jobsEyebrow}>OPERATIONS OVERVIEW</Text>
+          <Text style={styles.jobsTitle}>{snapshot.tenantName}</Text>
+          <Text style={styles.operationsRole}>
+            {roleLabels[snapshot.role]} mobile view
+          </Text>
+        </View>
+        <Pressable
+          accessibilityLabel="Refresh operations overview"
+          accessibilityRole="button"
+          disabled={approvalResult !== undefined}
+          onPress={onRefresh}
+          style={({ pressed }) => [
+            styles.compactButton,
+            approvalResult !== undefined && styles.buttonDisabled,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Text style={styles.compactButtonText}>Refresh</Text>
+        </Pressable>
+      </View>
+
+      <View accessibilityLabel="Operations metrics" style={styles.metricGrid}>
+        {metrics.map((metric) => (
+          <View key={metric.label} style={styles.metricCard}>
+            <Text style={styles.metricLabel}>{metric.label}</Text>
+            <Text style={styles.metricValue}>{metric.value}</Text>
+            <Text style={styles.metricDetail}>{metric.detail}</Text>
+          </View>
+        ))}
+      </View>
+
+      {approvalResult ? (
+        <View style={styles.approvalSuccess}>
+          <Text style={styles.noticeTitle}>
+            {approvalResult.label} approved
+          </Text>
+          <Text style={styles.noticeBody}>
+            The customer link is ready. Share it now; CrewFlow360 does not
+            display the secure token again after this message is dismissed.
+          </Text>
+          <Text selectable style={styles.customerLink}>
+            {approvalResult.customerUrl}
+          </Text>
+          <View style={styles.approvalResultActions}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void shareApprovalResult()}
+              style={({ pressed }) => [
+                styles.compactButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.compactButtonText}>Share customer link</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setApprovalResult(undefined);
+                onRefresh();
+              }}
+              style={({ pressed }) => [
+                styles.compactButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.secondaryButtonText}>Dismiss</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+      {approvalError && !selectedApproval ? (
+        <Text accessibilityRole="alert" style={styles.errorText}>
+          {approvalError}
+        </Text>
+      ) : null}
+
+      <OperationsListSection
+        emptyMessage="No jobs are scheduled for today."
+        title="Today's jobs"
+      >
+        {snapshot.todayJobs.slice(0, 10).map((job) => (
+          <OperationsJobCard
+            job={job}
+            key={job.id}
+            onPress={() => setSelectedJobId(job.id)}
+            timeZone={snapshot.timeZone}
+          />
+        ))}
+      </OperationsListSection>
+
+      <OperationsListSection
+        emptyMessage="No open jobs are waiting for assignment."
+        title="Needs assignment"
+      >
+        {snapshot.unassignedJobs.slice(0, 10).map((job) => (
+          <OperationsJobCard
+            job={job}
+            key={job.id}
+            onPress={() => setSelectedJobId(job.id)}
+            timeZone={snapshot.timeZone}
+          />
+        ))}
+      </OperationsListSection>
+
+      <OperationsListSection
+        emptyMessage="No draft quotes, invoices, or reports need review."
+        title="Pending approvals"
+      >
+        {snapshot.pendingApprovals
+          .filter(
+            (approval) =>
+              `${approval.kind}-${approval.id}` !== approvalResult?.approvalKey,
+          )
+          .slice(0, 10)
+          .map((approval) => (
+            <OperationsApprovalCard
+              approval={approval}
+              key={`${approval.kind}-${approval.id}`}
+              onPress={() => {
+                setApprovalError(undefined);
+                setSelectedApprovalKey(`${approval.kind}-${approval.id}`);
+              }}
+            />
+          ))}
+      </OperationsListSection>
+
+      <OperationsListSection
+        emptyMessage="No sent invoices are currently unpaid."
+        title="Unpaid invoices"
+      >
+        {snapshot.unpaidInvoices.slice(0, 10).map((invoice) => (
+          <OperationsInvoiceCard
+            invoice={invoice}
+            key={invoice.id}
+            ownerView={snapshot.role === 'owner'}
+            timeZone={snapshot.timeZone}
+          />
+        ))}
+      </OperationsListSection>
+
+      <View style={styles.readOnlyNotice}>
+        <Text style={styles.noticeTitle}>Guarded mobile oversight</Text>
+        <Text style={styles.noticeBody}>
+          Review and approve draft customer documents above. Job editing,
+          scheduling, and reassignment remain in the CrewFlow360 web app.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function OperationsListSection({
+  children,
+  emptyMessage,
+  title,
+}: Readonly<{
+  children: React.ReactNode;
+  emptyMessage: string;
+  title: string;
+}>) {
+  const hasItems = Array.isArray(children)
+    ? children.length > 0
+    : Boolean(children);
+
+  return (
+    <View style={styles.operationsGroup}>
+      <Text style={styles.jobGroupTitle}>{title}</Text>
+      {hasItems ? (
+        children
+      ) : (
+        <Text style={styles.operationsEmpty}>{emptyMessage}</Text>
+      )}
+    </View>
+  );
+}
+
+function OperationsJobCard({
+  job,
+  onPress,
+  timeZone,
+}: Readonly<{ job: OperationsJob; onPress: () => void; timeZone: string }>) {
+  const customerName = job.customers
+    ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
+    : 'Customer';
+
+  return (
+    <Pressable
+      accessibilityLabel={`Open ${job.title}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.operationsListCard,
+        pressed && styles.buttonPressed,
+      ]}
+    >
+      <View style={styles.jobCardHeader}>
+        <Text numberOfLines={2} style={styles.operationsCardTitle}>
+          {job.title}
+        </Text>
+        <Text style={styles.statusBadge}>{jobStatusLabels[job.status]}</Text>
+      </View>
+      <Text style={styles.jobSchedule}>{formatJobSchedule(job, timeZone)}</Text>
+      <Text style={styles.jobMeta}>
+        {customerName}
+        {job.services?.name ? ` - ${job.services.name}` : ''}
+      </Text>
+    </Pressable>
+  );
+}
+
+function OperationsJobDetail({
+  job,
+  onBack,
+  timeZone,
+}: Readonly<{
+  job: OperationsJob;
+  onBack: () => void;
+  timeZone: string;
+}>) {
+  const customerName = job.customers
+    ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
+    : 'Customer details unavailable';
+  const address = formatCustomerAddress(job.customers);
+
+  return (
+    <View style={styles.operationsSection}>
+      <Pressable
+        accessibilityRole="button"
+        onPress={onBack}
+        style={({ pressed }) => [
+          styles.backButton,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.backButtonText}>Back to operations overview</Text>
+      </Pressable>
+      <Text style={styles.jobsEyebrow}>{jobStatusLabels[job.status]}</Text>
+      <Text style={styles.detailTitle}>{job.title}</Text>
+      <Text style={styles.detailSchedule}>
+        {formatJobSchedule(job, timeZone)}
+      </Text>
+
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Customer</Text>
+        <Text style={styles.detailValue}>{customerName}</Text>
+        {job.customers?.phone ? (
+          <Text style={styles.detailSecondary}>{job.customers.phone}</Text>
+        ) : null}
+      </View>
+      {address ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Service address</Text>
+          <Text style={styles.detailValue}>{address}</Text>
+        </View>
+      ) : null}
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Priority</Text>
+        <Text style={styles.detailValue}>{job.priority}</Text>
+      </View>
+      {job.services?.name ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Service</Text>
+          <Text style={styles.detailValue}>{job.services.name}</Text>
+        </View>
+      ) : null}
+      {job.description ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Work details</Text>
+          <Text style={styles.detailSecondary}>{job.description}</Text>
+        </View>
+      ) : null}
+      <View style={styles.readOnlyNotice}>
+        <Text style={styles.noticeTitle}>Read-only job oversight</Text>
+        <Text style={styles.noticeBody}>
+          Scheduling, reassignment, and status controls remain in the guarded
+          web workflow.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const approvalLabels: Record<OperationsApproval['kind'], string> = {
+  invoice: 'Draft invoice',
+  quote: 'Draft quote',
+  report: 'Draft work report',
+};
+
+function OperationsApprovalCard({
+  approval,
+  onPress,
+}: Readonly<{ approval: OperationsApproval; onPress: () => void }>) {
+  return (
+    <Pressable
+      accessibilityLabel={`Review ${approvalLabels[approval.kind]} for ${approval.jobTitle}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.operationsListCard,
+        pressed && styles.buttonPressed,
+      ]}
+    >
+      <Text style={styles.operationsCardKicker}>
+        {approvalLabels[approval.kind]}
+      </Text>
+      <Text style={styles.operationsCardTitle}>{approval.jobTitle}</Text>
+      <Text style={styles.jobMeta}>Tap to review and approve</Text>
+    </Pressable>
+  );
+}
+
+function OperationsApprovalDetail({
+  approval,
+  error,
+  onApprove,
+  onBack,
+  pending,
+  timeZone,
+}: Readonly<{
+  approval: OperationsApproval;
+  error?: string;
+  onApprove: () => void;
+  onBack: () => void;
+  pending: boolean;
+  timeZone: string;
+}>) {
+  const date = (value: string) =>
+    new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeZone,
+    }).format(new Date(value));
+
+  return (
+    <View style={styles.operationsSection}>
+      <Pressable
+        accessibilityRole="button"
+        disabled={pending}
+        onPress={onBack}
+        style={({ pressed }) => [
+          styles.backButton,
+          pending && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.backButtonText}>Back to operations overview</Text>
+      </Pressable>
+      <Text style={styles.jobsEyebrow}>{approvalLabels[approval.kind]}</Text>
+      <Text style={styles.detailTitle}>{approval.jobTitle}</Text>
+
+      {approval.kind === 'quote' ? (
+        <>
+          <ApprovalDetailRow
+            label="Customer total"
+            value={formatUsdCents(approval.totalCents)}
+          />
+          <ApprovalDetailRow
+            label="Quote expires"
+            value={date(approval.expiresAt)}
+          />
+        </>
+      ) : null}
+      {approval.kind === 'invoice' ? (
+        <>
+          <ApprovalDetailRow
+            label="Invoice"
+            value={`#${approval.invoiceNumber}`}
+          />
+          <ApprovalDetailRow
+            label="Customer total"
+            value={formatUsdCents(approval.totalCents)}
+          />
+          <ApprovalDetailRow label="Due date" value={date(approval.dueAt)} />
+        </>
+      ) : null}
+      {approval.kind === 'report' ? (
+        <>
+          <ApprovalDetailRow label="Summary" value={approval.summary} />
+          <ApprovalDetailRow
+            label="Work performed"
+            value={approval.workPerformed}
+          />
+          {approval.partsUsed ? (
+            <ApprovalDetailRow label="Parts used" value={approval.partsUsed} />
+          ) : null}
+          {approval.recommendations ? (
+            <ApprovalDetailRow
+              label="Recommendations"
+              value={approval.recommendations}
+            />
+          ) : null}
+        </>
+      ) : null}
+
+      <View style={styles.approvalWarning}>
+        <Text style={styles.noticeTitle}>Review before approving</Text>
+        <Text style={styles.noticeBody}>
+          Approval publishes this document and generates a secure customer link.
+          This action is recorded in the audit log.
+        </Text>
+      </View>
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.errorText}>
+          {error}
+        </Text>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        disabled={pending}
+        onPress={onApprove}
+        style={({ pressed }) => [
+          styles.primaryButton,
+          pending && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.primaryButtonText}>
+          {pending ? 'Approving...' : 'Approve & create customer link'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function ApprovalDetailRow({
+  label,
+  value,
+}: Readonly<{ label: string; value: string }>) {
+  return (
+    <View style={styles.detailBlock}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
+function OperationsInvoiceCard({
+  invoice,
+  ownerView,
+  timeZone,
+}: Readonly<{
+  invoice: OperationsInvoice;
+  ownerView: boolean;
+  timeZone: string;
+}>) {
+  return (
+    <View style={styles.operationsListCard}>
+      <View style={styles.jobCardHeader}>
+        <Text style={styles.operationsCardTitle}>
+          Invoice #{invoice.invoice_number}
+        </Text>
+        <Text style={styles.statusBadge}>
+          {invoice.status.replace('_', ' ')}
+        </Text>
+      </View>
+      <Text style={styles.jobMeta}>
+        Due{' '}
+        {new Intl.DateTimeFormat('en-US', {
+          dateStyle: 'medium',
+          timeZone,
+        }).format(new Date(invoice.due_at))}
+      </Text>
+      {ownerView ? (
+        <Text style={styles.invoiceOutstanding}>
+          {formatUsdCents(invoice.total_cents - invoice.paid_cents)} outstanding
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+const jobStatusLabels: Record<AssignedJob['status'], string> = {
+  accepted: 'Accepted',
+  cancelled: 'Cancelled',
+  closed: 'Closed',
+  completed: 'Completed',
+  in_progress: 'In progress',
+  new: 'New',
+  quoted: 'Quoted',
+  scheduled: 'Scheduled',
+};
+
+function AssignedJobsView({
+  deepLink,
+  onAdvanceJob,
+  onCapturePhoto,
+  onDiscardPhoto,
+  onDeepLinkHandled,
+  onRecordSignature,
+  onRefresh,
+  onRetryPhoto,
+  pendingPhotoResults,
+  snapshot,
+  userId,
+}: Readonly<{
+  deepLink?: CrewFlowDeepLink;
+  onAdvanceJob: (
+    jobId: string,
+    status: TechnicianProgressStatus,
+    note: string,
+  ) => Promise<void>;
+  onCapturePhoto: (
+    jobId: string,
+    mediaKind: JobMediaKind,
+  ) => Promise<JobPhotoUploadResult>;
+  onDiscardPhoto: (upload: PendingJobPhotoUpload) => Promise<void>;
+  onDeepLinkHandled: () => void;
+  onRecordSignature: (
+    jobId: string,
+    signerName: string,
+    strokes: readonly SignatureStroke[],
+  ) => Promise<void>;
+  onRefresh: () => void;
+  onRetryPhoto: (
+    upload: PendingJobPhotoUpload,
+  ) => Promise<Exclude<JobPhotoUploadResult, 'cancelled'>>;
+  pendingPhotoResults: readonly JobPhotoUploadPendingResult[];
+  snapshot: AssignedJobsSnapshot;
+  userId: string;
+}>) {
+  const [selectedJobId, setSelectedJobId] = useState<string>();
+  const selectedJob = snapshot.jobs.find((job) => job.id === selectedJobId);
+  const unavailablePendingPhotos = pendingPhotoResults.filter(
+    (result) => !snapshot.jobs.some((job) => job.id === result.upload.jobId),
+  );
+
+  useEffect(() => {
+    if (!selectedJobId) return;
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        setSelectedJobId(undefined);
+        return true;
+      },
+    );
+    return () => subscription.remove();
+  }, [selectedJobId]);
+
+  useEffect(() => {
+    if (deepLink?.kind !== 'job') return;
+    setSelectedJobId(deepLink.jobId);
+    onDeepLinkHandled();
+  }, [deepLink, onDeepLinkHandled]);
+
+  if (selectedJob) {
+    return (
+      <AssignedJobDetail
+        activity={snapshot.activity.filter(
+          (item) => item.entity_id === selectedJob.id,
+        )}
+        job={selectedJob}
+        onAdvanceJob={onAdvanceJob}
+        onBack={() => setSelectedJobId(undefined)}
+        onCapturePhoto={onCapturePhoto}
+        onDiscardPhoto={onDiscardPhoto}
+        onRecordSignature={onRecordSignature}
+        onRetryPhoto={onRetryPhoto}
+        pendingPhotoResult={pendingPhotoResults.find(
+          (result) => result.upload.jobId === selectedJob.id,
+        )}
+        timeZone={snapshot.timeZone}
+        userId={userId}
+      />
+    );
+  }
+
+  const { history, upcoming } = partitionAssignedJobs(snapshot.jobs);
+
+  return (
+    <View style={styles.jobsSection}>
+      <View style={styles.jobsHeader}>
+        <View style={styles.flex}>
+          <Text style={styles.jobsEyebrow}>ASSIGNED WORK</Text>
+          <Text style={styles.jobsTitle}>{snapshot.tenantName}</Text>
+        </View>
+        <Pressable
+          accessibilityLabel="Refresh assigned jobs"
+          accessibilityRole="button"
+          onPress={onRefresh}
+          style={({ pressed }) => [
+            styles.compactButton,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Text style={styles.compactButtonText}>Refresh</Text>
+        </Pressable>
+      </View>
+
+      {unavailablePendingPhotos.length > 0 ? (
+        <View style={styles.photoRetryPanel}>
+          <Text style={styles.noticeTitle}>Saved photos need attention</Text>
+          <Text style={styles.noticeBody}>
+            {unavailablePendingPhotos.length} pending photo
+            {unavailablePendingPhotos.length === 1 ? '' : 's'} belong to work
+            that is no longer assigned to you. Discard them to remove the
+            private device copies.
+          </Text>
+          <View style={styles.photoRetryActions}>
+            {unavailablePendingPhotos.map((result) => (
+              <Pressable
+                accessibilityRole="button"
+                key={result.upload.localUri}
+                onPress={() => {
+                  void onDiscardPhoto(result.upload).catch(() => undefined);
+                }}
+                style={({ pressed }) => [
+                  styles.discardButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.discardButtonText}>
+                  Discard {result.upload.mediaKind} photo
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {upcoming.length === 0 ? (
+        <View style={styles.emptyJobs}>
+          <Text style={styles.noticeTitle}>No active assignments</Text>
+          <Text style={styles.noticeBody}>
+            New work will appear after the office assigns it to you.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.jobGroup}>
+          <Text style={styles.jobGroupTitle}>Upcoming and active</Text>
+          {upcoming.map((job) => (
+            <AssignedJobCard
+              hasPendingPhoto={pendingPhotoResults.some(
+                (result) => result.upload.jobId === job.id,
+              )}
+              job={job}
+              key={job.id}
+              onPress={() => setSelectedJobId(job.id)}
+              timeZone={snapshot.timeZone}
+            />
+          ))}
+        </View>
+      )}
+
+      {history.length > 0 ? (
+        <View style={styles.jobGroup}>
+          <Text style={styles.jobGroupTitle}>Recent history</Text>
+          {history.map((job) => (
+            <AssignedJobCard
+              hasPendingPhoto={pendingPhotoResults.some(
+                (result) => result.upload.jobId === job.id,
+              )}
+              job={job}
+              key={job.id}
+              onPress={() => setSelectedJobId(job.id)}
+              timeZone={snapshot.timeZone}
+            />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function AssignedJobCard({
+  hasPendingPhoto,
+  job,
+  onPress,
+  timeZone,
+}: Readonly<{
+  hasPendingPhoto: boolean;
+  job: AssignedJob;
+  onPress: () => void;
+  timeZone: string;
+}>) {
+  const customerName = job.customers
+    ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
+    : 'Customer';
+
+  return (
+    <Pressable
+      accessibilityLabel={`${job.title}, ${jobStatusLabels[job.status]}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.jobCard, pressed && styles.buttonPressed]}
+    >
+      <View style={styles.jobCardHeader}>
+        <Text numberOfLines={2} style={styles.jobCardTitle}>
+          {job.title}
+        </Text>
+        <Text style={styles.statusBadge}>{jobStatusLabels[job.status]}</Text>
+      </View>
+      <Text style={styles.jobSchedule}>{formatJobSchedule(job, timeZone)}</Text>
+      <Text style={styles.jobMeta}>
+        {customerName}
+        {job.services?.name ? ` - ${job.services.name}` : ''}
+      </Text>
+      {hasPendingPhoto ? (
+        <Text style={styles.pendingUploadBadge}>Photo upload pending</Text>
+      ) : null}
+    </Pressable>
+  );
+}
+
+function AssignedJobDetail({
+  activity,
+  job,
+  onAdvanceJob,
+  onBack,
+  onCapturePhoto,
+  onDiscardPhoto,
+  onRecordSignature,
+  onRetryPhoto,
+  pendingPhotoResult,
+  timeZone,
+  userId,
+}: Readonly<{
+  activity: readonly AssignedJobActivity[];
+  job: AssignedJob;
+  onAdvanceJob: (
+    jobId: string,
+    status: TechnicianProgressStatus,
+    note: string,
+  ) => Promise<void>;
+  onBack: () => void;
+  onCapturePhoto: (
+    jobId: string,
+    mediaKind: JobMediaKind,
+  ) => Promise<JobPhotoUploadResult>;
+  onDiscardPhoto: (upload: PendingJobPhotoUpload) => Promise<void>;
+  onRecordSignature: (
+    jobId: string,
+    signerName: string,
+    strokes: readonly SignatureStroke[],
+  ) => Promise<void>;
+  onRetryPhoto: (
+    upload: PendingJobPhotoUpload,
+  ) => Promise<Exclude<JobPhotoUploadResult, 'cancelled'>>;
+  pendingPhotoResult?: JobPhotoUploadPendingResult;
+  timeZone: string;
+  userId: string;
+}>) {
+  const [photoError, setPhotoError] = useState<string>();
+  const [photoMessage, setPhotoMessage] = useState<string>();
+  const [photoPending, setPhotoPending] = useState<JobMediaKind>();
+  const [progressError, setProgressError] = useState<string>();
+  const [progressDraft, setProgressDraft] = useState<JobProgressDraft>();
+  const [progressDraftLoaded, setProgressDraftLoaded] = useState(false);
+  const [progressDraftStatus, setProgressDraftStatus] = useState<
+    'error' | 'saved' | 'saving'
+  >();
+  const [progressPending, setProgressPending] = useState(false);
+  const [workNote, setWorkNote] = useState('');
+  const address = formatCustomerAddress(job.customers);
+  const customerName = job.customers
+    ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
+    : 'Customer details unavailable';
+  const progressAction = technicianProgressAction(job.status);
+  const progressActionStatus = progressAction?.status;
+  const progressDraftBaseForSave =
+    progressDraft && progressDraft.targetStatus === progressActionStatus
+      ? progressDraft.baseJobUpdatedAt
+      : job.updated_at;
+  const progressDraftConflict = progressDraft
+    ? progressDraftHasConflict(
+        progressDraft,
+        job.updated_at,
+        progressActionStatus,
+      )
+    : false;
+  const pendingPhotoUpload = pendingPhotoResult?.upload;
+  const photoRetryAllowed = pendingPhotoResult?.canRetry ?? true;
+  const allowedPhotoKinds = allowedJobPhotoKinds(job.status);
+  const uploadedPhotos = job.job_media.filter(
+    (media) => media.uploaded_at !== null,
+  );
+  const customerSignature = job.job_signatures[0];
+  const completionNeedsSignature =
+    progressAction?.status === 'completed' && !customerSignature;
+  const workNotes = [...job.job_work_notes].sort(
+    (left, right) =>
+      new Date(right.created_at).getTime() -
+      new Date(left.created_at).getTime(),
+  );
+  const timeline = buildJobTimeline(activity, timeZone);
+
+  useEffect(() => {
+    let active = true;
+    setProgressDraftLoaded(false);
+    setProgressDraftStatus(undefined);
+    void jobProgressDraftStore
+      .get(userId, job.id)
+      .then((draft) => {
+        if (!active) return;
+        setProgressDraft(draft);
+        if (draft) {
+          setWorkNote(draft.note);
+          setProgressDraftStatus('saved');
+        }
+        setProgressDraftLoaded(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setProgressDraftStatus('error');
+        setProgressDraftLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [job.id, userId]);
+
+  useEffect(() => {
+    if (
+      !progressDraftLoaded ||
+      !progressActionStatus ||
+      progressDraftConflict
+    ) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (workNote.length === 0) {
+        if (!progressDraft) return;
+        setProgressDraftStatus('saving');
+        void jobProgressDraftStore
+          .remove(userId, job.id)
+          .then(() => {
+            setProgressDraft(undefined);
+            setProgressDraftStatus(undefined);
+          })
+          .catch(() => setProgressDraftStatus('error'));
+        return;
+      }
+
+      setProgressDraftStatus('saving');
+      void jobProgressDraftStore
+        .save({
+          baseJobUpdatedAt: progressDraftBaseForSave,
+          jobId: job.id,
+          note: workNote,
+          targetStatus: progressActionStatus,
+          userId,
+        })
+        .then((saved) => {
+          setProgressDraft(saved);
+          setProgressDraftStatus('saved');
+        })
+        .catch(() => setProgressDraftStatus('error'));
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [
+    job.id,
+    progressActionStatus,
+    progressDraftBaseForSave,
+    progressDraft !== undefined,
+    progressDraftConflict,
+    progressDraftLoaded,
+    userId,
+    workNote,
+  ]);
+
+  async function submitProgress() {
+    if (!progressAction || progressPending) return;
+    if (progressDraftConflict) {
+      setProgressError(
+        'The job changed after this draft was saved. Review or discard the draft before retrying.',
+      );
+      return;
+    }
+    const validationMessage = validateProgressNote(workNote, progressAction);
+    if (validationMessage) {
+      setProgressError(validationMessage);
+      return;
+    }
+
+    setProgressError(undefined);
+    setProgressPending(true);
+    try {
+      await onAdvanceJob(job.id, progressAction.status, workNote);
+    } catch {
+      setProgressPending(false);
+      if (workNote.length > 0) {
+        try {
+          const saved = await jobProgressDraftStore.save({
+            baseJobUpdatedAt: progressDraft?.baseJobUpdatedAt ?? job.updated_at,
+            jobId: job.id,
+            note: workNote,
+            targetStatus: progressAction.status,
+            userId,
+          });
+          setProgressDraft(saved);
+          setProgressDraftStatus('saved');
+        } catch {
+          setProgressDraftStatus('error');
+        }
+      }
+      setProgressError(
+        'Job could not be updated. Your note remains a device draft; reconnect, refresh, and retry.',
+      );
+      return;
+    }
+    try {
+      await jobProgressDraftStore.remove(userId, job.id);
+      setProgressDraft(undefined);
+      setProgressDraftStatus(undefined);
+      setWorkNote('');
+    } catch {
+      setProgressDraftStatus('error');
+    } finally {
+      setProgressPending(false);
+    }
+  }
+
+  async function discardProgressDraft() {
+    try {
+      await jobProgressDraftStore.remove(userId, job.id);
+      setProgressDraft(undefined);
+      setProgressDraftStatus(undefined);
+      setProgressError(undefined);
+      setWorkNote('');
+    } catch {
+      setProgressDraftStatus('error');
+    }
+  }
+
+  async function rebaseProgressDraft() {
+    if (!progressDraft || !progressAction) return;
+    try {
+      const saved = await jobProgressDraftStore.save({
+        baseJobUpdatedAt: job.updated_at,
+        jobId: job.id,
+        note: workNote,
+        targetStatus: progressAction.status,
+        userId,
+      });
+      setProgressDraft(saved);
+      setProgressDraftStatus('saved');
+      setProgressError(undefined);
+    } catch {
+      setProgressDraftStatus('error');
+    }
+  }
+
+  async function capturePhoto(mediaKind: JobMediaKind) {
+    if (photoPending || pendingPhotoUpload) return;
+    setPhotoError(undefined);
+    setPhotoMessage(undefined);
+    setPhotoPending(mediaKind);
+
+    try {
+      const result = await onCapturePhoto(job.id, mediaKind);
+      if (result === 'cancelled') {
+        setPhotoPending(undefined);
+        return;
+      }
+      if (result !== 'uploaded') {
+        setPhotoPending(undefined);
+        setPhotoError(result.message);
+        return;
+      }
+      setPhotoPending(undefined);
+      setPhotoMessage(
+        `${mediaKind === 'before' ? 'Before' : 'After'} photo uploaded securely.`,
+      );
+    } catch (error) {
+      setPhotoPending(undefined);
+      setPhotoError(
+        error instanceof Error
+          ? error.message
+          : 'Photo could not be uploaded. Try again.',
+      );
+    }
+  }
+
+  async function retryPhoto() {
+    if (!pendingPhotoUpload || !photoRetryAllowed || photoPending) return;
+    setPhotoError(undefined);
+    setPhotoMessage(undefined);
+    setPhotoPending(pendingPhotoUpload.mediaKind);
+
+    try {
+      const result = await onRetryPhoto(pendingPhotoUpload);
+      if (result !== 'uploaded') {
+        setPhotoPending(undefined);
+        setPhotoError(result.message);
+        return;
+      }
+      const label =
+        pendingPhotoUpload.mediaKind === 'before' ? 'Before' : 'After';
+      setPhotoPending(undefined);
+      setPhotoMessage(`${label} photo uploaded securely.`);
+    } catch {
+      setPhotoPending(undefined);
+      setPhotoError(
+        'The pending photo could not be retried. Check your connection and try again.',
+      );
+    }
+  }
+
+  async function discardPendingPhoto() {
+    if (!pendingPhotoUpload || photoPending) return;
+    setPhotoPending(pendingPhotoUpload.mediaKind);
+    try {
+      await onDiscardPhoto(pendingPhotoUpload);
+      setPhotoPending(undefined);
+      setPhotoError(undefined);
+      setPhotoMessage('Pending photo discarded. You can capture a new one.');
+    } catch {
+      setPhotoPending(undefined);
+      setPhotoError('The pending photo could not be discarded. Try again.');
+    }
+  }
+
+  return (
+    <View style={styles.jobsSection}>
+      <Pressable
+        accessibilityRole="button"
+        disabled={photoPending !== undefined}
+        onPress={onBack}
+        style={({ pressed }) => [
+          styles.backButton,
+          photoPending !== undefined && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.backButtonText}>Back to assigned jobs</Text>
+      </Pressable>
+      <Text style={styles.jobsEyebrow}>{jobStatusLabels[job.status]}</Text>
+      <Text style={styles.detailTitle}>{job.title}</Text>
+      <Text style={styles.detailSchedule}>
+        {formatJobSchedule(job, timeZone)}
+      </Text>
+
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Customer</Text>
+        <Text style={styles.detailValue}>{customerName}</Text>
+        {job.customers?.phone ? (
+          <Text style={styles.detailSecondary}>{job.customers.phone}</Text>
+        ) : null}
+      </View>
+
+      {address ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Service address</Text>
+          <Text style={styles.detailValue}>{address}</Text>
+        </View>
+      ) : null}
+
+      {job.services?.name ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Service</Text>
+          <Text style={styles.detailValue}>{job.services.name}</Text>
+        </View>
+      ) : null}
+
+      {job.description ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Work details</Text>
+          <Text style={styles.detailSecondary}>{job.description}</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Job timeline</Text>
+        {timeline.length > 0 ? (
+          <View style={styles.timelineList}>
+            {timeline.map((item) => (
+              <View key={item.id} style={styles.timelineRow}>
+                <View style={styles.timelineDot} />
+                <View style={styles.flex}>
+                  <Text style={styles.timelineLabel}>{item.label}</Text>
+                  {item.detail ? (
+                    <Text style={styles.detailSecondary}>{item.detail}</Text>
+                  ) : null}
+                  <Text style={styles.workNoteTime}>
+                    {new Intl.DateTimeFormat('en-US', {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                      timeZone,
+                    }).format(new Date(item.occurredAt))}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noticeBody}>
+            No job activity has been recorded yet.
+          </Text>
+        )}
+      </View>
+
+      {workNotes.length > 0 ? (
+        <View style={styles.detailBlock}>
+          <Text style={styles.detailLabel}>Field notes</Text>
+          {workNotes.map((note) => (
+            <View key={note.id} style={styles.workNote}>
+              <Text style={styles.detailSecondary}>{note.body}</Text>
+              <Text style={styles.workNoteTime}>
+                {new Intl.DateTimeFormat('en-US', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                  timeZone,
+                }).format(new Date(note.created_at))}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Private job photos</Text>
+        <Text style={styles.detailSecondary}>
+          {
+            uploadedPhotos.filter((photo) => photo.media_kind === 'before')
+              .length
+          }{' '}
+          before ·{' '}
+          {
+            uploadedPhotos.filter((photo) => photo.media_kind === 'after')
+              .length
+          }{' '}
+          after
+        </Text>
+        {allowedPhotoKinds.length > 0 ? (
+          <View style={styles.photoActions}>
+            {allowedPhotoKinds.map((mediaKind) => (
+              <Pressable
+                accessibilityRole="button"
+                disabled={
+                  photoPending !== undefined || pendingPhotoUpload !== undefined
+                }
+                key={mediaKind}
+                onPress={() => void capturePhoto(mediaKind)}
+                style={({ pressed }) => [
+                  styles.compactButton,
+                  (photoPending !== undefined ||
+                    pendingPhotoUpload !== undefined) &&
+                    styles.buttonDisabled,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.compactButtonText}>
+                  {photoPending === mediaKind
+                    ? 'Uploading...'
+                    : `Take ${mediaKind} photo`}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noticeBody}>
+            Photo capture is available while work is scheduled or in progress.
+          </Text>
+        )}
+        {pendingPhotoUpload ? (
+          <View style={styles.photoRetryPanel}>
+            <Text style={styles.noticeTitle}>
+              Pending {pendingPhotoUpload.mediaKind} photo
+            </Text>
+            {(photoError ?? pendingPhotoResult.message) ? (
+              <Text accessibilityRole="alert" style={styles.noticeBody}>
+                {photoError ?? pendingPhotoResult.message}
+              </Text>
+            ) : null}
+            <View style={styles.photoRetryActions}>
+              {photoRetryAllowed ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={photoPending !== undefined}
+                  onPress={() => void retryPhoto()}
+                  style={({ pressed }) => [
+                    styles.compactButton,
+                    photoPending !== undefined && styles.buttonDisabled,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  <Text style={styles.compactButtonText}>
+                    {photoPending
+                      ? 'Retrying...'
+                      : pendingPhotoUpload.stored
+                        ? 'Retry confirmation'
+                        : 'Retry upload'}
+                  </Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                accessibilityRole="button"
+                disabled={photoPending !== undefined}
+                onPress={() => void discardPendingPhoto()}
+                style={({ pressed }) => [
+                  styles.discardButton,
+                  photoPending !== undefined && styles.buttonDisabled,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.discardButtonText}>
+                  {photoPending ? 'Working...' : 'Discard photo'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+        {photoError && !pendingPhotoUpload ? (
+          <Text accessibilityRole="alert" style={styles.errorText}>
+            {photoError}
+          </Text>
+        ) : null}
+        {photoMessage ? (
+          <Text accessibilityRole="alert" style={styles.successText}>
+            {photoMessage}
+          </Text>
+        ) : null}
+      </View>
+
+      <View style={styles.detailBlock}>
+        <Text style={styles.detailLabel}>Customer signature</Text>
+        {customerSignature ? (
+          <View style={styles.signatureRecorded}>
+            <Text style={styles.noticeTitle}>Signature securely recorded</Text>
+            <Text style={styles.noticeBody}>
+              {customerSignature.signer_name} signed on{' '}
+              {new Intl.DateTimeFormat('en-US', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone,
+              }).format(new Date(customerSignature.signed_at))}
+              .
+            </Text>
+          </View>
+        ) : job.status === 'in_progress' ? (
+          <CustomerSignatureCapture
+            defaultSignerName={
+              job.customers
+                ? `${job.customers.first_name} ${job.customers.last_name}`.trim()
+                : ''
+            }
+            onSubmit={(signerName, strokes) =>
+              onRecordSignature(job.id, signerName, strokes)
+            }
+          />
+        ) : (
+          <Text style={styles.noticeBody}>
+            Signature capture is available while work is in progress.
+          </Text>
+        )}
+      </View>
+
+      {progressDraft ? (
+        <View
+          style={[
+            styles.progressDraftPanel,
+            progressDraftConflict && styles.progressDraftConflict,
+          ]}
+        >
+          <Text style={styles.noticeTitle}>
+            {progressDraftConflict
+              ? 'Saved draft needs review'
+              : 'Progress draft saved on this device'}
+          </Text>
+          <Text style={styles.noticeBody}>
+            {progressDraftConflict
+              ? 'The job status, schedule, or intended action changed after this note was saved. CrewFlow360 will not submit it automatically.'
+              : 'This note has not changed the job yet. Tap the status action below when you are online and ready.'}
+          </Text>
+          <View style={styles.photoRetryActions}>
+            {progressDraftConflict &&
+            progressAction?.status === progressDraft.targetStatus ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void rebaseProgressDraft()}
+                style={({ pressed }) => [
+                  styles.compactButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.compactButtonText}>
+                  Keep draft for current job
+                </Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void discardProgressDraft()}
+              style={({ pressed }) => [
+                styles.discardButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.discardButtonText}>Discard draft</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      {progressAction ? (
+        <View style={styles.progressPanel}>
+          <Text style={styles.noticeTitle}>Update field progress</Text>
+          <Text style={styles.noticeBody}>
+            {progressAction.noteRequired
+              ? 'Add a completion note for the office and customer report draft.'
+              : 'You may add a note before starting this job.'}
+          </Text>
+          <TextInput
+            accessibilityLabel="Work note"
+            editable={!progressPending}
+            maxLength={2000}
+            multiline
+            onChangeText={setWorkNote}
+            placeholder={
+              progressAction.noteRequired
+                ? 'What work was completed?'
+                : 'Optional arrival or diagnostic note'
+            }
+            style={[styles.input, styles.workNoteInput]}
+            textAlignVertical="top"
+            value={workNote}
+          />
+          <Text style={styles.characterCount}>{workNote.length}/2000</Text>
+          {progressDraftStatus ? (
+            <Text
+              accessibilityRole={
+                progressDraftStatus === 'error' ? 'alert' : undefined
+              }
+              style={
+                progressDraftStatus === 'error'
+                  ? styles.errorTextCompact
+                  : styles.draftStatus
+              }
+            >
+              {progressDraftStatus === 'saving'
+                ? 'Saving device draft...'
+                : progressDraftStatus === 'saved'
+                  ? 'Draft saved on this device.'
+                  : 'Draft could not be saved on this device.'}
+            </Text>
+          ) : null}
+          {progressError ? (
+            <Text accessibilityRole="alert" style={styles.errorTextCompact}>
+              {progressError}
+            </Text>
+          ) : null}
+          {completionNeedsSignature ? (
+            <Text accessibilityRole="alert" style={styles.signatureRequired}>
+              Ask the customer to sign above before completing this job.
+            </Text>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            disabled={
+              progressPending ||
+              progressDraftConflict ||
+              completionNeedsSignature
+            }
+            onPress={() => void submitProgress()}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              (progressPending ||
+                progressDraftConflict ||
+                completionNeedsSignature) &&
+                styles.buttonDisabled,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.primaryButtonText}>
+              {progressPending ? 'Saving...' : progressAction.label}
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.readOnlyNotice}>
+          <Text style={styles.noticeTitle}>Field progress locked</Text>
+          <Text style={styles.noticeBody}>
+            This assignment has no technician status action available.
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function CustomerSignatureCapture({
+  defaultSignerName,
+  onSubmit,
+}: Readonly<{
+  defaultSignerName: string;
+  onSubmit: (
+    signerName: string,
+    strokes: readonly SignatureStroke[],
+  ) => Promise<void>;
+}>) {
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [error, setError] = useState<string>();
+  const [pending, setPending] = useState(false);
+  const [signerName, setSignerName] = useState(defaultSignerName);
+  const [strokes, setStrokes] = useState<readonly SignatureStroke[]>([]);
+  const padSize = useRef({ height: 1, width: 1 });
+  const strokesRef = useRef<readonly SignatureStroke[]>([]);
+
+  function updateStrokes(next: readonly SignatureStroke[]) {
+    strokesRef.current = next;
+    setStrokes(next);
+  }
+
+  function pointFromTouch(
+    locationX: number,
+    locationY: number,
+  ): SignaturePoint {
+    return {
+      x: Math.max(0, Math.min(1, locationX / padSize.current.width)),
+      y: Math.max(0, Math.min(1, locationY / padSize.current.height)),
+    };
+  }
+
+  const signatureResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (event) => {
+          if (strokesRef.current.length >= MAX_SIGNATURE_STROKES) return;
+          const point = pointFromTouch(
+            event.nativeEvent.locationX,
+            event.nativeEvent.locationY,
+          );
+          updateStrokes([...strokesRef.current, [point]]);
+          setError(undefined);
+        },
+        onPanResponderMove: (event) => {
+          const currentStrokes = strokesRef.current;
+          const lastStroke = currentStrokes.at(-1);
+          if (
+            !lastStroke ||
+            lastStroke.length >= MAX_SIGNATURE_POINTS_PER_STROKE
+          ) {
+            return;
+          }
+
+          const point = pointFromTouch(
+            event.nativeEvent.locationX,
+            event.nativeEvent.locationY,
+          );
+          const previousPoint = lastStroke.at(-1);
+          if (
+            previousPoint &&
+            Math.abs(previousPoint.x - point.x) < 0.002 &&
+            Math.abs(previousPoint.y - point.y) < 0.002
+          ) {
+            return;
+          }
+
+          updateStrokes([
+            ...currentStrokes.slice(0, -1),
+            [...lastStroke, point],
+          ]);
+        },
+        onPanResponderRelease: () => {
+          const currentStrokes = strokesRef.current;
+          if (currentStrokes.at(-1)?.length === 1) {
+            updateStrokes(currentStrokes.slice(0, -1));
+          }
+        },
+        onPanResponderTerminate: () => {
+          const currentStrokes = strokesRef.current;
+          if (currentStrokes.at(-1)?.length === 1) {
+            updateStrokes(currentStrokes.slice(0, -1));
+          }
+        },
+        onStartShouldSetPanResponder: () => true,
+      }),
+    [],
+  );
+
+  async function saveSignature() {
+    if (pending) return;
+    const validationMessage = signatureDraftError(
+      signerName,
+      strokes,
+      consentAccepted,
+    );
+    if (validationMessage) {
+      setError(validationMessage);
+      return;
+    }
+
+    setError(undefined);
+    setPending(true);
+    try {
+      await onSubmit(signerName.trim(), strokes);
+    } catch (saveError) {
+      setPending(false);
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : 'Signature could not be recorded. Try again.',
+      );
+    }
+  }
+
+  return (
+    <View style={styles.signatureCapture}>
+      <Text style={styles.noticeBody}>
+        Hand the device to the customer. Their consent, server timestamp, job,
+        and signature are saved as immutable evidence.
+      </Text>
+      <Text style={styles.label}>Signer name</Text>
+      <TextInput
+        autoCapitalize="words"
+        editable={!pending}
+        maxLength={120}
+        onChangeText={setSignerName}
+        placeholder="Customer or authorized signer"
+        style={styles.input}
+        value={signerName}
+      />
+      <Text style={styles.label}>Draw signature</Text>
+      <View
+        accessibilityLabel="Customer signature drawing area"
+        onLayout={(event) => {
+          padSize.current = {
+            height: Math.max(1, event.nativeEvent.layout.height),
+            width: Math.max(1, event.nativeEvent.layout.width),
+          };
+        }}
+        style={styles.signaturePad}
+        {...signatureResponder.panHandlers}
+      >
+        <Svg
+          height="100%"
+          pointerEvents="none"
+          viewBox="0 0 1000 300"
+          width="100%"
+        >
+          {strokes.map((stroke, index) => (
+            <Path
+              d={signaturePath(stroke)}
+              fill="none"
+              key={index}
+              stroke="#11223C"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={5}
+            />
+          ))}
+        </Svg>
+        {strokes.length === 0 ? (
+          <Text pointerEvents="none" style={styles.signaturePlaceholder}>
+            Sign here
+          </Text>
+        ) : null}
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        disabled={pending || strokes.length === 0}
+        onPress={() => updateStrokes([])}
+        style={({ pressed }) => [
+          styles.signatureClearButton,
+          (pending || strokes.length === 0) && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.linkButtonText}>Clear signature</Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: consentAccepted, disabled: pending }}
+        disabled={pending}
+        onPress={() => setConsentAccepted((accepted) => !accepted)}
+        style={({ pressed }) => [
+          styles.consentRow,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <View
+          style={[
+            styles.consentCheckbox,
+            consentAccepted && styles.consentCheckboxChecked,
+          ]}
+        >
+          {consentAccepted ? <Text style={styles.consentCheck}>✓</Text> : null}
+        </View>
+        <Text style={styles.consentText}>{CUSTOMER_SIGNATURE_CONSENT}</Text>
+      </Pressable>
+      <Text style={styles.signatureDisclaimer}>
+        Electronic-signature legal sufficiency can depend on the business use
+        case and local law.
+      </Text>
+      {error ? (
+        <Text accessibilityRole="alert" style={styles.errorTextCompact}>
+          {error}
+        </Text>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        disabled={pending}
+        onPress={() => void saveSignature()}
+        style={({ pressed }) => [
+          styles.primaryButton,
+          pending && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.primaryButtonText}>
+          {pending ? 'Recording signature...' : 'Record customer signature'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function ForgotPasswordView({
+  email,
+  formMessage,
+  onBack,
+  onChangeEmail,
+  onSubmit,
+  pending,
+  sent,
+}: Readonly<{
+  email: string;
+  formMessage?: string;
+  onBack: () => void;
+  onChangeEmail: (value: string) => void;
+  onSubmit: () => Promise<void>;
+  pending: boolean;
+  sent: boolean;
+}>) {
+  return (
+    <View style={styles.card}>
+      <Text style={styles.title}>Reset your password</Text>
+      <Text style={styles.body}>
+        We’ll email a secure link that opens the installed CrewFlow360 app.
+      </Text>
+      <Text style={styles.label}>Account email</Text>
+      <TextInput
+        autoCapitalize="none"
+        autoComplete="email"
+        editable={!pending}
+        keyboardType="email-address"
+        onChangeText={onChangeEmail}
+        onSubmitEditing={() => void onSubmit()}
+        placeholder="you@company.com"
+        style={styles.input}
+        value={email}
+      />
+      {formMessage ? (
+        <Text accessibilityRole="alert" style={styles.errorText}>
+          {formMessage}
+        </Text>
+      ) : null}
+      {sent ? (
+        <Text accessibilityRole="alert" style={styles.successText}>
+          If an account exists, a password reset link has been sent.
+        </Text>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        disabled={pending || !email.trim()}
+        onPress={() => void onSubmit()}
+        style={({ pressed }) => [
+          styles.primaryButton,
+          (pending || !email.trim()) && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.primaryButtonText}>
+          {pending ? 'Sending…' : 'Send reset link'}
+        </Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        disabled={pending}
+        onPress={onBack}
+        style={({ pressed }) => [
+          styles.linkButton,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.linkButtonText}>Back to sign in</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function PasswordInput({
+  autoComplete,
+  editable,
+  onChangeText,
+  onSubmitEditing,
+  placeholder,
+  value,
+}: Readonly<{
+  autoComplete: 'current-password' | 'new-password';
+  editable: boolean;
+  onChangeText: (value: string) => void;
+  onSubmitEditing?: () => void;
+  placeholder: string;
+  value: string;
+}>) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <View style={styles.passwordField}>
+      <TextInput
+        autoCapitalize="none"
+        autoComplete={autoComplete}
+        editable={editable}
+        onChangeText={onChangeText}
+        onSubmitEditing={onSubmitEditing}
+        placeholder={placeholder}
+        secureTextEntry={!visible}
+        style={[styles.input, styles.passwordInput]}
+        value={value}
+      />
+      <Pressable
+        accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !editable }}
+        disabled={!editable}
+        hitSlop={8}
+        onPress={() => setVisible((current) => !current)}
+        style={({ pressed }) => [
+          styles.passwordToggle,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Svg
+          accessibilityElementsHidden
+          height={22}
+          viewBox="0 0 24 24"
+          width={22}
+        >
+          <Path
+            d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
+            fill="none"
+            stroke="#475569"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+          />
+          <Path
+            d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"
+            fill="none"
+            stroke="#475569"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.8}
+          />
+          {!visible ? (
+            <Path
+              d="M4 4l16 16"
+              fill="none"
+              stroke="#475569"
+              strokeLinecap="round"
+              strokeWidth={1.8}
+            />
+          ) : null}
+        </Svg>
+      </Pressable>
+    </View>
+  );
+}
+
+function RecoveryView({
+  confirmation,
+  formMessage,
+  onBack,
+  onChangeConfirmation,
+  onChangePassword,
+  onSubmit,
+  password,
+  pending,
+  state,
+}: Readonly<{
+  confirmation: string;
+  formMessage?: string;
+  onBack: () => void;
+  onChangeConfirmation: (value: string) => void;
+  onChangePassword: (value: string) => void;
+  onSubmit: () => Promise<void>;
+  password: string;
+  pending: boolean;
+  state: Exclude<RecoveryState, { status: 'idle' } | { status: 'success' }>;
+}>) {
+  if (state.status === 'exchanging') {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.title}>Checking reset link</Text>
+        <View style={styles.inlineStatus}>
+          <ActivityIndicator color="#1769F4" />
+          <Text style={styles.noticeBody}>
+            Creating a secure recovery session…
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (state.status === 'error') {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.title}>Reset link unavailable</Text>
+        <Text accessibilityRole="alert" style={styles.errorText}>
+          {state.message}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onBack}
+          style={({ pressed }) => [
+            styles.secondaryButton,
+            pressed && styles.buttonPressed,
+          ]}
+        >
+          <Text style={styles.secondaryButtonText}>Back to sign in</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.title}>Choose a new password</Text>
+      <Text style={styles.body}>
+        Use 10+ characters with uppercase, lowercase, and a number.
+      </Text>
+      <Text style={styles.label}>New password</Text>
+      <PasswordInput
+        autoComplete="new-password"
+        editable={!pending}
+        onChangeText={onChangePassword}
+        placeholder="New password"
+        value={password}
+      />
+      <Text style={styles.label}>Confirm new password</Text>
+      <PasswordInput
+        autoComplete="new-password"
+        editable={!pending}
+        onChangeText={onChangeConfirmation}
+        onSubmitEditing={() => void onSubmit()}
+        placeholder="Confirm new password"
+        value={confirmation}
+      />
+      {formMessage ? (
+        <Text accessibilityRole="alert" style={styles.errorText}>
+          {formMessage}
+        </Text>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        disabled={pending || !password || !confirmation}
+        onPress={() => void onSubmit()}
+        style={({ pressed }) => [
+          styles.primaryButton,
+          (pending || !password || !confirmation) && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Text style={styles.primaryButtonText}>
+          {pending ? 'Updating…' : 'Update password'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  accountNotice: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 16,
+    marginTop: 22,
+    padding: 18,
+  },
+  bottomNavigation: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    paddingBottom: Platform.OS === 'android' ? 10 : 4,
+    paddingHorizontal: 18,
+    paddingTop: 8,
+  },
+  bottomNavigationItem: {
+    alignItems: 'center',
+    borderRadius: 14,
+    flex: 1,
+    gap: 3,
+    justifyContent: 'center',
+    minHeight: 54,
+  },
+  bottomNavigationItemActive: {
+    backgroundColor: '#EFF6FF',
+  },
+  bottomNavigationLabel: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  bottomNavigationLabelActive: {
+    color: '#1769F4',
+  },
+  mobileBrandLetter: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  mobileBrandMark: {
+    alignItems: 'center',
+    backgroundColor: '#1769F4',
+    borderRadius: 12,
+    height: 42,
+    justifyContent: 'center',
+    marginRight: 12,
+    transform: [{ rotate: '-3deg' }],
+    width: 42,
+  },
+  mobileContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  mobileHeader: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderBottomColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  mobileHeaderSubtitle: {
+    color: '#64748B',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  mobileHeaderTitle: {
+    color: '#0F2747',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  mobileShell: {
+    backgroundColor: '#F4F7FB',
+    flex: 1,
+  },
+  mobileSurface: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 20,
+    shadowColor: '#0F2747',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+  },
+  approvalResultActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 14,
+  },
+  approvalSuccess: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 18,
+    padding: 15,
+  },
+  approvalWarning: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 22,
+    padding: 15,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 22,
+    paddingVertical: 6,
+  },
+  backButtonText: {
+    color: '#1769F4',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   body: {
     color: '#64748B',
-    fontSize: 16,
-    lineHeight: 24,
-    marginTop: 12,
-    maxWidth: 330,
-    textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 8,
   },
   brandLetter: {
     color: '#FFFFFF',
@@ -44,15 +3448,103 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     height: 56,
     justifyContent: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
     transform: [{ rotate: '-4deg' }],
     width: 56,
   },
-  container: {
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonPressed: {
+    opacity: 0.8,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
+    borderWidth: 1,
+    marginTop: 24,
+    padding: 22,
+    width: '100%',
+  },
+  authenticatedCard: {
+    borderRadius: 24,
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+  },
+  centered: {
     alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
+  },
+  compactButton: {
+    alignItems: 'center',
+    borderColor: '#CBD5E1',
+    borderRadius: 9,
+    borderWidth: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  compactButtonText: {
+    color: '#1769F4',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  customerLink: {
+    color: '#1769F4',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 10,
+  },
+  discardButton: {
+    alignItems: 'center',
+    borderColor: '#FCA5A5',
+    borderRadius: 9,
+    borderWidth: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  discardButtonText: {
+    color: '#B42318',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  draftStatus: {
+    color: '#475569',
+    fontSize: 12,
+    marginTop: 8,
+  },
+  characterCount: {
+    color: '#94A3B8',
+    fontSize: 11,
+    marginTop: 5,
+    textAlign: 'right',
+  },
+  container: {
+    alignItems: 'center',
+    flexGrow: 1,
+    justifyContent: 'center',
     padding: 28,
+  },
+  authenticatedContainer: {
+    justifyContent: 'flex-start',
+    paddingHorizontal: 16,
+    paddingTop: 18,
+  },
+  errorText: {
+    color: '#B42318',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 14,
+  },
+  errorTextCompact: {
+    color: '#B42318',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
   },
   eyebrow: {
     color: '#1769F4',
@@ -60,14 +3552,216 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.6,
   },
-  notice: {
+  flex: {
+    flex: 1,
+  },
+  detailBlock: {
+    borderTopColor: '#E2E8F0',
+    borderTopWidth: 1,
+    marginTop: 18,
+    paddingTop: 16,
+  },
+  detailLabel: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  detailSchedule: {
+    color: '#1769F4',
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 10,
+  },
+  detailSecondary: {
+    color: '#64748B',
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 5,
+  },
+  detailTitle: {
+    color: '#11223C',
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    marginTop: 5,
+  },
+  detailValue: {
+    color: '#11223C',
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 22,
+    marginTop: 5,
+  },
+  emptyJobs: {
+    backgroundColor: '#F6F8FC',
+    borderRadius: 12,
+    marginTop: 18,
+    padding: 16,
+  },
+  inlineStatus: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 22,
+  },
+  input: {
     backgroundColor: '#FFFFFF',
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    borderWidth: 1,
+    color: '#11223C',
+    fontSize: 16,
+    marginTop: 7,
+    paddingHorizontal: 13,
+    paddingVertical: 12,
+  },
+  passwordField: {
+    position: 'relative',
+  },
+  passwordInput: {
+    paddingRight: 54,
+  },
+  passwordToggle: {
+    alignItems: 'center',
+    bottom: 2,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 2,
+    top: 9,
+    width: 48,
+  },
+  invoiceOutstanding: {
+    color: '#067647',
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 8,
+  },
+  jobCard: {
+    backgroundColor: '#F8FAFC',
     borderColor: '#E2E8F0',
     borderRadius: 12,
     borderWidth: 1,
-    marginTop: 32,
-    padding: 18,
-    width: '100%',
+    marginTop: 10,
+    padding: 15,
+  },
+  jobCardHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  jobCardTitle: {
+    color: '#11223C',
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 21,
+  },
+  jobGroup: {
+    marginTop: 22,
+  },
+  jobGroupTitle: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  jobMeta: {
+    color: '#64748B',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 7,
+  },
+  jobsEyebrow: {
+    color: '#1769F4',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  jobsHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 14,
+  },
+  jobsSection: {
+    marginTop: 24,
+  },
+  jobsTitle: {
+    color: '#11223C',
+    fontSize: 19,
+    fontWeight: '800',
+    marginTop: 3,
+  },
+  jobSchedule: {
+    color: '#1769F4',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 10,
+  },
+  label: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 18,
+  },
+  linkButton: {
+    alignItems: 'center',
+    marginTop: 16,
+    padding: 8,
+  },
+  linkButtonText: {
+    color: '#1769F4',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  loadingText: {
+    color: '#64748B',
+    fontSize: 14,
+    marginTop: 14,
+  },
+  metricCard: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexBasis: '46%',
+    flexGrow: 1,
+    minWidth: 130,
+    padding: 14,
+  },
+  metricDetail: {
+    color: '#64748B',
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 3,
+  },
+  metricGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 18,
+  },
+  metricLabel: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  metricValue: {
+    color: '#11223C',
+    fontSize: 23,
+    fontWeight: '900',
+    marginTop: 5,
+  },
+  notice: {
+    backgroundColor: '#F6F8FC',
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 22,
+    padding: 16,
   },
   noticeBody: {
     color: '#64748B',
@@ -80,17 +3774,283 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  notificationSettingsButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderColor: '#CBD5E1',
+    borderRadius: 9,
+    borderWidth: 1,
+    marginTop: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  operationsCardKicker: {
+    color: '#1769F4',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    marginBottom: 5,
+    textTransform: 'uppercase',
+  },
+  operationsCardTitle: {
+    color: '#11223C',
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  operationsEmpty: {
+    color: '#64748B',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 9,
+  },
+  operationsGroup: {
+    borderTopColor: '#E2E8F0',
+    borderTopWidth: 1,
+    marginTop: 22,
+    paddingTop: 18,
+  },
+  operationsListCard: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 10,
+    padding: 14,
+  },
+  operationsRole: {
+    color: '#64748B',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  operationsSection: {
+    marginTop: 24,
+  },
+  photoActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 14,
+  },
+  photoRetryActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 12,
+  },
+  photoRetryPanel: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 14,
+    padding: 14,
+  },
+  pendingUploadBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFF7ED',
+    borderRadius: 999,
+    color: '#9A3412',
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 10,
+    overflow: 'hidden',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  readOnlyNotice: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 22,
+    padding: 15,
+  },
+  primaryButton: {
+    alignItems: 'center',
+    backgroundColor: '#1769F4',
+    borderRadius: 10,
+    marginTop: 22,
+    padding: 14,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  progressPanel: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 22,
+    padding: 15,
+  },
+  progressDraftConflict: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+  },
+  progressDraftPanel: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 22,
+    padding: 15,
+  },
   safeArea: {
     backgroundColor: '#F6F8FC',
     flex: 1,
   },
+  signatureRequired: {
+    color: '#B42318',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
+    marginTop: 12,
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 22,
+    padding: 13,
+  },
+  secondaryButtonText: {
+    color: '#334155',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  consentCheck: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
+    lineHeight: 16,
+  },
+  consentCheckbox: {
+    alignItems: 'center',
+    borderColor: '#94A3B8',
+    borderRadius: 5,
+    borderWidth: 1,
+    height: 22,
+    justifyContent: 'center',
+    marginTop: 2,
+    width: 22,
+  },
+  consentCheckboxChecked: {
+    backgroundColor: '#1769F4',
+    borderColor: '#1769F4',
+  },
+  consentRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  consentText: {
+    color: '#334155',
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  signatureCapture: {
+    marginTop: 6,
+  },
+  signatureClearButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    paddingHorizontal: 4,
+    paddingVertical: 10,
+  },
+  signatureDisclaimer: {
+    color: '#94A3B8',
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 10,
+  },
+  signaturePad: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 180,
+    justifyContent: 'center',
+    marginTop: 8,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  signaturePlaceholder: {
+    color: '#94A3B8',
+    fontSize: 18,
+    fontStyle: 'italic',
+    position: 'absolute',
+  },
+  signatureRecorded: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 8,
+    padding: 13,
+  },
+  statusBadge: {
+    backgroundColor: '#E8F0FF',
+    borderRadius: 999,
+    color: '#174EA6',
+    fontSize: 11,
+    fontWeight: '800',
+    overflow: 'hidden',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  successText: {
+    color: '#067647',
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 14,
+  },
+  timelineDot: {
+    backgroundColor: '#1769F4',
+    borderRadius: 999,
+    height: 9,
+    marginTop: 5,
+    width: 9,
+  },
+  timelineLabel: {
+    color: '#11223C',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  timelineList: {
+    marginTop: 10,
+  },
+  timelineRow: {
+    borderBottomColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    gap: 11,
+    paddingVertical: 12,
+  },
   title: {
     color: '#11223C',
-    fontSize: 30,
+    fontSize: 27,
     fontWeight: '800',
-    letterSpacing: -0.8,
-    marginTop: 10,
-    maxWidth: 340,
-    textAlign: 'center',
+    letterSpacing: -0.6,
+  },
+  workNote: {
+    borderBottomColor: '#E2E8F0',
+    borderBottomWidth: 1,
+    paddingBottom: 12,
+  },
+  workNoteInput: {
+    minHeight: 104,
+  },
+  workNoteTime: {
+    color: '#94A3B8',
+    fontSize: 11,
+    marginTop: 5,
   },
 });

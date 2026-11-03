@@ -21,6 +21,7 @@ const serviceSchema = z.object({
     .max(1440, 'Duration cannot exceed 24 hours.'),
   description: z.string().trim().max(2000).default(''),
   name: z.string().trim().min(2, 'Enter a service name.').max(120),
+  requiredSkills: z.string().trim().max(1000).default(''),
   taxBehavior: z.enum(['exclusive', 'inclusive', 'non_taxable']),
   unitPrice: z
     .string()
@@ -39,6 +40,7 @@ function readService(formData: FormData) {
     defaultDurationMinutes: formData.get('defaultDurationMinutes'),
     description: formData.get('description'),
     name: formData.get('name'),
+    requiredSkills: formData.get('requiredSkills'),
     taxBehavior: formData.get('taxBehavior'),
     unitPrice: formData.get('unitPrice'),
   });
@@ -47,6 +49,19 @@ function readService(formData: FormData) {
 function toCents(value: string): number {
   const [dollars, fraction = ''] = value.split('.');
   return Number(dollars) * 100 + Number(fraction.padEnd(2, '0'));
+}
+
+function commaSeparatedValues(value: string): string[] {
+  return [
+    ...new Set(
+      value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ]
+    .slice(0, 20)
+    .map((item) => item.slice(0, 80));
 }
 
 function validationFailure(error: z.ZodError): ServiceFormState {
@@ -73,6 +88,7 @@ export async function createServiceAction(
       description: parsed.data.description || null,
       is_enabled: formData.get('isEnabled') === 'on',
       name: parsed.data.name,
+      required_skills: commaSeparatedValues(parsed.data.requiredSkills),
       tax_behavior: parsed.data.taxBehavior,
       tenant_id: context.tenantId,
       unit_price_cents: toCents(parsed.data.unitPrice),
@@ -115,6 +131,7 @@ export async function updateServiceAction(
       description: parsed.data.description || null,
       is_enabled: formData.get('isEnabled') === 'on',
       name: parsed.data.name,
+      required_skills: commaSeparatedValues(parsed.data.requiredSkills),
       tax_behavior: parsed.data.taxBehavior,
       unit_price_cents: toCents(parsed.data.unitPrice),
     })

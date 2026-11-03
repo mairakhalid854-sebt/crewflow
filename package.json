@@ -7,12 +7,27 @@
   "engines": {
     "node": ">=22.0.0"
   },
+  "overrides": {
+    "@expo/cli": {
+      "zod": "4.6.7"
+    },
+    "@nestjs/platform-express": {
+      "multer": "2.5.0"
+    },
+    "express": {
+      "body-parser": "2.4.0"
+    },
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "audit:production": "npm audit --omit=dev --audit-level=high",
+    "ai:evaluate:openai": "tsx apps/api/src/ai/openai-evaluation-runner.ts",
+    "audit:mobile": "node scripts/audit-mobile.mjs",
+    "audit:production": "npm audit --omit=dev --audit-level=high --workspace @crewflow/api --workspace @crewflow/scanner --workspace @crewflow/web --workspace @crewflow/worker",
     "build": "npm run build --workspaces --if-present",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
     "dev:api": "npm run dev --workspace @crewflow/api",
@@ -21,20 +36,26 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
+    "paddle:configure:sandbox": "node scripts/configure-paddle-sandbox.mjs",
+    "smoke:web": "node scripts/web-smoke.mjs",
     "supabase:reset": "supabase db reset",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:test": "supabase test db",
-    "test": "npm run test --workspaces --if-present",
+    "test:a11y": "playwright test --config=apps/web/playwright.a11y.config.ts",
+    "test:performance": "playwright test --config=apps/web/playwright.performance.config.ts",
+    "test": "npm run test --workspaces --if-present && node --test scripts/web-smoke.test.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.5",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
-    "next": "16.4.0",
+    "next": "16.4.3",
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "supabase": "^2.120.0",

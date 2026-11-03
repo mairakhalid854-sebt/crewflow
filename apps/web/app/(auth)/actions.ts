@@ -3,6 +3,12 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
+import { appUrl } from '../../lib/app-url';
+import {
+  passwordSchema,
+  updatePasswordSchema,
+} from '../../lib/auth/password-validation';
+import { safeNextPath } from '../../lib/auth/safe-next-path';
 import { createClient } from '../../lib/supabase/server';
 
 export interface AuthFormState {
@@ -15,13 +21,6 @@ const emailSchema = z
   .email('Enter a valid email address.')
   .trim()
   .toLowerCase();
-const passwordSchema = z
-  .string()
-  .min(10, 'Use at least 10 characters.')
-  .regex(/[a-z]/, 'Include a lowercase letter.')
-  .regex(/[A-Z]/, 'Include an uppercase letter.')
-  .regex(/[0-9]/, 'Include a number.');
-
 const signupSchema = z.object({
   email: emailSchema,
   fullName: z.string().trim().min(2, 'Enter your full name.').max(120),
@@ -32,16 +31,6 @@ const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, 'Enter your password.'),
 });
-
-function appUrl(): string {
-  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (configuredUrl) return configuredUrl.replace(/\/$/, '');
-
-  const vercelUrl = process.env.VERCEL_URL;
-  if (vercelUrl) return `https://${vercelUrl.replace(/\/$/, '')}`;
-
-  return 'http://localhost:3000';
-}
 
 function validationFailure(error: z.ZodError): AuthFormState {
   return {
@@ -63,26 +52,38 @@ export async function signupAction(
 
   if (!parsed.success) return validationFailure(parsed.error);
 
+  const next = safeNextPath(formData.get('next'));
+
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     options: {
       data: { full_name: parsed.data.fullName },
-      emailRedirectTo: `${appUrl()}/auth/confirm`,
+      emailRedirectTo: `${appUrl()}/auth/confirm?next=${encodeURIComponent(next)}`,
     },
     password: parsed.data.password,
   });
 
   if (error) {
     return {
-      message: 'We could not create the account. Please try again shortly.',
+      message:
+        error.code === 'over_email_send_rate_limit'
+          ? 'Email delivery is temporarily limited. Please try again later or contact the workspace owner.'
+          : 'We could not create the account. Please try again shortly.',
       status: 'error',
     };
   }
 
+  // Staging can run with email confirmation disabled while custom SMTP is not
+  // configured. In that mode Supabase returns an authenticated session
+  // immediately, so continue the intended invitation/onboarding flow instead
+  // of telling the user to wait for an email that will not be sent.
+  if (data.session) redirect(next);
+
   return {
-    message:
-      'Check your email to verify your account, then continue to sign in.',
+    message: next.startsWith('/invite/')
+      ? 'Check your email. The verification link will return you to accept the team invitation.'
+      : 'Check your email to verify your account, then continue to sign in.',
     status: 'success',
   };
 }
@@ -98,6 +99,8 @@ export async function loginAction(
 
   if (!parsed.success) return validationFailure(parsed.error);
 
+  const next = safeNextPath(formData.get('next'));
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
 
@@ -108,7 +111,7 @@ export async function loginAction(
     };
   }
 
-  redirect('/onboarding');
+  redirect(next);
 }
 
 export async function forgotPasswordAction(
@@ -134,14 +137,19 @@ export async function updatePasswordAction(
   _previousState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const parsed = passwordSchema.safeParse(formData.get('password'));
+  const parsed = updatePasswordSchema.safeParse({
+    confirmPassword: formData.get('confirmPassword'),
+    password: formData.get('password'),
+  });
   if (!parsed.success) return validationFailure(parsed.error);
 
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
   if (!claimsData?.claims) redirect('/login');
 
-  const { error } = await supabase.auth.updateUser({ password: parsed.data });
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
   if (error) {
     return {
       message: 'Password could not be updated. Request a new link.',
@@ -150,7 +158,7 @@ export async function updatePasswordAction(
   }
 
   return {
-    message: 'Password updated. You can continue to CrewFlow.',
+    message: 'Password updated. You can continue to CrewFlow360.',
     status: 'success',
   };
 }

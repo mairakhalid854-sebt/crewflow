@@ -1,14 +1,30 @@
 import { SignupForm } from '../auth-forms';
+import { safeNextPath } from '../../../lib/auth/safe-next-path';
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: Readonly<{
+  searchParams: Promise<{ next?: string | string[] }>;
+}>) {
+  const nextPath = safeNextPath((await searchParams).next);
+  const joiningTeam = nextPath.startsWith('/invite/');
+
   return (
     <div className="auth-card">
-      <p className="step-label">OWNER ACCOUNT</p>
-      <h2>Start your CrewFlow workspace</h2>
-      <p className="auth-intro">
-        Your email must be verified before company setup.
+      <p className="step-label">
+        {joiningTeam ? 'TEAM INVITATION' : 'OWNER ACCOUNT'}
       </p>
-      <SignupForm />
+      <h2>
+        {joiningTeam
+          ? 'Create your CrewFlow360 account'
+          : 'Start your CrewFlow360 workspace'}
+      </h2>
+      <p className="auth-intro">
+        {joiningTeam
+          ? 'Choose your own password. After email verification, you will return to accept the team invitation.'
+          : 'Your email must be verified before company setup.'}
+      </p>
+      <SignupForm joiningTeam={joiningTeam} nextPath={nextPath} />
     </div>
   );
 }

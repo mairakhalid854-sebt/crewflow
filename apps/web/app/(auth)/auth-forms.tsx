@@ -49,10 +49,14 @@ function StatusMessage({ state }: Readonly<{ state: AuthFormState }>) {
   );
 }
 
-export function SignupForm() {
+export function SignupForm({
+  joiningTeam = false,
+  nextPath,
+}: Readonly<{ joiningTeam?: boolean; nextPath?: string }>) {
   const [state, action] = useActionState(signupAction, initialAuthFormState);
   return (
     <form action={action} className="auth-form">
+      {nextPath ? <input name="next" type="hidden" value={nextPath} /> : null}
       <label htmlFor="fullName">Full name</label>
       <input autoComplete="name" id="fullName" name="fullName" required />
       <FieldError errors={state.fieldErrors?.fullName} />
@@ -78,21 +82,34 @@ export function SignupForm() {
       </p>
       <FieldError errors={state.fieldErrors?.password} />
       <StatusMessage state={state} />
+      <p className="auth-consent">
+        By creating an account, you agree to the{' '}
+        <Link href="/terms">Terms of Service</Link> and acknowledge the{' '}
+        <Link href="/privacy">Privacy Notice</Link>.
+      </p>
       <SubmitButton
-        label="Create owner account"
+        label={joiningTeam ? 'Create team account' : 'Create owner account'}
         pendingLabel="Creating account…"
       />
       <p className="auth-switch">
-        Already registered? <Link href="/login">Sign in</Link>
+        Already registered?{' '}
+        <Link
+          href={
+            nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : '/login'
+          }
+        >
+          Sign in
+        </Link>
       </p>
     </form>
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ nextPath }: Readonly<{ nextPath?: string }>) {
   const [state, action] = useActionState(loginAction, initialAuthFormState);
   return (
     <form action={action} className="auth-form">
+      {nextPath ? <input name="next" type="hidden" value={nextPath} /> : null}
       <label htmlFor="email">Work email</label>
       <input
         autoComplete="email"
@@ -118,7 +135,16 @@ export function LoginForm() {
       <StatusMessage state={state} />
       <SubmitButton label="Sign in" pendingLabel="Signing in…" />
       <p className="auth-switch">
-        New to CrewFlow? <Link href="/signup">Create an account</Link>
+        New to CrewFlow360?{' '}
+        <Link
+          href={
+            nextPath
+              ? `/signup?next=${encodeURIComponent(nextPath)}`
+              : '/signup'
+          }
+        >
+          Create an account
+        </Link>
       </p>
     </form>
   );
@@ -168,11 +194,20 @@ export function UpdatePasswordForm() {
         10+ characters with upper, lower, and number.
       </p>
       <FieldError errors={state.fieldErrors?.password} />
+      <label htmlFor="confirmPassword">Confirm new password</label>
+      <input
+        autoComplete="new-password"
+        id="confirmPassword"
+        name="confirmPassword"
+        required
+        type="password"
+      />
+      <FieldError errors={state.fieldErrors?.confirmPassword} />
       <StatusMessage state={state} />
       <SubmitButton label="Update password" pendingLabel="Updating…" />
       {state.status === 'success' ? (
         <p className="auth-switch">
-          <Link href="/onboarding">Continue</Link>
+          <Link href="/app">Continue to CrewFlow360</Link>
         </p>
       ) : null}
     </form>

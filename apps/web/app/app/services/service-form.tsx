@@ -110,6 +110,24 @@ export function ServiceForm({ service }: Readonly<{ service?: Service }>) {
           Service is available for new work
         </label>
         <label className="form-span-2">
+          <span>Required technician skills</span>
+          <input
+            aria-describedby="required-skills-help required-skills-error"
+            defaultValue={service?.required_skills.join(', ') ?? ''}
+            maxLength={1000}
+            name="requiredSkills"
+            placeholder="HVAC repair, Diagnostics"
+          />
+          <small className="form-help" id="required-skills-help">
+            Separate up to 20 skills with commas. An assigned technician must
+            have every listed skill.
+          </small>
+          <FieldError
+            errors={state.fieldErrors?.requiredSkills}
+            id="required-skills-error"
+          />
+        </label>
+        <label className="form-span-2">
           <span>Description</span>
           <textarea
             defaultValue={service?.description ?? ''}

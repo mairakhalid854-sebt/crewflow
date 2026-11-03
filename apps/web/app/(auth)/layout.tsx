@@ -10,11 +10,11 @@ export default function AuthLayout({
     <main className="auth-shell">
       <section
         className="auth-story"
-        aria-label="CrewFlow product introduction"
+        aria-label="CrewFlow360 product introduction"
       >
         <Link className="auth-brand" href="/">
           <span className="brand-mark">C</span>
-          CrewFlow
+          CrewFlow360
         </Link>
         <div className="auth-story-copy">
           <p className="auth-kicker">FIELD SERVICE, IN FLOW</p>
@@ -39,7 +39,7 @@ export default function AuthLayout({
           </div>
         </div>
         <p className="auth-legal">
-          CrewFlow handles SaaS access—not your customers’ service payments.
+          CrewFlow360 handles SaaS access—not your customers’ service payments.
         </p>
       </section>
       <section className="auth-card-wrap">{children}</section>
