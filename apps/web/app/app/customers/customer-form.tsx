@@ -5,6 +5,7 @@ import { useActionState } from 'react';
 import type { Tables } from '@crewflow/database';
 
 import { UsLocationFields } from '../../../components/us-location-fields';
+import { formatUsPhone } from '../../../lib/location/us-phone';
 
 import {
   type CustomerFormState,
@@ -83,12 +84,16 @@ export function CustomerForm({ customer }: Readonly<{ customer?: Customer }>) {
         <label>
           <span>Phone</span>
           <input
-            defaultValue={customer?.phone ?? ''}
+            aria-describedby="phone-error"
+            autoComplete="tel-national"
+            defaultValue={formatUsPhone(customer?.phone)}
             inputMode="tel"
-            maxLength={30}
+            maxLength={20}
             name="phone"
+            placeholder="(555) 555-0123"
             type="tel"
           />
+          <FieldError errors={state.fieldErrors?.phone} id="phone-error" />
         </label>
         <label className="form-span-2">
           <span>Street address</span>

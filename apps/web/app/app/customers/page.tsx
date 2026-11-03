@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
+import { formatUsPhone } from '../../../lib/location/us-phone';
 import { createClient } from '../../../lib/supabase/server';
 
 interface CustomersPageProps {
@@ -33,6 +34,7 @@ export default async function CustomersPage({
           customer.last_name,
           customer.email,
           customer.phone,
+          formatUsPhone(customer.phone),
           customer.city,
         ].some((value) => value?.toLocaleLowerCase().includes(needle)),
       )
@@ -99,7 +101,9 @@ export default async function CustomersPage({
                       {customer.first_name} {customer.last_name}
                     </strong>
                   </td>
-                  <td>{customer.email ?? customer.phone ?? '—'}</td>
+                  <td>
+                    {customer.email ?? (formatUsPhone(customer.phone) || '—')}
+                  </td>
                   <td>
                     {[customer.city, customer.state_code]
                       .filter(Boolean)

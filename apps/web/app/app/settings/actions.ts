@@ -6,7 +6,13 @@ import { z } from 'zod';
 import type { Json } from '@crewflow/database';
 
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
-import { isUsCityForState } from '../../../lib/location/us-locations';
+import {
+  isUsCityForState,
+  usStateName,
+} from '../../../lib/location/us-locations';
+import { optionalUsPhoneSchema } from '../../../lib/location/us-phone';
+import { US_TIME_ZONES } from '../../../lib/location/us-time-zones';
+import { isUsZipForState } from '../../../lib/location/us-zip';
 import { createClient } from '../../../lib/supabase/server';
 
 export interface CompanySettingsActionState {
@@ -23,15 +29,9 @@ const serviceCategorySchema = z.enum([
   'Pest control',
   'Other',
 ]);
-const timeZoneSchema = z.enum([
-  'America/New_York',
-  'America/Chicago',
-  'America/Denver',
-  'America/Phoenix',
-  'America/Los_Angeles',
-  'America/Anchorage',
-  'Pacific/Honolulu',
-]);
+const timeZoneSchema = z.enum(US_TIME_ZONES, {
+  error: 'Select a time zone.',
+});
 const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 
 const companySettingsSchema = z
@@ -52,7 +52,7 @@ const companySettingsSchema = z
       .trim()
       .min(2, 'Enter the legal business name.')
       .max(160),
-    phone: z.string().trim().max(30),
+    phone: optionalUsPhoneSchema,
     postalCode: z
       .string()
       .trim()
@@ -72,6 +72,14 @@ const companySettingsSchema = z
   .refine((value) => isUsCityForState(value.city, value.stateCode), {
     message: 'Select a city in the chosen state.',
     path: ['city'],
+  })
+  .superRefine((value, context) => {
+    if (isUsZipForState(value.postalCode, value.stateCode)) return;
+    context.addIssue({
+      code: 'custom',
+      message: `This ZIP code is not in ${usStateName(value.stateCode) ?? 'the chosen state'}.`,
+      path: ['postalCode'],
+    });
   });
 
 function failure(message: string): CompanySettingsActionState {

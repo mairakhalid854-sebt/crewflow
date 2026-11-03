@@ -5,6 +5,9 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
+import { usStateName } from '../../../lib/location/us-locations';
+import { optionalUsPhoneSchema } from '../../../lib/location/us-phone';
+import { isUsZipForState } from '../../../lib/location/us-zip';
 import { createClient } from '../../../lib/supabase/server';
 
 export interface CustomerFormState {
@@ -18,25 +21,35 @@ const optionalEmail = z.union([
   z.email('Enter a valid email address.').trim().toLowerCase(),
 ]);
 
-const customerSchema = z.object({
-  addressLine2: z.string().trim().max(120).default(''),
-  city: z.string().trim().max(100).default(''),
-  email: optionalEmail,
-  firstName: z.string().trim().min(1, 'Enter a first name.').max(80),
-  lastName: z.string().trim().min(1, 'Enter a last name.').max(80),
-  notes: z.string().trim().max(2000).default(''),
-  phone: z.string().trim().max(30).default(''),
-  postalCode: z
-    .string()
-    .trim()
-    .regex(/^$|^\d{5}(-\d{4})?$/, 'Use a valid US ZIP code.'),
-  stateCode: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^$|^[A-Z]{2}$/, 'Select a state.'),
-  streetAddress: z.string().trim().max(180).default(''),
-});
+const customerSchema = z
+  .object({
+    addressLine2: z.string().trim().max(120).default(''),
+    city: z.string().trim().max(100).default(''),
+    email: optionalEmail,
+    firstName: z.string().trim().min(1, 'Enter a first name.').max(80),
+    lastName: z.string().trim().min(1, 'Enter a last name.').max(80),
+    notes: z.string().trim().max(2000).default(''),
+    phone: optionalUsPhoneSchema,
+    postalCode: z
+      .string()
+      .trim()
+      .regex(/^$|^\d{5}(-\d{4})?$/, 'Use a valid US ZIP code.'),
+    stateCode: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^$|^[A-Z]{2}$/, 'Select a state.'),
+    streetAddress: z.string().trim().max(180).default(''),
+  })
+  .superRefine((value, context) => {
+    if (!value.postalCode || !value.stateCode) return;
+    if (isUsZipForState(value.postalCode, value.stateCode)) return;
+    context.addIssue({
+      code: 'custom',
+      message: `This ZIP code is not in ${usStateName(value.stateCode) ?? 'the chosen state'}.`,
+      path: ['postalCode'],
+    });
+  });
 
 const customerIdSchema = z.uuid();
 
