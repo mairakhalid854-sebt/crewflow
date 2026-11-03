@@ -4,6 +4,8 @@ import { useActionState } from 'react';
 
 import type { Tables } from '@crewflow/database';
 
+import { SkillListInput } from '../../../components/skill-list-input';
+
 import {
   type ServiceFormState,
   createServiceAction,
@@ -25,7 +27,10 @@ function FieldError({
   );
 }
 
-export function ServiceForm({ service }: Readonly<{ service?: Service }>) {
+export function ServiceForm({
+  service,
+  skillSuggestions = [],
+}: Readonly<{ service?: Service; skillSuggestions?: readonly string[] }>) {
   const action = service ? updateServiceAction : createServiceAction;
   const [state, formAction, pending] = useActionState(
     action,
@@ -111,12 +116,14 @@ export function ServiceForm({ service }: Readonly<{ service?: Service }>) {
         </label>
         <label className="form-span-2">
           <span>Required technician skills</span>
-          <input
-            aria-describedby="required-skills-help required-skills-error"
-            defaultValue={service?.required_skills.join(', ') ?? ''}
+          <SkillListInput
+            ariaDescribedBy="required-skills-help required-skills-error"
+            defaultSkills={service?.required_skills ?? []}
             maxLength={1000}
             name="requiredSkills"
             placeholder="HVAC repair, Diagnostics"
+            suggestionLabel="Skills your team already has:"
+            suggestions={skillSuggestions}
           />
           <small className="form-help" id="required-skills-help">
             Separate up to 20 skills with commas. An assigned technician must

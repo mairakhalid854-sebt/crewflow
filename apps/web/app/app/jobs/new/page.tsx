@@ -19,7 +19,7 @@ export default async function NewJobPage() {
         .order('last_name'),
       supabase
         .from('services')
-        .select('id, name')
+        .select('id, name, required_skills')
         .eq('tenant_id', context.tenantId)
         .eq('is_enabled', true)
         .is('archived_at', null)
@@ -32,7 +32,7 @@ export default async function NewJobPage() {
         .eq('status', 'active'),
       supabase
         .from('staff_profiles')
-        .select('membership_id, full_name')
+        .select('membership_id, full_name, skills')
         .eq('tenant_id', context.tenantId),
     ]);
 
@@ -55,12 +55,14 @@ export default async function NewJobPage() {
   const services = (servicesResult.data ?? []).map((service) => ({
     id: service.id,
     label: service.name,
+    requiredSkills: service.required_skills,
   }));
   const technicians = (profilesResult.data ?? [])
     .filter((profile) => activeTechnicians.has(profile.membership_id))
     .map((profile) => ({
       id: profile.membership_id,
       label: profile.full_name,
+      skills: profile.skills,
     }));
 
   return (
