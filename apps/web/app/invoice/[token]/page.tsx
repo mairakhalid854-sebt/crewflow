@@ -119,8 +119,8 @@ export default async function PublicInvoicePage({
               Open {invoice.company_name}&apos;s payment page
             </a>
             <p>
-              You will leave CrewFlow360. The service business—not CrewFlow360—is the
-              payee and controls that page.
+              You will leave CrewFlow360. The service business—not
+              CrewFlow360—is the payee and controls that page.
             </p>
           </div>
         ) : (

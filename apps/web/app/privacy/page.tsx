@@ -38,15 +38,15 @@ export default function PrivacyPage() {
         <section>
           <h2>Who is responsible for the information</h2>
           <p>
-            Each service business that uses CrewFlow360 controls the customer, job,
-            and workforce information placed in its workspace and decides how it
-            is used. For that information, CrewFlow360 acts as a service provider
-            that processes it on the business&apos;s behalf and under its
-            instructions. For questions about a specific job, quote, invoice,
-            photo, signature, or customer record, contact the service business
-            that created it. CrewFlow360 is responsible for account, billing,
-            security, and operational information it collects to run the
-            service.
+            Each service business that uses CrewFlow360 controls the customer,
+            job, and workforce information placed in its workspace and decides
+            how it is used. For that information, CrewFlow360 acts as a service
+            provider that processes it on the business&apos;s behalf and under
+            its instructions. For questions about a specific job, quote,
+            invoice, photo, signature, or customer record, contact the service
+            business that created it. CrewFlow360 is responsible for account,
+            billing, security, and operational information it collects to run
+            the service.
           </p>
         </section>
 
@@ -67,9 +67,9 @@ export default function PrivacyPage() {
               records, customer signatures, and consent records.
             </li>
             <li>
-              Conversations a customer has with a business through the CrewFlow360
-              booking chat, and documents a business uploads to its knowledge
-              library.
+              Conversations a customer has with a business through the
+              CrewFlow360 booking chat, and documents a business uploads to its
+              knowledge library.
             </li>
             <li>
               Subscription details for the business account, such as plan,
@@ -92,9 +92,9 @@ export default function PrivacyPage() {
             share business documents; send the emails and notifications a
             business requests; provide AI-assisted features; manage
             subscriptions; protect and troubleshoot the service; and meet legal
-            obligations. CrewFlow360 does not sell personal information, does not
-            share it for cross-context behavioral advertising, and does not use
-            workspace information for advertising.
+            obligations. CrewFlow360 does not sell personal information, does
+            not share it for cross-context behavioral advertising, and does not
+            use workspace information for advertising.
           </p>
         </section>
 
@@ -120,8 +120,8 @@ export default function PrivacyPage() {
             request includes an unsubscribe link that stops further marketing
             email from that business; service messages about active jobs and
             invoices continue. If an email address bounces or is reported as
-            spam, CrewFlow360 stops sending to it. Each business is responsible for
-            obtaining any consent its messages require.
+            spam, CrewFlow360 stops sending to it. Each business is responsible
+            for obtaining any consent its messages require.
           </p>
         </section>
 
@@ -130,8 +130,8 @@ export default function PrivacyPage() {
           <p>
             Information is visible to authorized members of the relevant
             workspace and, when a business shares a secure link, to the intended
-            recipient. CrewFlow360 uses these service providers, which may process
-            information only to provide their services to us:
+            recipient. CrewFlow360 uses these service providers, which may
+            process information only to provide their services to us:
           </p>
           <ul>
             <li>
@@ -157,8 +157,8 @@ export default function PrivacyPage() {
         <section>
           <h2>Cookies</h2>
           <p>
-            CrewFlow360 uses only the cookies needed to keep you signed in and to
-            secure your session. We do not use advertising or third-party
+            CrewFlow360 uses only the cookies needed to keep you signed in and
+            to secure your session. We do not use advertising or third-party
             analytics cookies.
           </p>
         </section>
@@ -218,8 +218,9 @@ export default function PrivacyPage() {
         <section>
           <h2>Children</h2>
           <p>
-            CrewFlow360 is a business service and is not directed to children under
-            13. We do not knowingly collect personal information from children.
+            CrewFlow360 is a business service and is not directed to children
+            under 13. We do not knowingly collect personal information from
+            children.
           </p>
         </section>
 

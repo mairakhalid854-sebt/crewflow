@@ -171,7 +171,8 @@ export async function synchronizeMobilePushToken(
   const easProjectId = projectId();
   if (!easProjectId) {
     return {
-      message: 'The CrewFlow360 EAS project ID is not configured in this build.',
+      message:
+        'The CrewFlow360 EAS project ID is not configured in this build.',
       status: 'configuration_required',
     };
   }
