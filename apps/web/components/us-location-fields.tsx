@@ -9,6 +9,7 @@ interface UsLocationFieldsProps {
   readonly cityErrors?: readonly string[];
   readonly initialCity?: string | null;
   readonly initialStateCode?: string | null;
+  readonly onStateChange?: (stateCode: string) => void;
   readonly required?: boolean;
   readonly stateErrorId?: string;
   readonly stateErrors?: readonly string[];
@@ -32,6 +33,7 @@ export function UsLocationFields({
   cityErrors,
   initialCity = '',
   initialStateCode = '',
+  onStateChange,
   required = false,
   stateErrorId,
   stateErrors,
@@ -59,6 +61,7 @@ export function UsLocationFields({
           onChange={(event) => {
             setStateCode(event.target.value);
             setCity('');
+            onStateChange?.(event.target.value);
           }}
           required={required}
           value={stateCode}

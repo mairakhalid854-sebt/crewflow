@@ -3,7 +3,10 @@
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
-import { isUsCityForState } from '../../lib/location/us-locations';
+import { isUsCityForState, usStateName } from '../../lib/location/us-locations';
+import { optionalUsPhoneSchema } from '../../lib/location/us-phone';
+import { US_TIME_ZONES } from '../../lib/location/us-time-zones';
+import { isUsZipForState } from '../../lib/location/us-zip';
 import { createClient } from '../../lib/supabase/server';
 
 export interface OnboardingFormState {
@@ -25,7 +28,7 @@ const onboardingSchema = z
       .trim()
       .min(2, 'Enter the legal business name.')
       .max(160),
-    phone: z.string().trim().max(30),
+    phone: optionalUsPhoneSchema,
     postalCode: z
       .string()
       .trim()
@@ -40,19 +43,19 @@ const onboardingSchema = z
       .regex(/^[A-Z]{2}$/, 'Select a state.'),
     streetAddress: z.string().trim().min(3, 'Enter a street address.').max(180),
     taxRatePercent: z.coerce.number().min(0).max(100),
-    timeZone: z.enum([
-      'America/New_York',
-      'America/Chicago',
-      'America/Denver',
-      'America/Phoenix',
-      'America/Los_Angeles',
-      'America/Anchorage',
-      'Pacific/Honolulu',
-    ]),
+    timeZone: z.enum(US_TIME_ZONES, { error: 'Select a time zone.' }),
   })
   .refine((value) => isUsCityForState(value.city, value.stateCode), {
     message: 'Select a city in the chosen state.',
     path: ['city'],
+  })
+  .superRefine((value, context) => {
+    if (isUsZipForState(value.postalCode, value.stateCode)) return;
+    context.addIssue({
+      code: 'custom',
+      message: `This ZIP code is not in ${usStateName(value.stateCode) ?? 'the chosen state'}.`,
+      path: ['postalCode'],
+    });
   });
 
 export async function completeOnboardingAction(
