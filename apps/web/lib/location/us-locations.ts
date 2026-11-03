@@ -14,6 +14,10 @@ for (const city of usaCities) {
   citiesByState.set(city.state, stateCities);
 }
 
+export function usStateName(stateCode: string): string | undefined {
+  return stateNamesByCode.get(stateCode.toUpperCase());
+}
+
 export function usCitiesForState(stateCode: string): string[] {
   const stateName = stateNamesByCode.get(stateCode);
   if (!stateName) return [];

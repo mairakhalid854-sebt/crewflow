@@ -5,6 +5,9 @@ import { useActionState, useState } from 'react';
 import type { Tables } from '@crewflow/database';
 
 import { UsLocationFields } from '../../../components/us-location-fields';
+import { UsTimeZoneSelect } from '../../../components/us-time-zone-select';
+import { formatUsPhone } from '../../../lib/location/us-phone';
+import { defaultTimeZoneForState } from '../../../lib/location/us-time-zones';
 
 import {
   type CompanySettingsActionState,
@@ -63,6 +66,8 @@ export function CompanySettingsForm({
     updateCompanySettingsAction,
     initialState,
   );
+  const [stateCode, setStateCode] = useState(tenant.state_code ?? '');
+  const [timeZone, setTimeZone] = useState(tenant.time_zone);
   const schedule = new Map(
     businessHours.map((day) => [day.day_of_week, day] as const),
   );
@@ -128,12 +133,16 @@ export function CompanySettingsForm({
           <label>
             <span>US phone</span>
             <input
-              defaultValue={tenant.phone ?? ''}
+              aria-describedby="phone-error"
+              autoComplete="tel-national"
+              defaultValue={formatUsPhone(tenant.phone)}
               inputMode="tel"
-              maxLength={30}
+              maxLength={20}
               name="phone"
+              placeholder="(555) 555-0123"
               type="tel"
             />
+            <FieldError errors={state.fieldErrors?.phone} id="phone-error" />
           </label>
         </div>
       </section>
@@ -163,6 +172,11 @@ export function CompanySettingsForm({
             cityErrors={state.fieldErrors?.city}
             initialCity={tenant.city}
             initialStateCode={tenant.state_code}
+            onStateChange={(nextStateCode) => {
+              setStateCode(nextStateCode);
+              const suggested = defaultTimeZoneForState(nextStateCode);
+              if (suggested) setTimeZone(suggested);
+            }}
             required
             stateErrorId="stateCode-error"
             stateErrors={state.fieldErrors?.stateCode}
@@ -182,18 +196,13 @@ export function CompanySettingsForm({
               id="postalCode-error"
             />
           </label>
-          <label>
-            <span>Time zone *</span>
-            <select defaultValue={tenant.time_zone} name="timeZone" required>
-              <option value="America/New_York">Eastern</option>
-              <option value="America/Chicago">Central</option>
-              <option value="America/Denver">Mountain</option>
-              <option value="America/Phoenix">Arizona</option>
-              <option value="America/Los_Angeles">Pacific</option>
-              <option value="America/Anchorage">Alaska</option>
-              <option value="Pacific/Honolulu">Hawaii</option>
-            </select>
-          </label>
+          <UsTimeZoneSelect
+            errors={state.fieldErrors?.timeZone}
+            onChange={setTimeZone}
+            required
+            stateCode={stateCode}
+            value={timeZone}
+          />
         </div>
       </section>
 

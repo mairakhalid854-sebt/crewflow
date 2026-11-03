@@ -1,9 +1,11 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
 import { UsLocationFields } from '../../components/us-location-fields';
+import { UsTimeZoneSelect } from '../../components/us-time-zone-select';
+import { defaultTimeZoneForState } from '../../lib/location/us-time-zones';
 
 import { type OnboardingFormState, completeOnboardingAction } from './actions';
 
@@ -32,6 +34,8 @@ export function OnboardingForm() {
     completeOnboardingAction,
     initialOnboardingState,
   );
+  const [stateCode, setStateCode] = useState('');
+  const [timeZone, setTimeZone] = useState('');
 
   return (
     <form action={action} className="onboarding-form">
@@ -52,7 +56,14 @@ export function OnboardingForm() {
           </label>
           <label>
             US phone
-            <input name="phone" placeholder="(555) 555-0123" type="tel" />
+            <input
+              autoComplete="tel-national"
+              inputMode="tel"
+              maxLength={20}
+              name="phone"
+              placeholder="(555) 555-0123"
+              type="tel"
+            />
           </label>
         </div>
       </fieldset>
@@ -67,6 +78,11 @@ export function OnboardingForm() {
           <UsLocationFields
             cityErrorId="city-error"
             cityErrors={state.fieldErrors?.city}
+            onStateChange={(nextStateCode) => {
+              setStateCode(nextStateCode);
+              const suggested = defaultTimeZoneForState(nextStateCode);
+              if (suggested) setTimeZone(suggested);
+            }}
             required
             stateErrorId="state-code-error"
             stateErrors={state.fieldErrors?.stateCode}
@@ -80,18 +96,12 @@ export function OnboardingForm() {
               required
             />
           </label>
-          <label>
-            Time zone
-            <select defaultValue="America/Los_Angeles" name="timeZone">
-              <option value="America/New_York">Eastern</option>
-              <option value="America/Chicago">Central</option>
-              <option value="America/Denver">Mountain</option>
-              <option value="America/Phoenix">Arizona</option>
-              <option value="America/Los_Angeles">Pacific</option>
-              <option value="America/Anchorage">Alaska</option>
-              <option value="Pacific/Honolulu">Hawaii</option>
-            </select>
-          </label>
+          <UsTimeZoneSelect
+            onChange={setTimeZone}
+            required
+            stateCode={stateCode}
+            value={timeZone}
+          />
         </div>
       </fieldset>
 

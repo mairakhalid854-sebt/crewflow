@@ -199,3 +199,9 @@
     gap: 12px;
   }
 }
+
+.field-help {
+  margin: 4px 0 0;
+  color: var(--cf-muted, #5b6b63);
+  font-size: 0.78rem;
+}
