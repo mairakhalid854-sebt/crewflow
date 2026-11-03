@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { requireTenantContext } from '../../../../lib/auth/tenant-context';
+import { serviceSkillSuggestions } from '../../../../lib/skill-suggestions';
 import { createClient } from '../../../../lib/supabase/server';
 import { StaffDetailsForm } from '../staff-details-form';
 import { TimeOffPanel } from '../time-off-panel';
@@ -53,6 +54,10 @@ export default async function StaffDetailsPage({
     throw new Error('Unable to load staff details.');
   }
   if (!membershipResult.data || !profileResult.data) notFound();
+  const skillSuggestions = await serviceSkillSuggestions(
+    supabase,
+    context.tenantId,
+  );
 
   return (
     <div className="workspace-page resource-editor-page">
@@ -72,6 +77,7 @@ export default async function StaffDetailsPage({
         <StaffDetailsForm
           availability={availabilityResult.data ?? []}
           profile={profileResult.data}
+          skillSuggestions={skillSuggestions}
         />
       ) : (
         <div className="empty-state">

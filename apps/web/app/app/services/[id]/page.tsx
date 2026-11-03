@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { requireTenantContext } from '../../../../lib/auth/tenant-context';
 import { createClient } from '../../../../lib/supabase/server';
+import { teamSkillSuggestions } from '../../../../lib/skill-suggestions';
 import { archiveServiceAction } from '../actions';
 import { ArchiveServiceButton } from '../archive-service-button';
 import { ServiceForm } from '../service-form';
@@ -29,6 +30,10 @@ export default async function ServiceDetailPage({
     .maybeSingle();
 
   if (error) throw new Error('Service could not be loaded.');
+  const skillSuggestions = await teamSkillSuggestions(
+    supabase,
+    context.tenantId,
+  );
   if (!service) notFound();
 
   return (
@@ -47,7 +52,7 @@ export default async function ServiceDetailPage({
           serviceId={service.id}
         />
       </header>
-      <ServiceForm service={service} />
+      <ServiceForm service={service} skillSuggestions={skillSuggestions} />
     </div>
   );
 }

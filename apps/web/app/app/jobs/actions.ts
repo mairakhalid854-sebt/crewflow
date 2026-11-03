@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
 import { localDateTimeToIso } from '../../../lib/date-time';
+import { missingSkills } from '../../../lib/skills';
 import { createClient } from '../../../lib/supabase/server';
 import { nextJobStatuses } from './job-status';
 
@@ -124,6 +125,62 @@ function databaseFailure(code?: string, detail?: string): JobFormState {
   };
 }
 
+type ServerClient = Awaited<ReturnType<typeof createClient>>;
+
+/** Names the exact skills a technician lacks when dispatch rejects them. */
+async function skillsFailure(
+  supabase: ServerClient,
+  tenantId: string,
+  serviceId: string,
+  membershipId: string,
+  fallback: JobFormState,
+): Promise<JobFormState> {
+  if (!serviceId || !membershipId) return fallback;
+  const [serviceResult, profileResult] = await Promise.all([
+    supabase
+      .from('services')
+      .select('name, required_skills')
+      .eq('id', serviceId)
+      .eq('tenant_id', tenantId)
+      .maybeSingle(),
+    supabase
+      .from('staff_profiles')
+      .select('full_name, skills')
+      .eq('membership_id', membershipId)
+      .eq('tenant_id', tenantId)
+      .maybeSingle(),
+  ]);
+  if (!serviceResult.data || !profileResult.data) return fallback;
+  const missing = missingSkills(
+    serviceResult.data.required_skills,
+    profileResult.data.skills,
+  );
+  if (!missing.length) return fallback;
+  return {
+    message: `${profileResult.data.full_name} is missing ${missing.join(', ')}, which ${serviceResult.data.name} requires. Use the add-skills button above, or pick another technician.`,
+    status: 'error',
+  };
+}
+
+async function jobSaveFailure(
+  supabase: ServerClient,
+  tenantId: string,
+  job: { readonly assignedMembershipId: string; readonly serviceId: string },
+  error: { readonly code?: string; readonly message?: string },
+): Promise<JobFormState> {
+  const failure = databaseFailure(error.code, error.message);
+  if (!error.message?.toLocaleLowerCase().includes('required service skills')) {
+    return failure;
+  }
+  return skillsFailure(
+    supabase,
+    tenantId,
+    job.serviceId,
+    job.assignedMembershipId,
+    failure,
+  );
+}
+
 export async function createJobAction(
   _previousState: JobFormState,
   formData: FormData,
@@ -165,7 +222,9 @@ export async function createJobAction(
     .select('id')
     .single();
 
-  if (error) return databaseFailure(error.code, error.message);
+  if (error) {
+    return jobSaveFailure(supabase, context.tenantId, parsed.data, error);
+  }
   revalidatePath('/app');
   revalidatePath('/app/jobs');
   redirect(`/app/jobs/${data.id}`);
@@ -218,7 +277,9 @@ export async function updateJobAction(
     .select('id')
     .maybeSingle();
 
-  if (error) return databaseFailure(error.code, error.message);
+  if (error) {
+    return jobSaveFailure(supabase, context.tenantId, parsed.data, error);
+  }
   if (!data) return { message: 'Job was not found.', status: 'error' };
 
   revalidatePath('/app');

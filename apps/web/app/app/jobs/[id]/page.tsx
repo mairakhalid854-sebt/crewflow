@@ -94,7 +94,7 @@ export default async function JobDetailPage({
       .order('last_name'),
     supabase
       .from('services')
-      .select('id, name')
+      .select('id, name, required_skills')
       .eq('tenant_id', context.tenantId)
       .order('name'),
     supabase
@@ -105,7 +105,7 @@ export default async function JobDetailPage({
       .eq('status', 'active'),
     supabase
       .from('staff_profiles')
-      .select('membership_id, full_name')
+      .select('membership_id, full_name, skills')
       .eq('tenant_id', context.tenantId),
     supabase
       .from('audit_events')
@@ -194,6 +194,7 @@ export default async function JobDetailPage({
   const services = (servicesResult.data ?? []).map((service) => ({
     id: service.id,
     label: service.name,
+    requiredSkills: service.required_skills,
   }));
   const technicians = (profilesResult.data ?? [])
     .filter(
@@ -204,6 +205,7 @@ export default async function JobDetailPage({
     .map((profile) => ({
       id: profile.membership_id,
       label: profile.full_name,
+      skills: profile.skills,
     }));
   const customerName =
     customers.find((customer) => customer.id === job.customer_id)?.label ??
