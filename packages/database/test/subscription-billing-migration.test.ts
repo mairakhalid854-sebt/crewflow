@@ -11,7 +11,7 @@ const migration = readFileSync(
 );
 const edgeFunction = readFileSync(
   new URL(
-    '../../../supabase/functions/paddle-billing-webhook/index.js',
+    '../../../supabase/functions/_shared/paddle-webhook.js',
     import.meta.url,
   ),
   'utf8',
@@ -203,7 +203,8 @@ describe('phase 5 subscription billing foundation', () => {
   it('accepts only subscription events and never logs billing payloads', () => {
     expect(edgeFunction).toContain("'subscription.updated'");
     expect(edgeFunction).toContain("'subscription.canceled'");
-    expect(edgeFunction).toContain("'apply_paddle_sandbox_subscription_event'");
+    expect(edgeFunction).toContain("'apply_paddle_subscription_event'");
+    expect(edgeFunction).toContain('target_provider: environment.provider');
     expect(edgeFunction).toContain('target_payload_sha256');
     expect(edgeFunction).not.toContain("console.log('Webhook Data:'");
     expect(edgeFunction).not.toContain('PADDLE_API_KEY');

@@ -5,16 +5,19 @@ import { redirect } from 'next/navigation';
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
 import { createClient } from '../../../lib/supabase/server';
 
-const PADDLE_SANDBOX_PORTAL_HOST = 'sandbox-customer-portal.paddle.com';
+const PADDLE_PORTAL_HOSTS = new Set([
+  'customer-portal.paddle.com',
+  'sandbox-customer-portal.paddle.com',
+]);
 
-function isSafePaddleSandboxPortalUrl(candidate: unknown): candidate is string {
+function isSafePaddlePortalUrl(candidate: unknown): candidate is string {
   if (typeof candidate !== 'string') return false;
 
   try {
     const url = new URL(candidate);
     return (
       url.protocol === 'https:' &&
-      url.hostname === PADDLE_SANDBOX_PORTAL_HOST &&
+      PADDLE_PORTAL_HOSTS.has(url.hostname) &&
       url.username === '' &&
       url.password === ''
     );
@@ -42,7 +45,7 @@ export async function openBillingPortalAction(): Promise<void> {
   );
   const portalUrl = portalUrlFromInvocation(invocation);
 
-  if (!isSafePaddleSandboxPortalUrl(portalUrl)) {
+  if (!isSafePaddlePortalUrl(portalUrl)) {
     redirect('/app/billing?portal=unavailable');
   }
 

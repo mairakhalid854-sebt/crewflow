@@ -76,10 +76,16 @@ export default async function AuthenticatedAppLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const context = await requireTenantContext();
   const supabase = await createClient();
-  const { data: accessMode, error: accessError } = await supabase.rpc(
-    'get_current_tenant_access_mode',
-  );
-  if (accessError) throw new Error('Workspace access could not be verified.');
+  const [
+    { data: accessMode, error: accessError },
+    { data: requiresCheckout, error: checkoutError },
+  ] = await Promise.all([
+    supabase.rpc('get_current_tenant_access_mode'),
+    supabase.rpc('get_current_tenant_requires_checkout'),
+  ]);
+  if (accessError || checkoutError) {
+    throw new Error('Workspace access could not be verified.');
+  }
   const initials = context.userName
     .split(' ')
     .slice(0, 2)
@@ -124,7 +130,26 @@ export default async function AuthenticatedAppLayout({
             </form>
           </div>
         </header>
-        {accessMode !== 'full' ? (
+        {requiresCheckout ? (
+          <div
+            className="subscription-access-banner subscription-access-read_only"
+            role="status"
+          >
+            <strong>Choose a plan to unlock your workspace</strong>
+            <span>
+              {context.role === 'owner' ? (
+                <>
+                  Start your free trial on the{' '}
+                  <Link href="/app/billing">CrewFlow360 billing page</Link>.
+                  Your data stays available, but business records cannot be
+                  changed until a plan is active.
+                </>
+              ) : (
+                'Business records cannot be changed until the workspace owner chooses a CrewFlow360 plan.'
+              )}
+            </span>
+          </div>
+        ) : accessMode !== 'full' ? (
           <div
             className={`subscription-access-banner subscription-access-${accessMode}`}
             role="status"

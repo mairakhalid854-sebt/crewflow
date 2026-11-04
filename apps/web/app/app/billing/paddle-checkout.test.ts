@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   checkoutCustomData,
-  isSandboxCheckoutConfigured,
-  type SandboxCheckoutPlan,
+  isCheckoutConfigured,
+  paddleEnvironmentFromToken,
+  paddleProviderFor,
+  type CheckoutPlan,
 } from './paddle-checkout';
 
-const plan: SandboxCheckoutPlan = {
-  code: 'starter_monthly_sandbox',
+const plan: CheckoutPlan = {
+  code: 'starter_monthly',
   displayName: 'Starter',
   priceId: 'pri_01h1vjes1y163xfj1rh1tkfb65',
   amountCents: 2900,
@@ -17,15 +19,30 @@ const plan: SandboxCheckoutPlan = {
   trialDays: 14,
 };
 
-describe('Paddle sandbox checkout guards', () => {
-  it('requires a sandbox client token and validated catalog plans', () => {
-    expect(isSandboxCheckoutConfigured('test_abc123', [plan])).toBe(true);
-    expect(isSandboxCheckoutConfigured('live_abc123', [plan])).toBe(false);
-    expect(isSandboxCheckoutConfigured('test_abc123', [])).toBe(false);
+describe('Paddle checkout guards', () => {
+  it('derives the Paddle environment from the client-side token', () => {
+    expect(paddleEnvironmentFromToken('test_abc123')).toBe('sandbox');
+    expect(paddleEnvironmentFromToken('live_abc123')).toBe('production');
+    expect(paddleEnvironmentFromToken('pdl_live_apikey_secret')).toBe(
+      undefined,
+    );
+    expect(paddleEnvironmentFromToken(undefined)).toBe(undefined);
+    expect(paddleProviderFor('production')).toBe('paddle');
+    expect(paddleProviderFor('sandbox')).toBe('paddle_sandbox');
+  });
+
+  it('requires a client token and validated catalog plans', () => {
+    expect(isCheckoutConfigured('test_abc123', [plan])).toBe(true);
+    expect(isCheckoutConfigured('live_abc123', [plan])).toBe(true);
+    expect(isCheckoutConfigured('', [plan])).toBe(false);
+    expect(isCheckoutConfigured('live_abc123', [])).toBe(false);
     expect(
-      isSandboxCheckoutConfigured('test_abc123', [
+      isCheckoutConfigured('live_abc123', [
         { ...plan, priceId: 'not-a-price' },
       ]),
+    ).toBe(false);
+    expect(
+      isCheckoutConfigured('live_abc123', [{ ...plan, currencyCode: 'EUR' }]),
     ).toBe(false);
   });
 

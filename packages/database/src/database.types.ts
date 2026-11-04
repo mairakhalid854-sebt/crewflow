@@ -3023,6 +3023,10 @@ export type Database = {
         Args: never;
         Returns: Database['public']['Enums']['billing_access_mode'];
       };
+      get_current_tenant_requires_checkout: {
+        Args: never;
+        Returns: boolean;
+      };
       get_public_intake_slot_status: {
         Args: { session_token: string; target_conversation_id: string };
         Returns: Json;
@@ -3090,6 +3094,21 @@ export type Database = {
       is_allowed_external_payment_url: {
         Args: { candidate: string };
         Returns: boolean;
+      };
+      list_owner_paddle_plans: {
+        Args: {
+          target_provider: Database['public']['Enums']['billing_provider'];
+        };
+        Returns: {
+          amount_cents: number;
+          billing_interval: Database['public']['Enums']['billing_interval'];
+          code: string;
+          currency_code: string;
+          display_name: string;
+          provider_price_id: string;
+          seat_limit: number;
+          trial_days: number;
+        }[];
       };
       list_owner_paddle_sandbox_plans: {
         Args: never;
@@ -3449,7 +3468,7 @@ export type Database = {
       billing_access_mode: 'full' | 'grace' | 'read_only';
       billing_event_status: 'processed' | 'ignored' | 'failed';
       billing_interval: 'month' | 'year';
-      billing_provider: 'stub' | 'paddle_sandbox';
+      billing_provider: 'stub' | 'paddle_sandbox' | 'paddle';
       billing_reconciliation_status:
         'running' | 'succeeded' | 'partial' | 'failed';
       follow_up_delivery_status:
@@ -3673,7 +3692,7 @@ export const Constants = {
       billing_access_mode: ['full', 'grace', 'read_only'],
       billing_event_status: ['processed', 'ignored', 'failed'],
       billing_interval: ['month', 'year'],
-      billing_provider: ['stub', 'paddle_sandbox'],
+      billing_provider: ['stub', 'paddle_sandbox', 'paddle'],
       billing_reconciliation_status: [
         'running',
         'succeeded',

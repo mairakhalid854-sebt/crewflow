@@ -112,5 +112,6 @@ export async function completeOnboardingAction(
     };
   }
 
-  redirect('/app');
+  // New workspaces must choose a plan before business records can change.
+  redirect('/app/billing');
 }
