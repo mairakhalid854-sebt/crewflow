@@ -2,10 +2,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const PADDLE_API_URL = 'https://sandbox-api.paddle.com';
-const PADDLE_SANDBOX_KEY =
-  /^pdl_sdbx_apikey_[a-z\d]{26}_[a-zA-Z\d]{22}_[a-zA-Z\d]{3}$/;
-const PORTAL_HOST = 'sandbox-customer-portal.paddle.com';
+import { paddleEnvironmentForProvider } from '../_shared/paddle-environments.js';
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -44,12 +41,12 @@ function bearerToken(request) {
   return token.length >= 20 && token.length <= 8192 ? token : undefined;
 }
 
-function validPortalUrl(candidate) {
+function validPortalUrl(candidate, portalHost) {
   try {
     const url = new URL(candidate);
     return (
       url.protocol === 'https:' &&
-      url.hostname === PORTAL_HOST &&
+      url.hostname === portalHost &&
       url.username === '' &&
       url.password === ''
     );
@@ -65,7 +62,6 @@ Deno.serve(async (request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const secretKeys = configuredSecretKeys();
-  const paddleApiKey = Deno.env.get('PADDLE_SANDBOX_API_KEY');
   if (!supabaseUrl || secretKeys.length === 0) {
     return json({ error: 'Billing portal is not configured.' }, 500);
   }
@@ -90,21 +86,23 @@ Deno.serve(async (request) => {
     console.error('Unable to authorize billing portal access.');
     return json({ error: 'Billing portal authorization failed.' }, 500);
   }
+  const environment = paddleEnvironmentForProvider(context?.provider);
   if (
-    context?.provider !== 'paddle_sandbox' ||
+    !environment ||
     !context.provider_customer_id ||
     !context.provider_subscription_id
   ) {
-    return json({ error: 'Sandbox subscription is not configured.' }, 409);
+    return json({ error: 'Paddle subscription is not configured.' }, 409);
   }
-  if (!paddleApiKey || !PADDLE_SANDBOX_KEY.test(paddleApiKey)) {
-    return json({ error: 'Paddle sandbox portal is dormant.' }, 503);
+  const paddleApiKey = Deno.env.get(environment.apiKeySecret);
+  if (!paddleApiKey || !environment.apiKeyPattern.test(paddleApiKey)) {
+    return json({ error: `${environment.label} portal is dormant.` }, 503);
   }
 
   let response;
   try {
     response = await fetch(
-      `${PADDLE_API_URL}/customers/${context.provider_customer_id}/portal-sessions`,
+      `${environment.apiUrl}/customers/${context.provider_customer_id}/portal-sessions`,
       {
         method: 'POST',
         headers: {
@@ -119,27 +117,30 @@ Deno.serve(async (request) => {
       },
     );
   } catch {
-    return json({ error: 'Paddle sandbox portal is unavailable.' }, 502);
+    return json({ error: `${environment.label} portal is unavailable.` }, 502);
   }
 
   if (!response.ok) {
     console.error(
       `Paddle portal request failed with status ${response.status}.`,
     );
-    return json({ error: 'Paddle sandbox portal is unavailable.' }, 502);
+    return json({ error: `${environment.label} portal is unavailable.` }, 502);
   }
 
   let payload;
   try {
     payload = await response.json();
   } catch {
-    return json({ error: 'Paddle sandbox portal returned invalid data.' }, 502);
+    return json(
+      { error: `${environment.label} portal returned invalid data.` },
+      502,
+    );
   }
 
   const portalUrl = payload?.data?.urls?.general?.overview;
-  if (!validPortalUrl(portalUrl)) {
+  if (!validPortalUrl(portalUrl, environment.portalHost)) {
     return json(
-      { error: 'Paddle sandbox portal returned an unsafe link.' },
+      { error: `${environment.label} portal returned an unsafe link.` },
       502,
     );
   }

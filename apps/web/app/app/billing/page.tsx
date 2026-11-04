@@ -3,10 +3,12 @@ import { createClient } from '../../../lib/supabase/server';
 
 import { openBillingPortalAction } from './actions';
 import {
-  isSandboxCheckoutConfigured,
-  type SandboxCheckoutPlan,
+  isCheckoutConfigured,
+  paddleEnvironmentFromToken,
+  paddleProviderFor,
+  type CheckoutPlan,
 } from './paddle-checkout';
-import { SandboxCheckout } from './sandbox-checkout';
+import { PlanCheckout } from './plan-checkout';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +28,14 @@ function formatLimit(value: number | null): string {
   return value === null ? 'Not configured' : value.toLocaleString('en-US');
 }
 
+function providerLabel(provider: string, planCode: string): string {
+  if (provider === 'paddle') return 'Billed by Paddle';
+  if (provider === 'paddle_sandbox') return 'Paddle sandbox';
+  return planCode === 'development_stub'
+    ? 'Free beta access'
+    : 'No subscription yet';
+}
+
 interface BillingPageProps {
   readonly searchParams: Promise<{ checkout?: string; portal?: string }>;
 }
@@ -34,9 +44,15 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const query = await searchParams;
   const context = await requireTenantContext(['owner']);
   const supabase = await createClient();
+  const paddleClientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+  const environment = paddleEnvironmentFromToken(paddleClientToken);
   const [{ data, error }, plansResult] = await Promise.all([
     supabase.rpc('get_owner_billing_summary'),
-    supabase.rpc('list_owner_paddle_sandbox_plans'),
+    environment
+      ? supabase.rpc('list_owner_paddle_plans', {
+          target_provider: paddleProviderFor(environment),
+        })
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   if (error || !data?.[0]) {
@@ -45,22 +61,25 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
 
   const billing = data[0];
   const isStub = billing.provider === 'stub';
-  const sandboxPlans: SandboxCheckoutPlan[] = (plansResult.data ?? []).map(
-    (plan) => ({
-      amountCents: plan.amount_cents,
-      billingInterval: plan.billing_interval,
-      code: plan.code,
-      currencyCode: plan.currency_code,
-      displayName: plan.display_name,
-      priceId: plan.provider_price_id,
-      seatLimit: plan.seat_limit,
-      trialDays: plan.trial_days,
-    }),
-  );
-  const paddleClientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+  const isSandbox = environment === 'sandbox';
+  const requiresCheckout =
+    billing.plan_code === 'checkout_required' ||
+    (!isStub && billing.subscription_status === 'canceled');
+  const plans: CheckoutPlan[] = (plansResult.data ?? []).map((plan) => ({
+    amountCents: plan.amount_cents,
+    billingInterval: plan.billing_interval,
+    code: plan.code,
+    currencyCode: plan.currency_code,
+    displayName: plan.display_name,
+    priceId: plan.provider_price_id,
+    seatLimit: plan.seat_limit,
+    trialDays: plan.trial_days,
+  }));
   const checkoutConfigured =
-    !plansResult.error &&
-    isSandboxCheckoutConfigured(paddleClientToken, sandboxPlans);
+    !plansResult.error && isCheckoutConfigured(paddleClientToken, plans);
+  // Sandbox keeps test checkout open for any stub workspace so staging can
+  // exercise the flow; live checkout appears only when a plan is required.
+  const showCheckout = requiresCheckout || (isSandbox && isStub);
 
   return (
     <div className="workspace-page billing-page">
@@ -69,9 +88,8 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           <p className="workspace-kicker">Owner controls</p>
           <h1>CrewFlow360 billing</h1>
           <p>
-            Review the subscription entitlement for this workspace. Customer
-            invoice payments remain separate and always go directly to your
-            business.
+            Review the subscription for this workspace. Customer invoice
+            payments remain separate and always go directly to your business.
           </p>
         </div>
         <span
@@ -80,6 +98,14 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           {label(billing.access_mode)} access
         </span>
       </header>
+
+      {requiresCheckout ? (
+        <p className="billing-checkout-required" role="status">
+          {billing.plan_code === 'checkout_required'
+            ? 'Choose a plan below to start your free trial and unlock your workspace.'
+            : 'Your subscription has ended. Choose a plan to unlock your workspace again.'}
+        </p>
+      ) : null}
 
       <section
         className="billing-summary-grid"
@@ -92,8 +118,12 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         </article>
         <article className="billing-summary-card">
           <span>Status</span>
-          <strong>{label(billing.subscription_status)}</strong>
-          <small>{isStub ? 'Local/staging provider' : 'Paddle sandbox'}</small>
+          <strong>
+            {billing.plan_code === 'checkout_required'
+              ? 'Not started'
+              : label(billing.subscription_status)}
+          </strong>
+          <small>{providerLabel(billing.provider, billing.plan_code)}</small>
         </article>
         <article className="billing-summary-card">
           <span>Current period</span>
@@ -146,27 +176,32 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
 
       {query.checkout === 'success' ? (
         <p className="billing-checkout-success" role="status">
-          Test checkout completed. Paddle is syncing the subscription; refresh
-          this page in a few seconds if the status has not changed yet.
+          {isSandbox ? 'Test checkout completed.' : 'Checkout completed.'}{' '}
+          Paddle is syncing the subscription; refresh this page in a few seconds
+          if the status has not changed yet.
         </p>
       ) : null}
 
-      {isStub && checkoutConfigured && paddleClientToken ? (
-        <SandboxCheckout
+      {showCheckout &&
+      checkoutConfigured &&
+      environment &&
+      paddleClientToken ? (
+        <PlanCheckout
           clientToken={paddleClientToken}
-          plans={sandboxPlans}
+          environment={environment}
+          plans={plans}
           tenantId={context.tenantId}
         />
       ) : null}
 
-      {isStub && !checkoutConfigured ? (
+      {showCheckout && !checkoutConfigured ? (
         <section className="billing-plan-panel">
           <div>
-            <p className="workspace-kicker">Sandbox catalog</p>
-            <h2>Checkout setup pending</h2>
+            <p className="workspace-kicker">Choose a plan</p>
+            <h2>Checkout is being set up</h2>
             <p>
-              CrewFlow360 needs active Paddle sandbox price IDs and a sandbox
-              client-side token before test checkout can be opened.
+              Plans will appear here shortly. Contact support@crewflow360.com if
+              this message does not go away.
             </p>
           </div>
         </section>
@@ -178,24 +213,23 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           <h2>Billing portal</h2>
           <p>
             {isStub
-              ? 'The customer portal becomes available after a Paddle sandbox subscription is linked to this workspace.'
-              : 'Open Paddle’s hosted sandbox portal to review invoices, payment methods, and subscription settings.'}
+              ? 'The billing portal becomes available after you start a subscription.'
+              : 'Open Paddle’s secure portal to review invoices, update your payment method, or cancel your subscription.'}
           </p>
           {query.portal === 'unavailable' ? (
             <p className="billing-portal-error" role="alert">
-              The sandbox billing portal is temporarily unavailable. Please try
-              again.
+              The billing portal is temporarily unavailable. Please try again.
             </p>
           ) : null}
         </div>
         {isStub ? (
           <button className="secondary-button" disabled type="button">
-            Portal not configured
+            Portal not available yet
           </button>
         ) : (
           <form action={openBillingPortalAction}>
             <button className="primary-button" type="submit">
-              Open sandbox portal
+              Open billing portal
             </button>
           </form>
         )}
@@ -205,18 +239,21 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         <div aria-hidden="true">✓</div>
         <div>
           <h2>
-            {isStub ? 'No real billing is active' : 'Sandbox billing only'}
+            {billing.provider === 'paddle_sandbox'
+              ? 'Sandbox billing only'
+              : 'Paddle is the merchant of record'}
           </h2>
           <p>
-            {isStub
-              ? 'This price-free development entitlement keeps CrewFlow360 test workflows available. It cannot create a checkout or charge a card.'
-              : 'Verified Paddle sandbox events can update this entitlement, but no live Paddle provider exists in the application.'}
+            {billing.provider === 'paddle_sandbox'
+              ? 'Verified Paddle sandbox events update this test entitlement. No real card is charged.'
+              : 'Paddle.com handles checkout, payment, invoices, and sales tax for CrewFlow360 subscriptions. CrewFlow360 never sees your full card details.'}
           </p>
-          <p>
-            Live plans, prices, trial/grace terms, seller approval, and legal
-            wording still require an explicit owner decision before production
-            billing can be enabled.
-          </p>
+          {billing.plan_code === 'development_stub' ? (
+            <p>
+              This workspace has free beta access and keeps full access at no
+              charge.
+            </p>
+          ) : null}
         </div>
       </section>
     </div>
