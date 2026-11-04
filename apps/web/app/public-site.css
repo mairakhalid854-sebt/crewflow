@@ -1,0 +1,448 @@
+/* Public marketing pages (home, pricing, refund policy). Colors and shapes
+   follow the login story panel and the privacy/terms pages. */
+
+.site-shell {
+  background:
+    radial-gradient(
+      circle at top left,
+      rgb(23 105 244 / 12%),
+      transparent 32rem
+    ),
+    #f4f7fc;
+  color: #11223c;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.site-shell > main {
+  flex: 1;
+  padding: 0 24px 64px;
+}
+
+.site-header {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 1128px;
+  padding: 28px 24px;
+  width: 100%;
+}
+
+.site-brand {
+  align-items: center;
+  display: flex;
+  font-size: 20px;
+  font-weight: 800;
+  gap: 10px;
+}
+
+.site-brand span {
+  align-items: center;
+  background: #1769f4;
+  border-radius: 10px;
+  color: white;
+  display: inline-flex;
+  height: 36px;
+  justify-content: center;
+  transform: rotate(-4deg);
+  width: 36px;
+}
+
+.site-nav {
+  align-items: center;
+  display: flex;
+  gap: 22px;
+}
+
+.site-nav a {
+  white-space: nowrap;
+}
+
+.site-nav a:not(.site-button) {
+  color: #294568;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.site-button {
+  align-items: center;
+  background: #1769f4;
+  border: 1px solid #1769f4;
+  border-radius: 10px;
+  color: white;
+  display: inline-flex;
+  font-size: 15px;
+  font-weight: 750;
+  justify-content: center;
+  padding: 13px 20px;
+  transition: background 120ms ease;
+}
+
+.site-button:hover {
+  background: #0d4cc4;
+  border-color: #0d4cc4;
+}
+
+.site-button-small {
+  font-size: 13px;
+  padding: 10px 15px;
+}
+
+.site-button-ghost {
+  background: transparent;
+  border-color: rgb(184 199 217 / 55%);
+  color: white;
+}
+
+.site-button-ghost:hover {
+  background: rgb(255 255 255 / 8%);
+  border-color: rgb(184 199 217 / 80%);
+}
+
+.site-kicker {
+  color: #70a7ff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  margin: 0 0 14px;
+}
+
+.site-kicker-blue,
+.site-page-intro p.site-kicker-blue {
+  color: #0f5ad8;
+  font-size: 11px;
+}
+
+.site-hero {
+  background:
+    radial-gradient(circle at 18% 18%, #1e4677 0, transparent 34%),
+    linear-gradient(145deg, #11223c, #091528);
+  border-radius: 22px;
+  color: white;
+  margin: 8px auto 0;
+  max-width: 1080px;
+  padding: clamp(40px, 8vw, 88px) clamp(28px, 6vw, 80px);
+}
+
+.site-hero-copy {
+  max-width: 620px;
+}
+
+.site-hero h1 {
+  font-size: clamp(40px, 6vw, 72px);
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+  margin: 0 0 24px;
+}
+
+.site-hero-copy > p:not(.site-kicker) {
+  color: #b8c7d9;
+  font-size: 17px;
+  line-height: 1.65;
+  margin: 0;
+  max-width: 48ch;
+}
+
+.site-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.site-hero-copy > p.site-hero-note {
+  font-size: 14px;
+  margin-top: 18px;
+}
+
+.site-section {
+  margin: 0 auto;
+  max-width: 1080px;
+  padding-top: 64px;
+}
+
+.site-section h2 {
+  font-size: clamp(28px, 4vw, 40px);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.site-feature-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 32px;
+}
+
+.site-feature,
+.site-plan,
+.site-included {
+  background: white;
+  border: 1px solid #e1e7f0;
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgb(17 34 60 / 6%);
+  padding: 26px;
+}
+
+.site-feature h3 {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+}
+
+.site-feature p,
+.site-plan-description,
+.site-fine-print p,
+.site-cta p,
+.site-page-intro p {
+  color: #53657d;
+  font-size: 15px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.site-cta {
+  text-align: center;
+}
+
+.site-cta p {
+  margin: 14px auto 24px;
+  max-width: 52ch;
+}
+
+.site-page-intro {
+  max-width: 720px;
+  text-align: center;
+}
+
+.site-page-intro h1 {
+  font-size: clamp(36px, 6vw, 56px);
+  letter-spacing: -0.05em;
+  line-height: 1.02;
+  margin: 0 0 18px;
+}
+
+.site-page-intro p {
+  font-size: 17px;
+}
+
+.site-plan-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-top: 40px;
+}
+
+.site-plan {
+  display: flex;
+  flex-direction: column;
+  padding: 30px;
+}
+
+.site-plan h2 {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.site-plan-description {
+  margin-top: 8px;
+  min-height: 3.4em;
+}
+
+.site-plan-price {
+  align-items: baseline;
+  display: flex;
+  gap: 4px;
+  margin: 22px 0 6px;
+}
+
+.site-plan-price strong {
+  font-size: 46px;
+  letter-spacing: -0.05em;
+}
+
+.site-plan-price span,
+.site-plan-seats {
+  color: #53657d;
+  font-size: 15px;
+}
+
+.site-plan-seats {
+  font-weight: 700;
+  margin: 0 0 24px;
+}
+
+.site-plan .site-button {
+  margin-top: auto;
+}
+
+.site-included {
+  margin: 0 auto;
+  max-width: 760px;
+  padding: 34px;
+}
+
+.site-included h2 {
+  font-size: 24px;
+  margin-bottom: 18px;
+}
+
+.site-included ul {
+  color: #294568;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.site-included li {
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: 28px;
+  position: relative;
+}
+
+.site-included li::before {
+  color: #16a34a;
+  content: '✓';
+  font-weight: 800;
+  left: 4px;
+  position: absolute;
+}
+
+.site-fine-print {
+  max-width: 760px;
+  padding-top: 32px;
+  text-align: center;
+}
+
+.site-fine-print p {
+  font-size: 13px;
+}
+
+.site-fine-print a,
+.site-legal-card p a {
+  color: #0f5ad8;
+  font-weight: 700;
+}
+
+.site-legal-card {
+  margin-top: 8px;
+}
+
+.site-footer {
+  background: #0d1d35;
+  color: #b8c7d9;
+  padding: 36px 24px;
+}
+
+.site-footer-inner {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 1080px;
+}
+
+.site-footer-brand {
+  color: white;
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.site-footer address {
+  font-size: 13px;
+  font-style: normal;
+  line-height: 1.7;
+}
+
+.site-footer a {
+  color: #d8e1ed;
+}
+
+.site-footer address a {
+  font-weight: 700;
+}
+
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (max-width: 860px) {
+  .site-feature-grid,
+  .site-plan-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .site-plan-description {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .site-shell > main {
+    padding: 0 14px 40px;
+  }
+
+  .site-header {
+    padding: 18px 14px;
+  }
+
+  .site-nav {
+    gap: 14px;
+  }
+
+  .site-brand {
+    font-size: 17px;
+    gap: 8px;
+  }
+
+  .site-brand span {
+    height: 32px;
+    width: 32px;
+  }
+
+  .site-nav {
+    gap: 12px;
+  }
+
+  .site-button-small {
+    padding: 9px 12px;
+  }
+
+  .site-nav a[href='/pricing'] {
+    display: none;
+  }
+
+  .site-hero {
+    border-radius: 16px;
+  }
+
+  .site-included ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .site-section {
+    padding-top: 44px;
+  }
+}
+
+/* Very small phones: the page body already has a large trial button. */
+@media (max-width: 400px) {
+  .site-nav .site-button-small {
+    display: none;
+  }
+}
