@@ -78,14 +78,15 @@ export default async function AuthenticatedAppLayout({
   const supabase = await createClient();
   const [
     { data: accessMode, error: accessError },
-    { data: requiresCheckout, error: checkoutError },
+    { data: checkoutRequired, error: checkoutError },
   ] = await Promise.all([
     supabase.rpc('get_current_tenant_access_mode'),
     supabase.rpc('get_current_tenant_requires_checkout'),
   ]);
-  if (accessError || checkoutError) {
-    throw new Error('Workspace access could not be verified.');
-  }
+  if (accessError) throw new Error('Workspace access could not be verified.');
+  // The plan prompt is guidance only; write access is enforced in the
+  // database. Fall back to the generic banner if the prompt cannot load.
+  const requiresCheckout = !checkoutError && checkoutRequired === true;
   const initials = context.userName
     .split(' ')
     .slice(0, 2)
