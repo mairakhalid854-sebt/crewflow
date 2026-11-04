@@ -10,6 +10,9 @@ const budgets = {
 } as const;
 
 const publicRoutes = [
+  { name: 'home', path: '/' },
+  { name: 'pricing', path: '/pricing' },
+  { name: 'refund policy', path: '/refund-policy' },
   { name: 'login', path: '/login' },
   { name: 'privacy notice', path: '/privacy' },
   { name: 'terms of service', path: '/terms' },
