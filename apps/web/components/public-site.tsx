@@ -30,11 +30,7 @@ export function PublicSiteFooter() {
         <div>
           <p className="site-footer-brand">CrewFlow360</p>
           <address>
-            30 N Gould St, Ste N, Sheridan, WY 82801, United States
-            <br />
             <a href={`mailto:${supportEmail}`}>{supportEmail}</a>
-            {' · '}
-            <a href="tel:+13074002050">+1 307-400-2050</a>
           </address>
         </div>
         <nav aria-label="Legal" className="site-footer-links">
