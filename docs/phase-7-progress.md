@@ -16,11 +16,12 @@ production environment.
   under the override.
 - One low-severity `deepmerge` advisory (GHSA-gcqx-w48m-w2h4) remains through
   Expo's build-time `@expo/config`. No patched `deepmerge` release exists; its
-  reviewed exception expires on 2026-11-10. A production mobile release still
+  reviewed exception expires on 2026-12-04. A production mobile release still
   needs installed-device acceptance and store prerequisites.
 - Moderate `glob` (GHSA-3g3m-2fjr-6pw4) and `minimatch` (GHSA-g3hv-75wg-m249)
   advisories also remain through Expo's build-time tooling. Their fixes are only
-  in the next major releases; the reviewed exceptions share the 2026-11-10 expiry.
+  in the next major releases; the reviewed exceptions share the 2026-12-04 expiry
+  (renewed 2026-11-04: no Expo release has moved to the patched majors yet).
 
 ## AI staging baseline
 
