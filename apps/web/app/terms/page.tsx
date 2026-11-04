@@ -25,14 +25,15 @@ export default function TermsPage() {
       <article className="privacy-card">
         <p className="privacy-kicker">TERMS OF SERVICE</p>
         <h1>Terms for using CrewFlow360</h1>
-        <p className="privacy-effective">Effective October 28, 2026</p>
+        <p className="privacy-effective">Effective November 4, 2026</p>
 
         <div className="privacy-summary">
-          These terms are an agreement between CrewFlow360
-          (&quot;CrewFlow360,&quot; &quot;we,&quot; or &quot;us&quot;) and the
-          business that creates a CrewFlow360 account (&quot;Customer&quot; or
-          &quot;you&quot;). By creating an account, accepting an invitation, or
-          using the service, you agree to these terms and acknowledge the{' '}
+          These terms are an agreement between Muhammad Hassaan Khalid, a sole
+          proprietor doing business as CrewFlow360 (&quot;CrewFlow360,&quot;
+          &quot;we,&quot; or &quot;us&quot;), and the business that creates a
+          CrewFlow360 account (&quot;Customer&quot; or &quot;you&quot;). By
+          creating an account, accepting an invitation, or using the service,
+          you agree to these terms and acknowledge the{' '}
           <Link href="/privacy">Privacy Notice</Link>.
         </div>
 
@@ -270,13 +271,13 @@ export default function TermsPage() {
         <section>
           <h2>16. Contact</h2>
           <address className="privacy-contact">
-            30 N Gould St, Ste N
+            Muhammad Hassaan Khalid, doing business as CrewFlow360
             <br />
-            Sheridan, WY 82801
+            Lahore, Pakistan
             <br />
-            United States
+            <a href="tel:+923334966924">+92 333 4966924</a>
             <br />
-            <a href="tel:+13074002050">+1 307-400-2050</a>
+            <a href="mailto:support@crewflow360.com">support@crewflow360.com</a>
           </address>
         </section>
       </article>

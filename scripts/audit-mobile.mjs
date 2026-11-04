@@ -6,7 +6,7 @@ const reviewedAdvisories = new Map([
     'https://github.com/advisories/GHSA-gcqx-w48m-w2h4',
     {
       packageName: 'deepmerge',
-      reviewBy: '2026-11-10',
+      reviewBy: '2026-12-04',
       severity: 'low',
       source: 1243505,
     },
@@ -15,7 +15,7 @@ const reviewedAdvisories = new Map([
     'https://github.com/advisories/GHSA-3g3m-2fjr-6pw4',
     {
       packageName: 'glob',
-      reviewBy: '2026-11-10',
+      reviewBy: '2026-12-04',
       severity: 'moderate',
       source: 1244013,
     },
@@ -24,7 +24,7 @@ const reviewedAdvisories = new Map([
     'https://github.com/advisories/GHSA-g3hv-75wg-m249',
     {
       packageName: 'minimatch',
-      reviewBy: '2026-11-10',
+      reviewBy: '2026-12-04',
       severity: 'moderate',
       source: 1244012,
     },
@@ -104,5 +104,5 @@ for (const [url, reviewed] of reviewedAdvisories) {
 
 process.stderr.write(
   `Mobile release remains blocked by ${observed.size} reviewed transitive advisories. ` +
-    'No new advisories were found; review is required again by 2026-11-10.\n',
+    'No new advisories were found; review is required again by 2026-12-04.\n',
 );

@@ -25,7 +25,7 @@ export default function PrivacyPage() {
       <article className="privacy-card">
         <p className="privacy-kicker">PRIVACY NOTICE</p>
         <h1>How CrewFlow360 handles information</h1>
-        <p className="privacy-effective">Effective October 28, 2026</p>
+        <p className="privacy-effective">Effective November 4, 2026</p>
 
         <div className="privacy-summary">
           CrewFlow360 is software that field-service businesses use to manage
@@ -193,9 +193,10 @@ export default function PrivacyPage() {
         <section>
           <h2>International processing</h2>
           <p>
-            CrewFlow360 and its service providers may process information in the
-            United States and other countries where they operate. We take steps
-            to keep information protected wherever it is processed.
+            CrewFlow360 is operated from Pakistan, and its service providers may
+            process information in the United States and other countries where
+            they operate. We take steps to keep information protected wherever
+            it is processed.
           </p>
         </section>
 
@@ -236,13 +237,13 @@ export default function PrivacyPage() {
         <section>
           <h2>Contact CrewFlow360</h2>
           <address className="privacy-contact">
-            30 N Gould St, Ste N
+            Muhammad Hassaan Khalid, doing business as CrewFlow360
             <br />
-            Sheridan, WY 82801
+            Lahore, Pakistan
             <br />
-            United States
+            <a href="tel:+923334966924">+92 333 4966924</a>
             <br />
-            <a href="tel:+13074002050">+1 307-400-2050</a>
+            <a href="mailto:support@crewflow360.com">support@crewflow360.com</a>
           </address>
           <p className="privacy-related">
             See also the <Link href="/terms">Terms of Service</Link>.
