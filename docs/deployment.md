@@ -97,7 +97,8 @@ Workspaces that already existed keep `development_stub` (free beta access).
 5. In Vercel **Production** only, set `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` to the
    live client-side token (`live_...`). Preview keeps the sandbox `test_...`
    token. The token prefix selects the Paddle environment.
-6. Add `crewflow360.com` as an approved checkout domain in Paddle.
+6. Add `crewflow360.com` as an approved checkout domain in Paddle and set the
+   checkout **Default payment link** to `https://crewflow360.com/pay`.
 7. Run a real checkout on a new workspace, confirm the workspace unlocks as
    `trialing`, open the billing portal, then cancel to confirm the workspace
    asks for a plan again.
