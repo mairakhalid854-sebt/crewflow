@@ -277,6 +277,8 @@ export default function TermsPage() {
             United States
             <br />
             <a href="tel:+13074002050">+1 307-400-2050</a>
+            <br />
+            <a href="mailto:support@crewflow360.com">support@crewflow360.com</a>
           </address>
         </section>
       </article>

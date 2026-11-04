@@ -243,6 +243,8 @@ export default function PrivacyPage() {
             United States
             <br />
             <a href="tel:+13074002050">+1 307-400-2050</a>
+            <br />
+            <a href="mailto:support@crewflow360.com">support@crewflow360.com</a>
           </address>
           <p className="privacy-related">
             See also the <Link href="/terms">Terms of Service</Link>.
