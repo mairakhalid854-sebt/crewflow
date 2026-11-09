@@ -211,3 +211,31 @@
     padding: 40px 22px 56px;
   }
 }
+.password-field {
+  position: relative;
+}
+.auth-form .password-field input {
+  padding-right: 48px;
+}
+.password-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: #596a80;
+  cursor: pointer;
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+}
+.password-toggle:hover {
+  color: var(--cf-navy);
+}
+.password-toggle:focus-visible {
+  outline: 3px solid rgb(23 105 244 / 25%);
+}

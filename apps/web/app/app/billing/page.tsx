@@ -8,6 +8,7 @@ import {
   paddleProviderFor,
   type CheckoutPlan,
 } from './paddle-checkout';
+import { CheckoutSuccessRedirect } from './checkout-success-redirect';
 import { PlanCheckout } from './plan-checkout';
 
 export const dynamic = 'force-dynamic';
@@ -80,6 +81,13 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   // Sandbox keeps test checkout open for any stub workspace so staging can
   // exercise the flow; live checkout appears only when a plan is required.
   const showCheckout = requiresCheckout || (isSandbox && isStub);
+  const syncedStatus =
+    !isStub &&
+    billing.plan_code !== 'checkout_required' &&
+    (billing.subscription_status === 'trialing' ||
+      billing.subscription_status === 'active')
+      ? billing.subscription_status
+      : null;
 
   return (
     <div className="workspace-page billing-page">
@@ -98,6 +106,13 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           {label(billing.access_mode)} access
         </span>
       </header>
+
+      {query.checkout === 'success' ? (
+        <CheckoutSuccessRedirect
+          isSandbox={isSandbox}
+          syncedStatus={syncedStatus}
+        />
+      ) : null}
 
       {requiresCheckout ? (
         <p className="billing-checkout-required" role="status">
@@ -173,14 +188,6 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           </div>
         </dl>
       </section>
-
-      {query.checkout === 'success' ? (
-        <p className="billing-checkout-success" role="status">
-          {isSandbox ? 'Test checkout completed.' : 'Checkout completed.'}{' '}
-          Paddle is syncing the subscription; refresh this page in a few seconds
-          if the status has not changed yet.
-        </p>
-      ) : null}
 
       {showCheckout &&
       checkoutConfigured &&
