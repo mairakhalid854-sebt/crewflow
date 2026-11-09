@@ -296,7 +296,7 @@ SELECT is((SELECT executed_count + skipped_count FROM public.run_ai_autopilot(50
 UPDATE public.tenant_settings SET ai_operations_enabled = true WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
 
 -- 5. A deactivated enabling owner can no longer act through Autopilot.
-UPDATE public.memberships SET status = 'deactivated'
+UPDATE public.memberships SET status = 'deactivated', deactivated_at = now()
 WHERE id = '33000000-0000-4000-8000-000000000004';
 SELECT is((SELECT skipped_count FROM public.run_ai_autopilot(50)), 1,
   'Policy enabled by a deactivated owner is skipped');
