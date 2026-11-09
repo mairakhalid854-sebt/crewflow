@@ -3,10 +3,20 @@ import Link from 'next/link';
 import { requireTenantContext } from '../../lib/auth/tenant-context';
 import { formatUsd } from '../../lib/quotes/public-quote';
 import { createClient } from '../../lib/supabase/server';
+import { WelcomeCelebration } from './welcome-celebration';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AuthenticatedDashboardPage() {
+interface DashboardPageProps {
+  readonly searchParams: Promise<{ welcome?: string }>;
+}
+
+export default async function AuthenticatedDashboardPage({
+  searchParams,
+}: DashboardPageProps) {
+  const { welcome } = await searchParams;
+  const welcomeStatus =
+    welcome === 'trialing' || welcome === 'active' ? welcome : null;
   const context = await requireTenantContext();
   const supabase = await createClient();
   const [jobsResult, invoiceResult, paymentResult] = await Promise.all([
@@ -69,6 +79,7 @@ export default async function AuthenticatedDashboardPage() {
 
   return (
     <div className="workspace-page">
+      {welcomeStatus ? <WelcomeCelebration status={welcomeStatus} /> : null}
       <div className="workspace-heading">
         <div>
           <p className="workspace-kicker">Overview</p>

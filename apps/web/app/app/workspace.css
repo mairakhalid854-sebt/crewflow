@@ -16,6 +16,15 @@
   gap: 32px;
   background: #10281f;
   color: #eef8f2;
+  /* Short screens scroll the menu; the scrollbar stays hidden. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.authenticated-sidebar::-webkit-scrollbar,
+.authenticated-sidebar nav::-webkit-scrollbar {
+  display: none;
 }
 
 .workspace-brand {
@@ -1428,6 +1437,7 @@
   .authenticated-sidebar nav {
     display: flex;
     overflow-x: auto;
+    scrollbar-width: none;
   }
 
   .authenticated-sidebar nav a {
@@ -2218,4 +2228,98 @@
 .skill-suggestions button:focus-visible {
   border-style: solid;
   background: #e9f8f0;
+}
+
+.billing-checkout-syncing {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 1rem;
+}
+
+.billing-sync-spinner {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 3px solid #b9e6cb;
+  border-top-color: #17643a;
+  border-radius: 50%;
+  animation: billing-sync-spin 0.8s linear infinite;
+}
+
+@keyframes billing-sync-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.welcome-celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(16 40 31 / 45%);
+  animation: welcome-fade 0.25s ease-out;
+}
+
+.welcome-confetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.welcome-card {
+  position: relative;
+  max-width: 420px;
+  padding: 32px 28px 28px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgb(16 40 31 / 30%);
+  text-align: center;
+  animation: welcome-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.welcome-card h2 {
+  margin: 0;
+  color: #10281f;
+  font-size: 1.6rem;
+}
+
+.welcome-card p {
+  margin: 0 0 8px;
+  color: #45574e;
+  line-height: 1.55;
+}
+
+.welcome-emoji {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+@keyframes welcome-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes welcome-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-celebration,
+  .welcome-card,
+  .billing-sync-spinner {
+    animation: none;
+  }
 }

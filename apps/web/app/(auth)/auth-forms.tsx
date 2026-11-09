@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 
 import {
@@ -34,6 +34,54 @@ function FieldError({ errors }: Readonly<{ errors?: readonly string[] }>) {
         <li key={error}>{error}</li>
       ))}
     </ul>
+  );
+}
+
+function EyeIcon({ crossed }: Readonly<{ crossed: boolean }>) {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="20"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
+      width="20"
+    >
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+      {crossed ? <path d="M3 3l18 18" /> : null}
+    </svg>
+  );
+}
+
+function PasswordInput({
+  autoComplete,
+  id,
+}: Readonly<{ autoComplete: string; id: string }>) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="password-field">
+      <input
+        autoComplete={autoComplete}
+        id={id}
+        name={id}
+        required
+        type={visible ? 'text' : 'password'}
+      />
+      <button
+        aria-controls={id}
+        aria-label={visible ? 'Hide password' : 'Show password'}
+        aria-pressed={visible}
+        className="password-toggle"
+        onClick={() => setVisible((current) => !current)}
+        type="button"
+      >
+        <EyeIcon crossed={visible} />
+      </button>
+    </div>
   );
 }
 
@@ -70,13 +118,7 @@ export function SignupForm({
       />
       <FieldError errors={state.fieldErrors?.email} />
       <label htmlFor="password">Password</label>
-      <input
-        autoComplete="new-password"
-        id="password"
-        name="password"
-        required
-        type="password"
-      />
+      <PasswordInput autoComplete="new-password" id="password" />
       <p className="field-hint">
         10+ characters with upper, lower, and number.
       </p>
@@ -124,13 +166,7 @@ export function LoginForm({ nextPath }: Readonly<{ nextPath?: string }>) {
         <span />
         <Link href="/forgot-password">Forgot password?</Link>
       </div>
-      <input
-        autoComplete="current-password"
-        id="password"
-        name="password"
-        required
-        type="password"
-      />
+      <PasswordInput autoComplete="current-password" id="password" />
       <FieldError errors={state.fieldErrors?.password} />
       <StatusMessage state={state} />
       <SubmitButton label="Sign in" pendingLabel="Signing in…" />
@@ -183,25 +219,13 @@ export function UpdatePasswordForm() {
   return (
     <form action={action} className="auth-form">
       <label htmlFor="password">New password</label>
-      <input
-        autoComplete="new-password"
-        id="password"
-        name="password"
-        required
-        type="password"
-      />
+      <PasswordInput autoComplete="new-password" id="password" />
       <p className="field-hint">
         10+ characters with upper, lower, and number.
       </p>
       <FieldError errors={state.fieldErrors?.password} />
       <label htmlFor="confirmPassword">Confirm new password</label>
-      <input
-        autoComplete="new-password"
-        id="confirmPassword"
-        name="confirmPassword"
-        required
-        type="password"
-      />
+      <PasswordInput autoComplete="new-password" id="confirmPassword" />
       <FieldError errors={state.fieldErrors?.confirmPassword} />
       <StatusMessage state={state} />
       <SubmitButton label="Update password" pendingLabel="Updating…" />
