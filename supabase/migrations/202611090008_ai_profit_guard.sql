@@ -30,7 +30,11 @@ ALTER TABLE public.services
       AND market_price_source IS NULL
       AND market_price_checked_on IS NULL
     ) OR (
-      market_price_low_cents BETWEEN 0 AND 100000000
+      -- Explicit NOT NULLs: a NULL inside BETWEEN would make CHECK pass.
+      market_price_low_cents IS NOT NULL
+      AND market_price_high_cents IS NOT NULL
+      AND market_price_source IS NOT NULL
+      AND market_price_low_cents BETWEEN 0 AND 100000000
       AND market_price_high_cents BETWEEN market_price_low_cents AND 100000000
       AND char_length(trim(market_price_source)) BETWEEN 2 AND 200
       AND market_price_checked_on IS NOT NULL
