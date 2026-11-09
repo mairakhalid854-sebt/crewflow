@@ -2376,3 +2376,176 @@
   color: inherit;
   opacity: 0.85;
 }
+
+.profit-panel,
+.profit-card {
+  margin-bottom: 18px;
+  padding: 20px 22px;
+  border: 1px solid #d7e2dc;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.profit-panel h2,
+.profit-card h2 {
+  margin: 0;
+  color: #10281f;
+  font-size: 1.15rem;
+}
+
+.profit-hint,
+.profit-summary {
+  color: #45574e;
+}
+
+.profit-summary {
+  font-weight: 700;
+}
+
+.profit-settings-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.profit-settings-form label,
+.market-price-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.profit-settings-form small {
+  color: #5b6d63;
+  font-weight: 400;
+}
+
+.profit-settings-form input,
+.market-price-form input {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #c9d6ce;
+  border-radius: 9px;
+}
+
+.profit-form-message {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-weight: 700;
+}
+
+.profit-form-error {
+  color: #b42318;
+}
+
+.profit-form-success {
+  color: #146c3e;
+}
+
+.profit-card > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profit-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.profit-facts div {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f5f7f5;
+}
+
+.profit-facts dt {
+  color: #5b6d63;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.profit-facts dd {
+  margin: 4px 0 0;
+  color: #10281f;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.profit-flags {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.profit-flags li {
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: #fff7ec;
+  color: #7a4105;
+  font-weight: 700;
+}
+
+.profit-flags li[data-flag='below_cost'] {
+  background: #fff1f0;
+  color: #8a1c13;
+}
+
+.profit-flags li[data-flag='not_enough_data'] {
+  background: #eef2f6;
+  color: #3d5068;
+  font-weight: 600;
+}
+
+.profit-suggestion {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #e9f8f0;
+  color: #146c3e;
+}
+
+.profit-market {
+  color: #45574e;
+}
+
+.profit-market summary {
+  color: #17643a;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.market-price-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.market-price-form .market-price-source {
+  grid-column: span 2;
+}
+
+.market-price-actions {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+@media (max-width: 760px) {
+  .profit-settings-form,
+  .market-price-form {
+    grid-template-columns: 1fr;
+  }
+
+  .market-price-form .market-price-source {
+    grid-column: auto;
+  }
+}
