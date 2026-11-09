@@ -5,6 +5,7 @@ const publicRoutes = [
   { name: 'home', path: '/' },
   { name: 'pricing', path: '/pricing' },
   { name: 'refund policy', path: '/refund-policy' },
+  { name: 'payment link', path: '/pay' },
   { name: 'login', path: '/login' },
   { name: 'signup', path: '/signup' },
   { name: 'password recovery', path: '/forgot-password' },

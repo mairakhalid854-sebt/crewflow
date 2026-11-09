@@ -11,7 +11,7 @@ const migration = readFileSync(
 );
 const reconciliationFunction = readFileSync(
   new URL(
-    '../../../supabase/functions/reconcile-paddle-billing/index.js',
+    '../../../supabase/functions/_shared/paddle-reconcile.js',
     import.meta.url,
   ),
   'utf8',
@@ -19,6 +19,20 @@ const reconciliationFunction = readFileSync(
 const portalFunction = readFileSync(
   new URL(
     '../../../supabase/functions/create-paddle-portal-session/index.js',
+    import.meta.url,
+  ),
+  'utf8',
+);
+const paddleEnvironments = readFileSync(
+  new URL(
+    '../../../supabase/functions/_shared/paddle-environments.js',
+    import.meta.url,
+  ),
+  'utf8',
+);
+const sandboxReconcileEntry = readFileSync(
+  new URL(
+    '../../../supabase/functions/reconcile-paddle-billing/index.js',
     import.meta.url,
   ),
   'utf8',
@@ -71,17 +85,24 @@ describe('phase 5 Paddle sandbox reconciliation and portal', () => {
     expect(reconciliationFunction).not.toContain('console.log(payload');
   });
 
-  it('pins the sandbox API and refuses live Paddle credentials', () => {
+  it('pins each Paddle environment to its own API, key format, and secret', () => {
+    expect(paddleEnvironments).toContain(
+      "apiUrl: 'https://sandbox-api.paddle.com'",
+    );
+    expect(paddleEnvironments).toContain("apiUrl: 'https://api.paddle.com'");
+    expect(paddleEnvironments).toContain('/^pdl_sdbx_apikey_');
+    expect(paddleEnvironments).toContain('/^pdl_live_apikey_');
+    expect(paddleEnvironments).toContain(
+      "apiKeySecret: 'PADDLE_SANDBOX_API_KEY'",
+    );
+    expect(paddleEnvironments).toContain("apiKeySecret: 'PADDLE_LIVE_API_KEY'");
+    expect(sandboxReconcileEntry).toContain('PADDLE_ENVIRONMENTS.sandbox');
     expect(reconciliationFunction).toContain(
-      "const PADDLE_API_URL = 'https://sandbox-api.paddle.com'",
+      'environment.apiKeyPattern.test(paddleApiKey)',
     );
     expect(portalFunction).toContain(
-      "const PADDLE_API_URL = 'https://sandbox-api.paddle.com'",
+      'paddleEnvironmentForProvider(context?.provider)',
     );
-    expect(reconciliationFunction).toContain('pdl_sdbx_apikey_');
-    expect(portalFunction).toContain('pdl_sdbx_apikey_');
-    expect(reconciliationFunction).not.toContain('pdl_live');
-    expect(portalFunction).not.toContain('pdl_live');
     expect(reconciliationFunction).toContain("'paddle-version': '1'");
   });
 
@@ -91,12 +112,18 @@ describe('phase 5 Paddle sandbox reconciliation and portal', () => {
     expect(portalFunction).toContain(
       'subscription_ids: [context.provider_subscription_id]',
     );
+    expect(paddleEnvironments).toContain(
+      "portalHost: 'sandbox-customer-portal.paddle.com'",
+    );
+    expect(paddleEnvironments).toContain(
+      "portalHost: 'customer-portal.paddle.com'",
+    );
     expect(portalFunction).toContain(
-      "const PORTAL_HOST = 'sandbox-customer-portal.paddle.com'",
+      'validPortalUrl(portalUrl, environment.portalHost)',
     );
     expect(portalFunction).toContain("'cache-control': 'no-store'");
     expect(portalFunction.indexOf('admin.auth.getUser(token)')).toBeLessThan(
-      portalFunction.indexOf('PADDLE_SANDBOX_KEY.test(paddleApiKey)'),
+      portalFunction.indexOf('environment.apiKeyPattern.test(paddleApiKey)'),
     );
     expect(portalAction).toContain("await requireTenantContext(['owner'])");
     expect(portalAction).toContain("'sandbox-customer-portal.paddle.com'");
@@ -111,7 +138,7 @@ describe('phase 5 Paddle sandbox reconciliation and portal', () => {
       'SELECT public.configure_paddle_reconciliation_cron()',
     );
     expect(reconciliationFunction).toContain(
-      "return json({ error: 'Paddle sandbox reconciliation is dormant.' }, 503)",
+      '`${environment.label} reconciliation is dormant.`',
     );
     expect(supabaseConfig).toContain('[functions.reconcile-paddle-billing]');
     expect(supabaseConfig).toContain(

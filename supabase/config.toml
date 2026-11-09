@@ -405,6 +405,14 @@ entrypoint = './functions/paddle-billing-webhook/index.js'
 verify_jwt = false
 entrypoint = './functions/reconcile-paddle-billing/index.js'
 
+[functions.paddle-live-billing-webhook]
+verify_jwt = false
+entrypoint = './functions/paddle-live-billing-webhook/index.js'
+
+[functions.reconcile-paddle-live-billing]
+verify_jwt = false
+entrypoint = './functions/reconcile-paddle-live-billing/index.js'
+
 [functions.create-paddle-portal-session]
 verify_jwt = false
 entrypoint = './functions/create-paddle-portal-session/index.js'

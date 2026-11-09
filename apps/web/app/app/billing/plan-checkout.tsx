@@ -6,16 +6,18 @@ import { initializePaddle, type Paddle } from '@paddle/paddle-js';
 
 import {
   checkoutCustomData,
-  type SandboxCheckoutPlan,
+  type CheckoutPlan,
+  type PaddleEnvironment,
 } from './paddle-checkout';
 
-interface SandboxCheckoutProps {
+interface PlanCheckoutProps {
   readonly clientToken: string;
-  readonly plans: readonly SandboxCheckoutPlan[];
+  readonly environment: PaddleEnvironment;
+  readonly plans: readonly CheckoutPlan[];
   readonly tenantId: string;
 }
 
-function formatPrice(plan: SandboxCheckoutPlan): string {
+function formatPrice(plan: CheckoutPlan): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: plan.currencyCode,
@@ -23,26 +25,35 @@ function formatPrice(plan: SandboxCheckoutPlan): string {
   }).format(plan.amountCents / 100);
 }
 
-export function SandboxCheckout({
+function startLabel(plan: CheckoutPlan, isSandbox: boolean): string {
+  if (isSandbox) return 'Start test checkout';
+  return plan.trialDays > 0
+    ? `Start ${plan.trialDays}-day free trial`
+    : 'Subscribe';
+}
+
+export function PlanCheckout({
   clientToken,
+  environment,
   plans,
   tenantId,
-}: SandboxCheckoutProps) {
+}: PlanCheckoutProps) {
   const paddleRef = useRef<Promise<Paddle | undefined> | null>(null);
   const [openingPlan, setOpeningPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isSandbox = environment === 'sandbox';
 
-  async function openCheckout(plan: SandboxCheckoutPlan): Promise<void> {
+  async function openCheckout(plan: CheckoutPlan): Promise<void> {
     setError(null);
     setOpeningPlan(plan.code);
 
     try {
       paddleRef.current ??= initializePaddle({
-        environment: 'sandbox',
+        environment,
         token: clientToken,
       });
       const paddle = await paddleRef.current;
-      if (!paddle) throw new Error('Paddle sandbox could not be initialized.');
+      if (!paddle) throw new Error('Paddle could not be initialized.');
 
       paddle.Checkout.open({
         items: [{ priceId: plan.priceId, quantity: 1 }],
@@ -56,20 +67,27 @@ export function SandboxCheckout({
       });
     } catch {
       paddleRef.current = null;
-      setError('Sandbox checkout could not be opened. Please try again.');
+      setError('Checkout could not be opened. Please try again.');
     } finally {
       setOpeningPlan(null);
     }
   }
 
   return (
-    <section className="billing-plan-panel" aria-labelledby="sandbox-plans">
+    <section className="billing-plan-panel" aria-labelledby="checkout-plans">
       <div>
-        <p className="workspace-kicker">Sandbox catalog</p>
-        <h2 id="sandbox-plans">Test a CrewFlow360 subscription</h2>
+        <p className="workspace-kicker">
+          {isSandbox ? 'Sandbox catalog' : 'Choose a plan'}
+        </p>
+        <h2 id="checkout-plans">
+          {isSandbox
+            ? 'Test a CrewFlow360 subscription'
+            : 'Start your CrewFlow360 subscription'}
+        </h2>
         <p>
-          These checkouts use Paddle test mode. No real card is charged and no
-          live subscription is created.
+          {isSandbox
+            ? 'These checkouts use Paddle test mode. No real card is charged and no live subscription is created.'
+            : 'Every plan includes every feature. You are not charged during the free trial and can cancel any time before it ends. Checkout is handled by Paddle, our merchant of record.'}
         </p>
       </div>
       <div className="billing-plan-grid">
@@ -87,7 +105,7 @@ export function SandboxCheckout({
             </p>
             <small>
               {plan.trialDays > 0
-                ? `${plan.trialDays}-day sandbox trial`
+                ? `${plan.trialDays}-day ${isSandbox ? 'sandbox' : 'free'} trial`
                 : 'No trial'}
             </small>
             <button
@@ -96,7 +114,9 @@ export function SandboxCheckout({
               onClick={() => void openCheckout(plan)}
               type="button"
             >
-              {openingPlan === plan.code ? 'Opening…' : 'Start test checkout'}
+              {openingPlan === plan.code
+                ? 'Opening…'
+                : startLabel(plan, isSandbox)}
             </button>
           </article>
         ))}

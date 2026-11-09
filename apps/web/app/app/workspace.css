@@ -1872,6 +1872,22 @@
   font-weight: 700;
 }
 
+.billing-checkout-required {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #f2c48d;
+  border-radius: 0.75rem;
+  background: #fff7ec;
+  color: #7a4105;
+  font-weight: 700;
+}
+
+.subscription-access-banner a {
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
 .billing-detail-list {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

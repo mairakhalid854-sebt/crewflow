@@ -73,6 +73,40 @@ The native app owns the `crewflow` URL scheme with Android package and iOS bundl
     delivery cron, then run its acceptance list.
 17. Promote the same reviewed commit to production only after all release blockers are closed.
 
+## Live Paddle billing
+
+Staging and production share one Supabase project, so sandbox and live billing
+run side by side. Migration `202611040002_paddle_live_billing.sql` adds the
+`paddle` provider, the live Starter/Growth/Pro prices, and the
+`checkout_required` entitlement for workspaces created after it ships.
+Workspaces that already existed keep `development_stub` (free beta access).
+
+1. Push the migrations, then deploy `paddle-live-billing-webhook`,
+   `reconcile-paddle-live-billing`, and the updated
+   `create-paddle-portal-session` and sandbox functions (they now share
+   `_shared/paddle-*.js`).
+2. In the live Paddle dashboard, add a notification destination for the
+   `subscription.*` events pointing to
+   `<project-url>/functions/v1/paddle-live-billing-webhook`, and store its
+   secret only as the Supabase secret `PADDLE_LIVE_WEBHOOK_SECRET`.
+3. Create a live API key with `subscription.read` and
+   `customer_portal_session.write` and store it only as the Supabase secret
+   `PADDLE_LIVE_API_KEY`.
+4. After a manual reconcile call succeeds, call
+   `configure_paddle_live_reconciliation_cron()` (minute 47, hourly).
+5. In Vercel **Production** only, set `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` to the
+   live client-side token (`live_...`). Preview keeps the sandbox `test_...`
+   token. The token prefix selects the Paddle environment.
+6. Add `crewflow360.com` as an approved checkout domain in Paddle and set the
+   checkout **Default payment link** to `https://crewflow360.com/pay`.
+7. Run a real checkout on a new workspace, confirm the workspace unlocks as
+   `trialing`, open the billing portal, then cancel to confirm the workspace
+   asks for a plan again.
+
+Known limitation: because the database is shared, a sandbox subscription can
+still unlock any workspace. Move production to its own Supabase project before
+scaling paid customers.
+
 ## Web smoke check
 
 Run the deployment smoke check against an HTTPS environment after its deploy
