@@ -8,6 +8,7 @@ import { createClient } from '../../../lib/supabase/server';
 import styles from './ai.module.css';
 import { humanize, proposedChangeLines } from './ai-presenters';
 import { ApprovalDecisionForm } from './approval-decision-form';
+import { AutopilotPanel } from './autopilot-panel';
 import { DispatcherExecutionForm } from './dispatcher-execution-form';
 import { FollowUpExecutionForm } from './follow-up-execution-form';
 import { IntakeExecutionForm } from './intake-execution-form';
@@ -58,7 +59,13 @@ export default async function AiOperationsPage() {
     process.env.VERCEL_ENV === 'preview' &&
     process.env.VERCEL_GIT_COMMIT_REF === 'staging';
   const supabase = await createClient();
-  const [runsResult, approvalsResult] = await Promise.all([
+  const [
+    runsResult,
+    approvalsResult,
+    autopilotPoliciesResult,
+    autopilotExecutionsResult,
+    settingsResult,
+  ] = await Promise.all([
     supabase
       .from('ai_agent_runs')
       .select('*')
@@ -71,6 +78,21 @@ export default async function AiOperationsPage() {
       .eq('tenant_id', context.tenantId)
       .order('created_at', { ascending: false })
       .limit(50),
+    supabase
+      .from('ai_autopilot_policies')
+      .select('policy_key, enabled')
+      .eq('tenant_id', context.tenantId),
+    supabase
+      .from('ai_autopilot_executions')
+      .select('approval_id, created_at, outcome, policy_key')
+      .eq('tenant_id', context.tenantId)
+      .order('created_at', { ascending: false })
+      .limit(10),
+    supabase
+      .from('tenant_settings')
+      .select('ai_operations_enabled')
+      .eq('tenant_id', context.tenantId)
+      .maybeSingle(),
   ]);
 
   if (runsResult.error || approvalsResult.error) {
@@ -160,6 +182,20 @@ export default async function AiOperationsPage() {
           <strong>{formatCost(estimatedSpend)}</strong>
         </div>
       </section>
+
+      <AutopilotPanel
+        aiEnabled={settingsResult.data?.ai_operations_enabled === true}
+        canEdit={context.role === 'owner'}
+        enabledKeys={
+          new Set(
+            (autopilotPoliciesResult.data ?? [])
+              .filter((policy) => policy.enabled)
+              .map((policy) => policy.policy_key),
+          )
+        }
+        executions={autopilotExecutionsResult.data ?? []}
+        timeZone={context.timeZone}
+      />
 
       {canEvaluateProvider ? <ProviderEvaluationForm /> : null}
 

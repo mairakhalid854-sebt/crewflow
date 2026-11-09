@@ -601,3 +601,141 @@
     grid-template-columns: 1fr;
   }
 }
+
+.autopilotList,
+.autopilotActivity {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.autopilotRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 0;
+  border-top: 1px solid #e5ebf1;
+}
+
+.autopilotRow h3 {
+  margin: 0 0 4px;
+  color: #102f4d;
+  font-size: 1rem;
+}
+
+.autopilotRow p {
+  margin: 0;
+  color: #53657d;
+  line-height: 1.5;
+}
+
+.autopilotToggleForm {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  flex: none;
+}
+
+.autopilotSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 92px;
+  min-height: 40px;
+  padding: 4px 14px 4px 4px;
+  border: 1px solid #c9d5e2;
+  border-radius: 999px;
+  background: #eef2f6;
+  color: #3d5068;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.autopilotSwitch[data-on='true'] {
+  border-color: #1f9d5c;
+  background: #e5f7ed;
+  color: #146c3e;
+}
+
+.autopilotSwitch:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.autopilotSwitch:focus-visible {
+  outline: 3px solid rgb(23 105 244 / 30%);
+  outline-offset: 2px;
+}
+
+.autopilotKnob {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(16 47 77 / 25%);
+}
+
+.autopilotSwitch[data-on='true'] .autopilotKnob {
+  background: #1f9d5c;
+}
+
+.autopilotNotice {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #f2c48d;
+  border-radius: 12px;
+  background: #fff7ec;
+  color: #7a4105;
+  font-weight: 700;
+}
+
+.autopilotError {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.85rem;
+}
+
+.autopilotActivityTitle {
+  margin: 8px 0 8px;
+  color: #102f4d;
+  font-size: 0.95rem;
+}
+
+.autopilotActivity li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 16px;
+  padding: 10px 0;
+  border-top: 1px solid #eef2f6;
+  color: #3d5068;
+  font-size: 0.9rem;
+}
+
+.autopilotActivity [data-outcome='executed'] {
+  color: #146c3e;
+  font-weight: 700;
+}
+
+.autopilotEmpty {
+  margin: 0;
+  color: #6d7f91;
+}
+
+@media (max-width: 700px) {
+  .autopilotRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .autopilotToggleForm {
+    justify-items: start;
+  }
+
+  .autopilotActivity li {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
