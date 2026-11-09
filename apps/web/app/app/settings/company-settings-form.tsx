@@ -327,6 +327,23 @@ export function CompanySettingsForm({
           </label>
           <label>
             <input
+              defaultChecked={settings.owner_daily_summary_enabled}
+              name="ownerDailySummaryEnabled"
+              type="checkbox"
+            />
+            Email me a daily business summary at 7 AM (today&apos;s jobs,
+            yesterday&apos;s payments, money waiting, next steps)
+          </label>
+          <label>
+            <input
+              defaultChecked={settings.owner_weekly_summary_enabled}
+              name="ownerWeeklySummaryEnabled"
+              type="checkbox"
+            />
+            Email me a weekly business summary every Monday at 7 AM
+          </label>
+          <label>
+            <input
               defaultChecked={settings.ai_operations_enabled}
               name="aiOperationsEnabled"
               type="checkbox"
