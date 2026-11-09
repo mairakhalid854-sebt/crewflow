@@ -2558,6 +2558,7 @@ export type Database = {
           customer_appointment_emails_enabled: boolean;
           owner_daily_summary_enabled: boolean;
           owner_weekly_summary_enabled: boolean;
+          quote_follow_up_emails_enabled: boolean;
           id: string;
           intake_widget_enabled: boolean;
           intake_widget_key: string;
@@ -2572,6 +2573,7 @@ export type Database = {
           customer_appointment_emails_enabled?: boolean;
           owner_daily_summary_enabled?: boolean;
           owner_weekly_summary_enabled?: boolean;
+          quote_follow_up_emails_enabled?: boolean;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -2586,6 +2588,7 @@ export type Database = {
           customer_appointment_emails_enabled?: boolean;
           owner_daily_summary_enabled?: boolean;
           owner_weekly_summary_enabled?: boolean;
+          quote_follow_up_emails_enabled?: boolean;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -3320,6 +3323,10 @@ export type Database = {
         };
         Returns: { body: string; subject: string }[];
       };
+      queue_quote_follow_ups: {
+        Args: { target_now: string };
+        Returns: number;
+      };
       queue_owner_summaries: {
         Args: { target_now: string };
         Returns: number;
@@ -3663,7 +3670,8 @@ export type Database = {
         | 'job_rescheduled'
         | 'job_cancelled'
         | 'owner_daily_summary'
-        | 'owner_weekly_summary';
+        | 'owner_weekly_summary'
+        | 'quote_reminder';
       work_report_status: 'draft' | 'sent' | 'void';
     };
     CompositeTypes: {
@@ -3925,6 +3933,7 @@ export const Constants = {
         'job_cancelled',
         'owner_daily_summary',
         'owner_weekly_summary',
+        'quote_reminder',
       ],
       work_report_status: ['draft', 'sent', 'void'],
     },

@@ -327,6 +327,15 @@ export function CompanySettingsForm({
           </label>
           <label>
             <input
+              defaultChecked={settings.quote_follow_up_emails_enabled}
+              name="quoteFollowUpEmailsEnabled"
+              type="checkbox"
+            />
+            Remind customers about quotes they have not answered, 3 and 7 days
+            after sending
+          </label>
+          <label>
+            <input
               defaultChecked={settings.owner_daily_summary_enabled}
               name="ownerDailySummaryEnabled"
               type="checkbox"
