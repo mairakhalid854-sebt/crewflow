@@ -114,6 +114,14 @@ export function ServiceForm({
           />
           Service is available for new work
         </label>
+        <label className="checkbox-field">
+          <input
+            defaultChecked={service?.weather_sensitive ?? false}
+            name="weatherSensitive"
+            type="checkbox"
+          />
+          Outdoor work: check the weather the day before
+        </label>
         <label className="form-span-2">
           <span>Required technician skills</span>
           <SkillListInput

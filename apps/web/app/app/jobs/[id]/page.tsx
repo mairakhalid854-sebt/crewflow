@@ -10,6 +10,7 @@ import { archiveJobAction } from '../actions';
 import { ArchiveJobButton } from '../archive-job-button';
 import { InvoicePanel } from '../invoice-panel';
 import { JobForm } from '../job-form';
+import { TranslateNoteForm } from '../translate-note-form';
 import { jobStatusLabels } from '../job-status';
 import { JobStatusForm } from '../job-status-form';
 import { QuotePanel } from '../quote-panel';
@@ -58,10 +59,25 @@ function signaturePaths(strokes: Json): string[] {
   });
 }
 
+const SLOT_ISO =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+const SLOT_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default async function JobDetailPage({
   params,
-}: Readonly<{ params: Promise<{ id: string }> }>) {
+  searchParams,
+}: Readonly<{
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{
+    slotEnd?: string;
+    slotStart?: string;
+    slotTech?: string;
+    slots?: string;
+  }>;
+}>) {
   const { id } = await params;
+  const slotQuery = await searchParams;
   const context = await requireTenantContext();
   const supabase = await createClient();
   const { data: job, error: jobError } = await supabase
@@ -249,6 +265,65 @@ export default async function JobDetailPage({
     throw new Error('Invoice details could not be loaded.');
   }
 
+  const weatherRisk =
+    context.role === 'technician'
+      ? null
+      : (
+          await supabase
+            .from('job_weather_risks')
+            .select('risk_level, summary, checked_at')
+            .eq('tenant_id', context.tenantId)
+            .eq('job_id', id)
+            .maybeSingle()
+        ).data;
+  const showWeatherRisk =
+    weatherRisk?.risk_level === 'high' || weatherRisk?.risk_level === 'watch';
+
+  const isOfficeUser = context.role !== 'technician';
+  const noteIds = (workNotesResult.data ?? []).map((note) => note.id);
+  const translations = new Map<string, string>();
+  if (isOfficeUser && noteIds.length) {
+    const { data: translationRows } = await supabase
+      .from('job_note_translations')
+      .select('note_id, translated_text')
+      .eq('tenant_id', context.tenantId)
+      .eq('target_language', 'en')
+      .in('note_id', noteIds);
+    for (const row of translationRows ?? []) {
+      translations.set(row.note_id, row.translated_text);
+    }
+  }
+
+  const canSchedule =
+    isOfficeUser &&
+    ['new', 'quoted', 'accepted', 'scheduled'].includes(job.status);
+  const slotSuggestions =
+    canSchedule && slotQuery.slots === '1'
+      ? ((
+          await supabase.rpc('suggest_job_slots', {
+            target_count: 3,
+            target_job_id: job.id,
+          })
+        ).data ?? [])
+      : null;
+  const chosenSlot =
+    canSchedule &&
+    SLOT_ISO.test(slotQuery.slotStart ?? '') &&
+    SLOT_ISO.test(slotQuery.slotEnd ?? '') &&
+    SLOT_UUID.test(slotQuery.slotTech ?? '')
+      ? {
+          end: slotQuery.slotEnd as string,
+          start: slotQuery.slotStart as string,
+          technicianId: slotQuery.slotTech as string,
+        }
+      : null;
+  const slotLabel = (value: string) =>
+    new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: context.timeZone,
+    }).format(new Date(value));
+
   return (
     <div className="workspace-page job-detail-page">
       <Link className="back-link" href="/app/jobs">
@@ -267,6 +342,29 @@ export default async function JobDetailPage({
           </div>
         </div>
       </header>
+
+      {showWeatherRisk && weatherRisk ? (
+        <p
+          className={`weather-risk-banner weather-risk-${weatherRisk.risk_level}`}
+          role="status"
+        >
+          <strong>
+            {weatherRisk.risk_level === 'high'
+              ? 'Weather risk for this job:'
+              : 'Weather watch for this job:'}
+          </strong>{' '}
+          {weatherRisk.summary}
+          <small>
+            Forecast from the US National Weather Service (weather.gov), checked{' '}
+            {new Intl.DateTimeFormat('en-US', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+              timeZone: context.timeZone,
+            }).format(new Date(weatherRisk.checked_at))}
+            . Nothing was rescheduled automatically.
+          </small>
+        </p>
+      ) : null}
 
       {context.role === 'technician' ? (
         <section className="job-readonly-card">
@@ -301,23 +399,71 @@ export default async function JobDetailPage({
       ) : (
         <div className="job-detail-grid">
           <div>
+            {chosenSlot ? (
+              <p className="slot-applied" role="status">
+                Suggested time filled in: {slotLabel(chosenSlot.start)}. Review
+                and press Save to schedule it.
+              </p>
+            ) : null}
             <JobForm
               customers={customers}
               job={job}
+              key={chosenSlot?.start ?? 'job'}
               scheduledEndLocal={isoToLocalDateTime(
-                job.scheduled_end_at,
+                chosenSlot?.end ?? job.scheduled_end_at,
                 context.timeZone,
               )}
               scheduledStartLocal={isoToLocalDateTime(
-                job.scheduled_start_at,
+                chosenSlot?.start ?? job.scheduled_start_at,
                 context.timeZone,
               )}
               services={services}
+              technicianIdOverride={chosenSlot?.technicianId}
               technicians={technicians}
               timeZone={context.timeZone}
             />
           </div>
           <aside className="job-workflow-panel">
+            {canSchedule ? (
+              <section className="slot-panel" aria-labelledby="slot-title">
+                <h2 id="slot-title">Find an open time</h2>
+                <p>
+                  Checks technician skills, service area, working hours, time
+                  off, and other jobs for the next 14 days.
+                </p>
+                {slotSuggestions === null ? (
+                  <a
+                    className="secondary-button"
+                    href={`/app/jobs/${job.id}?slots=1#slot-title`}
+                  >
+                    Show the next 3 open times
+                  </a>
+                ) : slotSuggestions.length === 0 ? (
+                  <p className="form-help">
+                    No open time found. Check technician hours, skills, and
+                    service areas in Team.
+                  </p>
+                ) : (
+                  <ul className="slot-list">
+                    {slotSuggestions.map((slot) => (
+                      <li
+                        key={`${slot.starts_at}-${slot.technician_membership_id}`}
+                      >
+                        <span>
+                          <strong>{slotLabel(slot.starts_at)}</strong>
+                          {slot.technician_name}
+                        </span>
+                        <a
+                          href={`/app/jobs/${job.id}?slotStart=${encodeURIComponent(slot.starts_at)}&slotEnd=${encodeURIComponent(slot.ends_at)}&slotTech=${slot.technician_membership_id}#job-form`}
+                        >
+                          Use this time
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ) : null}
             <h2>Workflow</h2>
             <p>
               Status changes follow the guarded job lifecycle and are recorded
@@ -466,6 +612,19 @@ export default async function JobDetailPage({
             {(workNotesResult.data ?? []).map((note) => (
               <li key={note.id}>
                 <p>{note.body}</p>
+                {translations.get(note.id) ? (
+                  <p className="work-note-translation" lang="en">
+                    <span>English (AI translation):</span>{' '}
+                    {translations.get(note.id)}
+                  </p>
+                ) : null}
+                {isOfficeUser ? (
+                  <TranslateNoteForm
+                    hasTranslation={translations.has(note.id)}
+                    jobId={job.id}
+                    noteId={note.id}
+                  />
+                ) : null}
                 <time dateTime={note.created_at}>
                   {new Intl.DateTimeFormat('en-US', {
                     dateStyle: 'medium',

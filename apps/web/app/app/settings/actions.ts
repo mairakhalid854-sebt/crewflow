@@ -174,11 +174,18 @@ export async function updateCompanySettingsAction(
     .update({
       customer_appointment_emails_enabled:
         formData.get('customerAppointmentEmailsEnabled') === 'on',
+      owner_daily_summary_enabled:
+        formData.get('ownerDailySummaryEnabled') === 'on',
+      owner_weekly_summary_enabled:
+        formData.get('ownerWeeklySummaryEnabled') === 'on',
+      quote_follow_up_emails_enabled:
+        formData.get('quoteFollowUpEmailsEnabled') === 'on',
+      weather_alerts_enabled: formData.get('weatherAlertsEnabled') === 'on',
     })
     .eq('tenant_id', context.tenantId);
   if (emailSettingError)
     return failure(
-      'Company settings were saved, but the appointment email preference could not be updated.',
+      'Company settings were saved, but the email preferences could not be updated.',
     );
 
   revalidatePath('/app', 'layout');

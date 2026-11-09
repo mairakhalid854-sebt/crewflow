@@ -197,6 +197,179 @@ export type Database = {
           },
         ];
       };
+      ai_autopilot_executions: {
+        Row: {
+          acting_user_id: string | null;
+          approval_id: string;
+          created_at: string;
+          error_message: string | null;
+          execution_result: string | null;
+          outcome: string;
+          policy_key: string;
+          tenant_id: string;
+        };
+        Insert: {
+          acting_user_id?: string | null;
+          approval_id: string;
+          created_at?: string;
+          error_message?: string | null;
+          execution_result?: string | null;
+          outcome: string;
+          policy_key: string;
+          tenant_id: string;
+        };
+        Update: {
+          acting_user_id?: string | null;
+          approval_id?: string;
+          created_at?: string;
+          error_message?: string | null;
+          execution_result?: string | null;
+          outcome?: string;
+          policy_key?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_autopilot_executions_approval_id_fkey';
+            columns: ['approval_id'];
+            isOneToOne: true;
+            referencedRelation: 'ai_approval_requests';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ai_autopilot_executions_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ai_autopilot_policies: {
+        Row: {
+          enabled: boolean;
+          policy_key: string;
+          tenant_id: string;
+          updated_at: string;
+          updated_by_user_id: string | null;
+        };
+        Insert: {
+          enabled?: boolean;
+          policy_key: string;
+          tenant_id: string;
+          updated_at?: string;
+          updated_by_user_id?: string | null;
+        };
+        Update: {
+          enabled?: boolean;
+          policy_key?: string;
+          tenant_id?: string;
+          updated_at?: string;
+          updated_by_user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_autopilot_policies_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      job_weather_risks: {
+        Row: {
+          checked_at: string;
+          details: Json;
+          forecast_date: string;
+          job_id: string;
+          risk_level: string;
+          summary: string;
+          tenant_id: string;
+        };
+        Insert: {
+          checked_at?: string;
+          details?: Json;
+          forecast_date: string;
+          job_id: string;
+          risk_level: string;
+          summary: string;
+          tenant_id: string;
+        };
+        Update: {
+          checked_at?: string;
+          details?: Json;
+          forecast_date?: string;
+          job_id?: string;
+          risk_level?: string;
+          summary?: string;
+          tenant_id?: string;
+        };
+        Relationships: [];
+      };
+      ai_quote_drafts: {
+        Row: {
+          created_at: string;
+          created_by_user_id: string | null;
+          id: string;
+          job_id: string;
+          lines: Json;
+          missing_information: string[];
+          run_id: string;
+          summary: string;
+          tenant_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          id?: string;
+          job_id: string;
+          lines: Json;
+          missing_information?: string[];
+          run_id: string;
+          summary: string;
+          tenant_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          id?: string;
+          job_id?: string;
+          lines?: Json;
+          missing_information?: string[];
+          run_id?: string;
+          summary?: string;
+          tenant_id?: string;
+        };
+        Relationships: [];
+      };
+      job_note_translations: {
+        Row: {
+          created_at: string;
+          note_id: string;
+          run_id: string;
+          target_language: string;
+          tenant_id: string;
+          translated_text: string;
+        };
+        Insert: {
+          created_at?: string;
+          note_id: string;
+          run_id: string;
+          target_language: string;
+          tenant_id: string;
+          translated_text: string;
+        };
+        Update: {
+          created_at?: string;
+          note_id?: string;
+          run_id?: string;
+          target_language?: string;
+          tenant_id?: string;
+          translated_text?: string;
+        };
+        Relationships: [];
+      };
       ai_run_replays: {
         Row: {
           action_kind: string;
@@ -553,6 +726,7 @@ export type Database = {
           notes: string | null;
           phone: string | null;
           postal_code: string | null;
+          preferred_language: string;
           state_code: string | null;
           street_address: string | null;
           tenant_id: string;
@@ -574,6 +748,7 @@ export type Database = {
           notes?: string | null;
           phone?: string | null;
           postal_code?: string | null;
+          preferred_language?: string;
           state_code?: string | null;
           street_address?: string | null;
           tenant_id: string;
@@ -595,6 +770,7 @@ export type Database = {
           notes?: string | null;
           phone?: string | null;
           postal_code?: string | null;
+          preferred_language?: string;
           state_code?: string | null;
           street_address?: string | null;
           tenant_id?: string;
@@ -2224,6 +2400,11 @@ export type Database = {
           tax_behavior: Database['public']['Enums']['tax_behavior'];
           tenant_id: string;
           unit_price_cents: number;
+          weather_sensitive: boolean;
+          market_price_low_cents: number | null;
+          market_price_high_cents: number | null;
+          market_price_source: string | null;
+          market_price_checked_on: string | null;
           updated_at: string;
         };
         Insert: {
@@ -2238,6 +2419,11 @@ export type Database = {
           tax_behavior?: Database['public']['Enums']['tax_behavior'];
           tenant_id: string;
           unit_price_cents: number;
+          weather_sensitive?: boolean;
+          market_price_low_cents?: number | null;
+          market_price_high_cents?: number | null;
+          market_price_source?: string | null;
+          market_price_checked_on?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -2252,6 +2438,11 @@ export type Database = {
           tax_behavior?: Database['public']['Enums']['tax_behavior'];
           tenant_id?: string;
           unit_price_cents?: number;
+          weather_sensitive?: boolean;
+          market_price_low_cents?: number | null;
+          market_price_high_cents?: number | null;
+          market_price_source?: string | null;
+          market_price_checked_on?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -2476,6 +2667,12 @@ export type Database = {
           ai_operations_enabled: boolean;
           created_at: string;
           customer_appointment_emails_enabled: boolean;
+          owner_daily_summary_enabled: boolean;
+          owner_weekly_summary_enabled: boolean;
+          quote_follow_up_emails_enabled: boolean;
+          weather_alerts_enabled: boolean;
+          profit_labor_cost_cents_per_hour: number | null;
+          profit_target_margin_bps: number;
           id: string;
           intake_widget_enabled: boolean;
           intake_widget_key: string;
@@ -2488,6 +2685,12 @@ export type Database = {
           ai_operations_enabled?: boolean;
           created_at?: string;
           customer_appointment_emails_enabled?: boolean;
+          owner_daily_summary_enabled?: boolean;
+          owner_weekly_summary_enabled?: boolean;
+          quote_follow_up_emails_enabled?: boolean;
+          weather_alerts_enabled?: boolean;
+          profit_labor_cost_cents_per_hour?: number | null;
+          profit_target_margin_bps?: number;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -2500,6 +2703,12 @@ export type Database = {
           ai_operations_enabled?: boolean;
           created_at?: string;
           customer_appointment_emails_enabled?: boolean;
+          owner_daily_summary_enabled?: boolean;
+          owner_weekly_summary_enabled?: boolean;
+          quote_follow_up_emails_enabled?: boolean;
+          weather_alerts_enabled?: boolean;
+          profit_labor_cost_cents_per_hour?: number | null;
+          profit_target_margin_bps?: number;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -3227,6 +3436,97 @@ export type Database = {
           result_message: string;
         }[];
       };
+      get_technician_workload: {
+        Args: { target_days?: number; target_tenant_id: string };
+        Returns: {
+          available_minutes: number;
+          job_count: number;
+          overbooked: boolean;
+          scheduled_minutes: number;
+          technician_membership_id: string;
+          technician_name: string;
+          work_date: string;
+        }[];
+      };
+      suggest_job_slots: {
+        Args: { target_count?: number; target_job_id: string };
+        Returns: {
+          ends_at: string;
+          starts_at: string;
+          technician_membership_id: string;
+          technician_name: string;
+        }[];
+      };
+      get_service_profit_report: {
+        Args: { target_days?: number; target_tenant_id: string };
+        Returns: {
+          average_revenue_cents: number | null;
+          completed_jobs: number;
+          cost_per_job_cents: number | null;
+          flags: string[];
+          labor_cost_cents_per_hour: number | null;
+          list_price_cents: number;
+          margin_bps: number | null;
+          market_price_checked_on: string | null;
+          market_price_high_cents: number | null;
+          market_price_low_cents: number | null;
+          market_price_source: string | null;
+          measured_jobs: number;
+          median_minutes: number | null;
+          planned_minutes: number;
+          revenue_per_hour_cents: number | null;
+          service_id: string;
+          service_name: string;
+          suggested_price_cents: number | null;
+          target_margin_bps: number;
+        }[];
+      };
+      set_service_market_price: {
+        Args: {
+          target_checked_on: string | null;
+          target_high_cents: number | null;
+          target_low_cents: number | null;
+          target_service_id: string;
+          target_source: string | null;
+        };
+        Returns: undefined;
+      };
+      preview_owner_summary: {
+        Args: {
+          target_kind: Database['public']['Enums']['transactional_email_kind'];
+          target_tenant_id: string;
+        };
+        Returns: { body: string; subject: string }[];
+      };
+      queue_weather_risk_alert: {
+        Args: { target_forecast_date: string; target_tenant_id: string };
+        Returns: number;
+      };
+      queue_quote_follow_ups: {
+        Args: { target_now: string };
+        Returns: number;
+      };
+      queue_owner_summaries: {
+        Args: { target_now: string };
+        Returns: number;
+      };
+      run_ai_autopilot: {
+        Args: { max_items?: number };
+        Returns: {
+          executed_count: number;
+          failed_count: number;
+          rejected_count: number;
+          skipped_count: number;
+        }[];
+      };
+      set_ai_autopilot_policy: {
+        Args: {
+          target_enabled: boolean;
+          target_policy_key: string;
+          target_tenant_id: string;
+        };
+        Returns: boolean;
+      };
       run_follow_up_scheduler: {
         Args: { target_now?: string };
         Returns: {
@@ -3456,7 +3756,13 @@ export type Database = {
       };
     };
     Enums: {
-      ai_agent_kind: 'intake' | 'dispatcher' | 'report' | 'follow_up';
+      ai_agent_kind:
+        | 'intake'
+        | 'dispatcher'
+        | 'report'
+        | 'follow_up'
+        | 'quote_assistant'
+        | 'translation';
       ai_approval_status: 'pending' | 'approved' | 'rejected' | 'expired';
       ai_run_status:
         | 'queued'
@@ -3547,7 +3853,11 @@ export type Database = {
         | 'work_report'
         | 'job_scheduled'
         | 'job_rescheduled'
-        | 'job_cancelled';
+        | 'job_cancelled'
+        | 'owner_daily_summary'
+        | 'owner_weekly_summary'
+        | 'quote_reminder'
+        | 'weather_risk_alert';
       work_report_status: 'draft' | 'sent' | 'void';
     };
     CompositeTypes: {
@@ -3679,7 +3989,14 @@ export const Constants = {
   },
   public: {
     Enums: {
-      ai_agent_kind: ['intake', 'dispatcher', 'report', 'follow_up'],
+      ai_agent_kind: [
+        'intake',
+        'dispatcher',
+        'report',
+        'follow_up',
+        'quote_assistant',
+        'translation',
+      ],
       ai_approval_status: ['pending', 'approved', 'rejected', 'expired'],
       ai_run_status: [
         'queued',
@@ -3807,6 +4124,10 @@ export const Constants = {
         'job_scheduled',
         'job_rescheduled',
         'job_cancelled',
+        'owner_daily_summary',
+        'owner_weekly_summary',
+        'quote_reminder',
+        'weather_risk_alert',
       ],
       work_report_status: ['draft', 'sent', 'void'],
     },

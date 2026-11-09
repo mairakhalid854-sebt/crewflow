@@ -31,6 +31,7 @@ interface JobFormProps {
   readonly scheduledEndLocal?: string;
   readonly scheduledStartLocal?: string;
   readonly services: readonly JobServiceOption[];
+  readonly technicianIdOverride?: string;
   readonly technicians: readonly JobTechnicianOption[];
   readonly timeZone: string;
 }
@@ -59,6 +60,7 @@ export function JobForm({
   scheduledEndLocal,
   scheduledStartLocal,
   services,
+  technicianIdOverride,
   technicians,
   timeZone,
 }: Readonly<JobFormProps>) {
@@ -73,7 +75,7 @@ export function JobForm({
   const [serviceId, setServiceId] = useState(job?.service_id ?? '');
   const [priority, setPriority] = useState<string>(job?.priority ?? 'normal');
   const [technicianId, setTechnicianId] = useState(
-    job?.assigned_membership_id ?? '',
+    technicianIdOverride ?? job?.assigned_membership_id ?? '',
   );
   const [description, setDescription] = useState(job?.description ?? '');
   const [scheduledStart, setScheduledStart] = useState(
@@ -135,7 +137,7 @@ export function JobForm({
   }
 
   return (
-    <form action={formAction} className="resource-form">
+    <form action={formAction} className="resource-form" id="job-form">
       {job ? <input name="jobId" type="hidden" value={job.id} /> : null}
 
       <div className="form-grid">

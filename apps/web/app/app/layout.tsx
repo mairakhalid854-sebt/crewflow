@@ -33,6 +33,7 @@ const navItems: readonly {
     roles: ['owner', 'office'],
   },
   { href: '/app/services', label: 'Services' },
+  { href: '/app/profit', label: 'Profit Guard', roles: ['owner'] },
   {
     href: '/app/team',
     label: 'Team',

@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
 import { createClient } from '../../../lib/supabase/server';
 
+import { isAutopilotPolicyKey } from './autopilot-policies';
+
 export interface ApprovalDecisionState {
   readonly message?: string;
   readonly status: 'idle' | 'error' | 'success';
@@ -474,4 +476,46 @@ export async function retryIntakeExecutionAction(
   }
 
   return executeIntakeApproval(parsed.data.approvalId);
+}
+
+const autopilotSchema = z.object({
+  enabled: z.enum(['true', 'false']),
+  policyKey: z.string().refine(isAutopilotPolicyKey),
+});
+
+export async function setAutopilotPolicyAction(
+  _previousState: ApprovalDecisionState,
+  formData: FormData,
+): Promise<ApprovalDecisionState> {
+  const context = await requireTenantContext(['owner']);
+  const parsed = autopilotSchema.safeParse({
+    enabled: formData.get('enabled'),
+    policyKey: formData.get('policyKey'),
+  });
+  if (!parsed.success) {
+    return { message: 'This Autopilot setting is not valid.', status: 'error' };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('set_ai_autopilot_policy', {
+    target_enabled: parsed.data.enabled === 'true',
+    target_policy_key: parsed.data.policyKey,
+    target_tenant_id: context.tenantId,
+  });
+
+  revalidatePath('/app/ai');
+  if (error) {
+    return {
+      message:
+        'Autopilot could not be changed. Only an active owner can do this.',
+      status: 'error',
+    };
+  }
+  return {
+    message:
+      parsed.data.enabled === 'true'
+        ? 'Autopilot turned on.'
+        : 'Autopilot turned off.',
+    status: 'success',
+  };
 }
