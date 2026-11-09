@@ -327,6 +327,15 @@ export function CompanySettingsForm({
           </label>
           <label>
             <input
+              defaultChecked={settings.weather_alerts_enabled}
+              name="weatherAlertsEnabled"
+              type="checkbox"
+            />
+            Weather alerts: at 4 PM, email me if tomorrow&apos;s outdoor jobs
+            face rain, storms, strong wind, or extreme heat or cold
+          </label>
+          <label>
+            <input
               defaultChecked={settings.quote_follow_up_emails_enabled}
               name="quoteFollowUpEmailsEnabled"
               type="checkbox"

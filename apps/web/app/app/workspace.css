@@ -2354,3 +2354,25 @@
   line-height: 1.55;
   white-space: pre-wrap;
 }
+
+.weather-risk-banner {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid #f2c48d;
+  border-radius: 12px;
+  background: #fff7ec;
+  color: #7a4105;
+}
+
+.weather-risk-banner.weather-risk-high {
+  border-color: #f1a7a1;
+  background: #fff1f0;
+  color: #8a1c13;
+}
+
+.weather-risk-banner small {
+  color: inherit;
+  opacity: 0.85;
+}

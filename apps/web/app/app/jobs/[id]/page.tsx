@@ -249,6 +249,20 @@ export default async function JobDetailPage({
     throw new Error('Invoice details could not be loaded.');
   }
 
+  const weatherRisk =
+    context.role === 'technician'
+      ? null
+      : (
+          await supabase
+            .from('job_weather_risks')
+            .select('risk_level, summary, checked_at')
+            .eq('tenant_id', context.tenantId)
+            .eq('job_id', id)
+            .maybeSingle()
+        ).data;
+  const showWeatherRisk =
+    weatherRisk?.risk_level === 'high' || weatherRisk?.risk_level === 'watch';
+
   return (
     <div className="workspace-page job-detail-page">
       <Link className="back-link" href="/app/jobs">
@@ -267,6 +281,29 @@ export default async function JobDetailPage({
           </div>
         </div>
       </header>
+
+      {showWeatherRisk && weatherRisk ? (
+        <p
+          className={`weather-risk-banner weather-risk-${weatherRisk.risk_level}`}
+          role="status"
+        >
+          <strong>
+            {weatherRisk.risk_level === 'high'
+              ? 'Weather risk for this job:'
+              : 'Weather watch for this job:'}
+          </strong>{' '}
+          {weatherRisk.summary}
+          <small>
+            Forecast from the US National Weather Service (weather.gov), checked{' '}
+            {new Intl.DateTimeFormat('en-US', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+              timeZone: context.timeZone,
+            }).format(new Date(weatherRisk.checked_at))}
+            . Nothing was rescheduled automatically.
+          </small>
+        </p>
+      ) : null}
 
       {context.role === 'technician' ? (
         <section className="job-readonly-card">

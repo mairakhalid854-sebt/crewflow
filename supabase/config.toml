@@ -413,6 +413,10 @@ entrypoint = './functions/paddle-live-billing-webhook/index.js'
 verify_jwt = false
 entrypoint = './functions/reconcile-paddle-live-billing/index.js'
 
+[functions.weather-risk-check]
+verify_jwt = false
+entrypoint = './functions/weather-risk-check/index.js'
+
 [functions.create-paddle-portal-session]
 verify_jwt = false
 entrypoint = './functions/create-paddle-portal-session/index.js'

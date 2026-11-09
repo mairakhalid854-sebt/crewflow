@@ -180,6 +180,7 @@ export async function updateCompanySettingsAction(
         formData.get('ownerWeeklySummaryEnabled') === 'on',
       quote_follow_up_emails_enabled:
         formData.get('quoteFollowUpEmailsEnabled') === 'on',
+      weather_alerts_enabled: formData.get('weatherAlertsEnabled') === 'on',
     })
     .eq('tenant_id', context.tenantId);
   if (emailSettingError)

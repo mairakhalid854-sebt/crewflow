@@ -277,6 +277,36 @@ export type Database = {
           },
         ];
       };
+      job_weather_risks: {
+        Row: {
+          checked_at: string;
+          details: Json;
+          forecast_date: string;
+          job_id: string;
+          risk_level: string;
+          summary: string;
+          tenant_id: string;
+        };
+        Insert: {
+          checked_at?: string;
+          details?: Json;
+          forecast_date: string;
+          job_id: string;
+          risk_level: string;
+          summary: string;
+          tenant_id: string;
+        };
+        Update: {
+          checked_at?: string;
+          details?: Json;
+          forecast_date?: string;
+          job_id?: string;
+          risk_level?: string;
+          summary?: string;
+          tenant_id?: string;
+        };
+        Relationships: [];
+      };
       ai_run_replays: {
         Row: {
           action_kind: string;
@@ -2304,6 +2334,7 @@ export type Database = {
           tax_behavior: Database['public']['Enums']['tax_behavior'];
           tenant_id: string;
           unit_price_cents: number;
+          weather_sensitive: boolean;
           updated_at: string;
         };
         Insert: {
@@ -2318,6 +2349,7 @@ export type Database = {
           tax_behavior?: Database['public']['Enums']['tax_behavior'];
           tenant_id: string;
           unit_price_cents: number;
+          weather_sensitive?: boolean;
           updated_at?: string;
         };
         Update: {
@@ -2332,6 +2364,7 @@ export type Database = {
           tax_behavior?: Database['public']['Enums']['tax_behavior'];
           tenant_id?: string;
           unit_price_cents?: number;
+          weather_sensitive?: boolean;
           updated_at?: string;
         };
         Relationships: [
@@ -2559,6 +2592,7 @@ export type Database = {
           owner_daily_summary_enabled: boolean;
           owner_weekly_summary_enabled: boolean;
           quote_follow_up_emails_enabled: boolean;
+          weather_alerts_enabled: boolean;
           id: string;
           intake_widget_enabled: boolean;
           intake_widget_key: string;
@@ -2574,6 +2608,7 @@ export type Database = {
           owner_daily_summary_enabled?: boolean;
           owner_weekly_summary_enabled?: boolean;
           quote_follow_up_emails_enabled?: boolean;
+          weather_alerts_enabled?: boolean;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -2589,6 +2624,7 @@ export type Database = {
           owner_daily_summary_enabled?: boolean;
           owner_weekly_summary_enabled?: boolean;
           quote_follow_up_emails_enabled?: boolean;
+          weather_alerts_enabled?: boolean;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -3323,6 +3359,10 @@ export type Database = {
         };
         Returns: { body: string; subject: string }[];
       };
+      queue_weather_risk_alert: {
+        Args: { target_forecast_date: string; target_tenant_id: string };
+        Returns: number;
+      };
       queue_quote_follow_ups: {
         Args: { target_now: string };
         Returns: number;
@@ -3671,7 +3711,8 @@ export type Database = {
         | 'job_cancelled'
         | 'owner_daily_summary'
         | 'owner_weekly_summary'
-        | 'quote_reminder';
+        | 'quote_reminder'
+        | 'weather_risk_alert';
       work_report_status: 'draft' | 'sent' | 'void';
     };
     CompositeTypes: {
@@ -3934,6 +3975,7 @@ export const Constants = {
         'owner_daily_summary',
         'owner_weekly_summary',
         'quote_reminder',
+        'weather_risk_alert',
       ],
       work_report_status: ['draft', 'sent', 'void'],
     },
