@@ -235,7 +235,7 @@ SET status = 'scheduled',
       ELSE date_trunc('day', now() + interval '3 days') + interval '19 hours' END
 WHERE id IN ('88000000-0000-4000-8000-000000000021', '88000000-0000-4000-8000-000000000022');
 
-SELECT like(
+SELECT is(
   (SELECT subject FROM public.transactional_emails WHERE kind = 'job_scheduled' AND entity_id = '88000000-0000-4000-8000-000000000021'),
   'Su cita con Follow Up está confirmada', 'Spanish customer gets a Spanish subject'
 );
