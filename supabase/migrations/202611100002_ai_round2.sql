@@ -332,6 +332,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
+#variable_conflict use_column
 DECLARE
   run_row public.ai_agent_runs%ROWTYPE;
 BEGIN

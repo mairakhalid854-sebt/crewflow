@@ -364,7 +364,7 @@ SELECT ok(
 );
 RESET ROLE;
 SELECT set_config('request.jwt.claims', '{"role":"service_role"}', true);
-UPDATE public.staff_availability SET is_available = false
+UPDATE public.staff_availability SET is_available = false, starts_at = NULL, ends_at = NULL
 WHERE membership_id = '33000000-0000-4000-8000-000000000003'
   AND day_of_week = extract(dow FROM (now() AT TIME ZONE 'America/New_York')::date + 1)::smallint;
 SET LOCAL ROLE authenticated;
