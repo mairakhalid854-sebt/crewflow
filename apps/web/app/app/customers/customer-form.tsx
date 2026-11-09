@@ -146,6 +146,16 @@ export function CustomerForm({ customer }: Readonly<{ customer?: Customer }>) {
 
       <fieldset className="form-consent">
         <legend>Communication permissions</legend>
+        <label className="form-language">
+          <span>Email language</span>
+          <select
+            defaultValue={customer?.preferred_language ?? 'en'}
+            name="preferredLanguage"
+          >
+            <option value="en">English</option>
+            <option value="es">Español (Spanish)</option>
+          </select>
+        </label>
         <label>
           <input
             defaultChecked={customer?.transactional_email_allowed ?? true}

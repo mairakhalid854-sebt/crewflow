@@ -100,6 +100,8 @@ export async function createCustomerAction(
       marketing_email_opted_in: formData.get('marketingEmailOptedIn') === 'on',
       notes: nullable(parsed.data.notes),
       phone: nullable(parsed.data.phone),
+      preferred_language:
+        formData.get('preferredLanguage') === 'es' ? 'es' : 'en',
       postal_code: nullable(parsed.data.postalCode),
       state_code: nullable(parsed.data.stateCode),
       street_address: nullable(parsed.data.streetAddress),
@@ -146,6 +148,8 @@ export async function updateCustomerAction(
       marketing_email_opted_in: formData.get('marketingEmailOptedIn') === 'on',
       notes: nullable(parsed.data.notes),
       phone: nullable(parsed.data.phone),
+      preferred_language:
+        formData.get('preferredLanguage') === 'es' ? 'es' : 'en',
       postal_code: nullable(parsed.data.postalCode),
       state_code: nullable(parsed.data.stateCode),
       street_address: nullable(parsed.data.streetAddress),

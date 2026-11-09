@@ -1,5 +1,12 @@
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 
+import { LanguageSwitch } from '../../../components/language-switch';
+import {
+  dateLocale,
+  publicCopy,
+  resolvePublicLocale,
+} from '../../../lib/i18n/public-copy';
 import { createClient } from '../../../lib/supabase/server';
 import { formatUsd, publicQuoteSchema } from '../../../lib/quotes/public-quote';
 import { decideQuoteAction } from './actions';
@@ -14,11 +21,16 @@ export default async function PublicQuotePage({
   searchParams,
 }: Readonly<{
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ error?: string; result?: string }>;
+  searchParams: Promise<{ error?: string; lang?: string; result?: string }>;
 }>) {
   const { token } = await params;
   const feedback = await searchParams;
   if (!tokenPattern.test(token)) notFound();
+  const locale = resolvePublicLocale(
+    feedback.lang,
+    (await headers()).get('accept-language'),
+  );
+  const t = publicCopy(locale);
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('get_public_quote', {
@@ -30,22 +42,29 @@ export default async function PublicQuotePage({
   const canDecide = quote.status === 'sent';
 
   return (
-    <main className="public-quote-shell">
+    <main className="public-quote-shell" lang={locale}>
       <section className="public-quote-card">
         <header className="public-quote-header">
           <div className="public-quote-brand">
             <span>C</span> CrewFlow360
           </div>
-          <p>Prepared by {quote.company_name}</p>
+          <p>{t.common.preparedBy(quote.company_name)}</p>
         </header>
+        <LanguageSwitch
+          label={t.common.languageLabel}
+          locale={locale}
+          path={`/quote/${token}`}
+        />
         <div className="public-quote-intro">
-          <p className="public-quote-kicker">QUOTE FOR {quote.customer_name}</p>
+          <p className="public-quote-kicker">
+            {t.quote.kicker(quote.customer_name)}
+          </p>
           <h1>{quote.job_title}</h1>
           <p>
-            Expires{' '}
-            {new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(
-              new Date(quote.expires_at),
-            )}
+            {t.quote.expires}{' '}
+            {new Intl.DateTimeFormat(dateLocale(locale), {
+              dateStyle: 'long',
+            }).format(new Date(quote.expires_at))}
           </p>
         </div>
 
@@ -59,7 +78,7 @@ export default async function PublicQuotePage({
                 <strong>{item.description}</strong>
                 <span>
                   {item.quantity} × {formatUsd(item.unit_price_cents)}
-                  {item.taxable ? '' : ' · non-taxable'}
+                  {item.taxable ? '' : ` · ${t.common.nonTaxable}`}
                 </span>
               </div>
               <strong>{formatUsd(item.line_total_cents)}</strong>
@@ -69,35 +88,33 @@ export default async function PublicQuotePage({
 
         <dl className="public-quote-totals">
           <div>
-            <dt>Subtotal</dt>
+            <dt>{t.common.subtotal}</dt>
             <dd>{formatUsd(quote.subtotal_cents)}</dd>
           </div>
           {quote.discount_cents ? (
             <div>
-              <dt>Discount</dt>
+              <dt>{t.common.discount}</dt>
               <dd>-{formatUsd(quote.discount_cents)}</dd>
             </div>
           ) : null}
           <div>
-            <dt>Tax</dt>
+            <dt>{t.common.tax}</dt>
             <dd>{formatUsd(quote.tax_cents)}</dd>
           </div>
           <div className="public-quote-total">
-            <dt>Total</dt>
+            <dt>{t.common.total}</dt>
             <dd>{formatUsd(quote.total_cents)}</dd>
           </div>
         </dl>
 
         {feedback.result ? (
           <p className="public-quote-success" role="status">
-            Quote {feedback.result}. {quote.company_name} has been notified in
-            CrewFlow360.
+            {t.quote.result(feedback.result, quote.company_name)}
           </p>
         ) : null}
         {feedback.error ? (
           <p className="public-quote-error" role="alert">
-            This quote could not be updated. It may be expired or already
-            decided.
+            {t.quote.error}
           </p>
         ) : null}
 
@@ -105,12 +122,12 @@ export default async function PublicQuotePage({
           <div className="public-quote-actions">
             <form action={decideQuoteAction.bind(null, token, 'accepted')}>
               <button className="public-quote-accept" type="submit">
-                Accept quote
+                {t.quote.accept}
               </button>
             </form>
             <form action={decideQuoteAction.bind(null, token, 'declined')}>
               <button className="public-quote-decline" type="submit">
-                Decline
+                {t.quote.decline}
               </button>
             </form>
           </div>
@@ -118,14 +135,11 @@ export default async function PublicQuotePage({
           <p
             className={`public-quote-status public-quote-status-${quote.status}`}
           >
-            This quote is {quote.status}.
+            {t.quote.status(quote.status)}
           </p>
         )}
 
-        <p className="public-quote-security">
-          This secure link is only for this quote. CrewFlow360 does not collect
-          your payment.
-        </p>
+        <p className="public-quote-security">{t.quote.security}</p>
       </section>
     </main>
   );
