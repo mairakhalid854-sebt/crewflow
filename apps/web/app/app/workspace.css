@@ -2589,3 +2589,167 @@
   border-radius: 9px;
   background: #fff;
 }
+
+.quote-assistant {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding: 18px 20px;
+  border: 1px solid #c9dcf5;
+  border-radius: 14px;
+  background: #f4f8ff;
+}
+
+.quote-assistant h2 {
+  margin: 0;
+  color: #10281f;
+  font-size: 1.1rem;
+}
+
+.quote-assistant p {
+  margin: 0;
+  color: #3d5068;
+}
+
+.quote-assistant-form {
+  display: grid;
+  gap: 10px;
+}
+
+.quote-assistant-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.quote-assistant-form textarea {
+  padding: 10px 12px;
+  border: 1px solid #c9d6e2;
+  border-radius: 9px;
+  font: inherit;
+  resize: vertical;
+}
+
+.quote-assistant-form button {
+  justify-self: start;
+}
+
+.quote-assistant-error,
+.translate-note-error {
+  color: #b42318;
+  font-weight: 700;
+}
+
+.quote-assistant-result {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #e9f8f0;
+  color: #146c3e;
+}
+
+.quote-assistant-result ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.work-note-translation {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid #1769f4;
+  background: #f4f8ff;
+  color: #17231e;
+}
+
+.work-note-translation span {
+  color: #53657d;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.translate-note-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.translate-note-form .link-button,
+.slot-list a {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #0f5ad8;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.slot-panel {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e1e7f0;
+}
+
+.slot-panel h2 {
+  margin: 0;
+}
+
+.slot-panel p {
+  margin: 0;
+}
+
+.slot-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slot-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f5f7f5;
+}
+
+.slot-list li span {
+  display: grid;
+  gap: 2px;
+}
+
+.slot-applied {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #e9f8f0;
+  color: #146c3e;
+  font-weight: 700;
+}
+
+.dispatch-overbooked {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid #f1a7a1;
+  border-radius: 12px;
+  background: #fff1f0;
+  color: #8a1c13;
+}
+
+.dispatch-overbooked h2 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.dispatch-overbooked ul {
+  margin: 0;
+  padding-left: 20px;
+}

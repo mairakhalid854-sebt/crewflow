@@ -180,6 +180,21 @@ export default async function DispatchPage({
       ? `${calendarLabel(boardStart)} – ${calendarLabel(dayDates.at(-1) ?? boardStart, true)}`
       : calendarLabel(boardStart, true);
 
+  const { data: workloadRows } = await supabase.rpc('get_technician_workload', {
+    target_days: 7,
+    target_tenant_id: context.tenantId,
+  });
+  const overbooked = (workloadRows ?? []).filter((row) => row.overbooked);
+  const hoursLabel = (minutes: number) =>
+    `${Math.round((minutes / 60) * 10) / 10} h`;
+  const workDateLabel = (value: string) =>
+    new Intl.DateTimeFormat('en-US', {
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'UTC',
+      weekday: 'short',
+    }).format(new Date(`${value}T12:00:00Z`));
+
   return (
     <div className="workspace-page dispatch-page">
       <header className="workspace-heading dispatch-heading">
@@ -192,6 +207,32 @@ export default async function DispatchPage({
           Create job
         </Link>
       </header>
+
+      {overbooked.length ? (
+        <section
+          aria-labelledby="overbooked-title"
+          className="dispatch-overbooked"
+          role="status"
+        >
+          <h2 id="overbooked-title">
+            {overbooked.length === 1
+              ? '1 technician day is overbooked'
+              : `${overbooked.length} technician days are overbooked`}
+          </h2>
+          <ul>
+            {overbooked.map((row) => (
+              <li key={`${row.technician_membership_id}-${row.work_date}`}>
+                <strong>{row.technician_name}</strong> ·{' '}
+                {workDateLabel(row.work_date)}: {row.job_count} job(s),{' '}
+                {hoursLabel(row.scheduled_minutes)} scheduled vs{' '}
+                {row.available_minutes
+                  ? `${hoursLabel(row.available_minutes)} working hours`
+                  : 'not a working day'}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="dispatch-toolbar" aria-label="Dispatch controls">
         <div className="dispatch-navigation">

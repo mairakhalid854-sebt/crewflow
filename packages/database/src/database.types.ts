@@ -307,6 +307,69 @@ export type Database = {
         };
         Relationships: [];
       };
+      ai_quote_drafts: {
+        Row: {
+          created_at: string;
+          created_by_user_id: string | null;
+          id: string;
+          job_id: string;
+          lines: Json;
+          missing_information: string[];
+          run_id: string;
+          summary: string;
+          tenant_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          id?: string;
+          job_id: string;
+          lines: Json;
+          missing_information?: string[];
+          run_id: string;
+          summary: string;
+          tenant_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by_user_id?: string | null;
+          id?: string;
+          job_id?: string;
+          lines?: Json;
+          missing_information?: string[];
+          run_id?: string;
+          summary?: string;
+          tenant_id?: string;
+        };
+        Relationships: [];
+      };
+      job_note_translations: {
+        Row: {
+          created_at: string;
+          note_id: string;
+          run_id: string;
+          target_language: string;
+          tenant_id: string;
+          translated_text: string;
+        };
+        Insert: {
+          created_at?: string;
+          note_id: string;
+          run_id: string;
+          target_language: string;
+          tenant_id: string;
+          translated_text: string;
+        };
+        Update: {
+          created_at?: string;
+          note_id?: string;
+          run_id?: string;
+          target_language?: string;
+          tenant_id?: string;
+          translated_text?: string;
+        };
+        Relationships: [];
+      };
       ai_run_replays: {
         Row: {
           action_kind: string;
@@ -3373,6 +3436,27 @@ export type Database = {
           result_message: string;
         }[];
       };
+      get_technician_workload: {
+        Args: { target_days?: number; target_tenant_id: string };
+        Returns: {
+          available_minutes: number;
+          job_count: number;
+          overbooked: boolean;
+          scheduled_minutes: number;
+          technician_membership_id: string;
+          technician_name: string;
+          work_date: string;
+        }[];
+      };
+      suggest_job_slots: {
+        Args: { target_count?: number; target_job_id: string };
+        Returns: {
+          ends_at: string;
+          starts_at: string;
+          technician_membership_id: string;
+          technician_name: string;
+        }[];
+      };
       get_service_profit_report: {
         Args: { target_days?: number; target_tenant_id: string };
         Returns: {
@@ -3672,7 +3756,13 @@ export type Database = {
       };
     };
     Enums: {
-      ai_agent_kind: 'intake' | 'dispatcher' | 'report' | 'follow_up';
+      ai_agent_kind:
+        | 'intake'
+        | 'dispatcher'
+        | 'report'
+        | 'follow_up'
+        | 'quote_assistant'
+        | 'translation';
       ai_approval_status: 'pending' | 'approved' | 'rejected' | 'expired';
       ai_run_status:
         | 'queued'
@@ -3899,7 +3989,14 @@ export const Constants = {
   },
   public: {
     Enums: {
-      ai_agent_kind: ['intake', 'dispatcher', 'report', 'follow_up'],
+      ai_agent_kind: [
+        'intake',
+        'dispatcher',
+        'report',
+        'follow_up',
+        'quote_assistant',
+        'translation',
+      ],
       ai_approval_status: ['pending', 'approved', 'rejected', 'expired'],
       ai_run_status: [
         'queued',
