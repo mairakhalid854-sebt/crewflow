@@ -197,6 +197,86 @@ export type Database = {
           },
         ];
       };
+      ai_autopilot_executions: {
+        Row: {
+          acting_user_id: string | null;
+          approval_id: string;
+          created_at: string;
+          error_message: string | null;
+          execution_result: string | null;
+          outcome: string;
+          policy_key: string;
+          tenant_id: string;
+        };
+        Insert: {
+          acting_user_id?: string | null;
+          approval_id: string;
+          created_at?: string;
+          error_message?: string | null;
+          execution_result?: string | null;
+          outcome: string;
+          policy_key: string;
+          tenant_id: string;
+        };
+        Update: {
+          acting_user_id?: string | null;
+          approval_id?: string;
+          created_at?: string;
+          error_message?: string | null;
+          execution_result?: string | null;
+          outcome?: string;
+          policy_key?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_autopilot_executions_approval_id_fkey';
+            columns: ['approval_id'];
+            isOneToOne: true;
+            referencedRelation: 'ai_approval_requests';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'ai_autopilot_executions_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      ai_autopilot_policies: {
+        Row: {
+          enabled: boolean;
+          policy_key: string;
+          tenant_id: string;
+          updated_at: string;
+          updated_by_user_id: string | null;
+        };
+        Insert: {
+          enabled?: boolean;
+          policy_key: string;
+          tenant_id: string;
+          updated_at?: string;
+          updated_by_user_id?: string | null;
+        };
+        Update: {
+          enabled?: boolean;
+          policy_key?: string;
+          tenant_id?: string;
+          updated_at?: string;
+          updated_by_user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_autopilot_policies_tenant_id_fkey';
+            columns: ['tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'tenants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       ai_run_replays: {
         Row: {
           action_kind: string;
@@ -3226,6 +3306,23 @@ export type Database = {
           replay_run_id: string;
           result_message: string;
         }[];
+      };
+      run_ai_autopilot: {
+        Args: { max_items?: number };
+        Returns: {
+          executed_count: number;
+          failed_count: number;
+          rejected_count: number;
+          skipped_count: number;
+        }[];
+      };
+      set_ai_autopilot_policy: {
+        Args: {
+          target_enabled: boolean;
+          target_policy_key: string;
+          target_tenant_id: string;
+        };
+        Returns: boolean;
       };
       run_follow_up_scheduler: {
         Args: { target_now?: string };
