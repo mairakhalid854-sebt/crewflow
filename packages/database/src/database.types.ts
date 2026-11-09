@@ -2335,6 +2335,10 @@ export type Database = {
           tenant_id: string;
           unit_price_cents: number;
           weather_sensitive: boolean;
+          market_price_low_cents: number | null;
+          market_price_high_cents: number | null;
+          market_price_source: string | null;
+          market_price_checked_on: string | null;
           updated_at: string;
         };
         Insert: {
@@ -2350,6 +2354,10 @@ export type Database = {
           tenant_id: string;
           unit_price_cents: number;
           weather_sensitive?: boolean;
+          market_price_low_cents?: number | null;
+          market_price_high_cents?: number | null;
+          market_price_source?: string | null;
+          market_price_checked_on?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -2365,6 +2373,10 @@ export type Database = {
           tenant_id?: string;
           unit_price_cents?: number;
           weather_sensitive?: boolean;
+          market_price_low_cents?: number | null;
+          market_price_high_cents?: number | null;
+          market_price_source?: string | null;
+          market_price_checked_on?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -2593,6 +2605,8 @@ export type Database = {
           owner_weekly_summary_enabled: boolean;
           quote_follow_up_emails_enabled: boolean;
           weather_alerts_enabled: boolean;
+          profit_labor_cost_cents_per_hour: number | null;
+          profit_target_margin_bps: number;
           id: string;
           intake_widget_enabled: boolean;
           intake_widget_key: string;
@@ -2609,6 +2623,8 @@ export type Database = {
           owner_weekly_summary_enabled?: boolean;
           quote_follow_up_emails_enabled?: boolean;
           weather_alerts_enabled?: boolean;
+          profit_labor_cost_cents_per_hour?: number | null;
+          profit_target_margin_bps?: number;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -2625,6 +2641,8 @@ export type Database = {
           owner_weekly_summary_enabled?: boolean;
           quote_follow_up_emails_enabled?: boolean;
           weather_alerts_enabled?: boolean;
+          profit_labor_cost_cents_per_hour?: number | null;
+          profit_target_margin_bps?: number;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -3351,6 +3369,40 @@ export type Database = {
           replay_run_id: string;
           result_message: string;
         }[];
+      };
+      get_service_profit_report: {
+        Args: { target_days?: number; target_tenant_id: string };
+        Returns: {
+          average_revenue_cents: number | null;
+          completed_jobs: number;
+          cost_per_job_cents: number | null;
+          flags: string[];
+          labor_cost_cents_per_hour: number | null;
+          list_price_cents: number;
+          margin_bps: number | null;
+          market_price_checked_on: string | null;
+          market_price_high_cents: number | null;
+          market_price_low_cents: number | null;
+          market_price_source: string | null;
+          measured_jobs: number;
+          median_minutes: number | null;
+          planned_minutes: number;
+          revenue_per_hour_cents: number | null;
+          service_id: string;
+          service_name: string;
+          suggested_price_cents: number | null;
+          target_margin_bps: number;
+        }[];
+      };
+      set_service_market_price: {
+        Args: {
+          target_checked_on: string | null;
+          target_high_cents: number | null;
+          target_low_cents: number | null;
+          target_service_id: string;
+          target_source: string | null;
+        };
+        Returns: undefined;
       };
       preview_owner_summary: {
         Args: {

@@ -28,6 +28,8 @@ CREATE TABLE public.customer_geocodes (
   CONSTRAINT customer_geocodes_hash_format CHECK (address_hash ~ '^[0-9a-f]{64}$'),
   CONSTRAINT customer_geocodes_shape CHECK (
     (status = 'matched'
+      AND latitude IS NOT NULL
+      AND longitude IS NOT NULL
       AND latitude BETWEEN -90 AND 90
       AND longitude BETWEEN -180 AND 180)
     OR (status = 'no_match' AND latitude IS NULL AND longitude IS NULL)
