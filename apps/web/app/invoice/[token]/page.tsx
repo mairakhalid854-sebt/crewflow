@@ -1,5 +1,12 @@
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 
+import { LanguageSwitch } from '../../../components/language-switch';
+import {
+  dateLocale,
+  publicCopy,
+  resolvePublicLocale,
+} from '../../../lib/i18n/public-copy';
 import {
   formatInvoiceNumber,
   publicInvoiceSchema,
@@ -14,9 +21,18 @@ const tokenPattern = /^[0-9a-f]{64}$/;
 
 export default async function PublicInvoicePage({
   params,
-}: Readonly<{ params: Promise<{ token: string }> }>) {
+  searchParams,
+}: Readonly<{
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ lang?: string }>;
+}>) {
   const { token } = await params;
   if (!tokenPattern.test(token)) notFound();
+  const locale = resolvePublicLocale(
+    (await searchParams).lang,
+    (await headers()).get('accept-language'),
+  );
+  const t = publicCopy(locale);
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('get_public_invoice', {
@@ -27,23 +43,28 @@ export default async function PublicInvoicePage({
   const invoice = parsed.data;
 
   return (
-    <main className="public-quote-shell">
+    <main className="public-quote-shell" lang={locale}>
       <section className="public-quote-card">
         <header className="public-quote-header">
           <div className="public-quote-brand">
             <span>C</span> CrewFlow360
           </div>
-          <p>Prepared by {invoice.company_name}</p>
+          <p>{t.common.preparedBy(invoice.company_name)}</p>
         </header>
+        <LanguageSwitch
+          label={t.common.languageLabel}
+          locale={locale}
+          path={`/invoice/${token}`}
+        />
         <div className="public-quote-intro">
           <p className="public-quote-kicker">
-            INVOICE {formatInvoiceNumber(invoice.invoice_number)}
+            {t.invoice.kicker(formatInvoiceNumber(invoice.invoice_number))}
           </p>
           <h1>{invoice.job_title}</h1>
-          <p>For {invoice.customer_name}</p>
+          <p>{t.invoice.for(invoice.customer_name)}</p>
           <p>
-            Due{' '}
-            {new Intl.DateTimeFormat('en-US', {
+            {t.invoice.due}{' '}
+            {new Intl.DateTimeFormat(dateLocale(locale), {
               dateStyle: 'long',
               timeZone: invoice.company_time_zone,
             }).format(new Date(invoice.due_at))}
@@ -60,7 +81,7 @@ export default async function PublicInvoicePage({
                 <strong>{item.description}</strong>
                 <span>
                   {item.quantity} x {formatUsd(item.unit_price_cents)}
-                  {item.taxable ? '' : ' - non-taxable'}
+                  {item.taxable ? '' : ` - ${t.common.nonTaxable}`}
                 </span>
               </div>
               <strong>{formatUsd(item.line_total_cents)}</strong>
@@ -70,43 +91,42 @@ export default async function PublicInvoicePage({
 
         <dl className="public-quote-totals">
           <div>
-            <dt>Subtotal</dt>
+            <dt>{t.common.subtotal}</dt>
             <dd>{formatUsd(invoice.subtotal_cents)}</dd>
           </div>
           {invoice.discount_cents ? (
             <div>
-              <dt>Discount</dt>
+              <dt>{t.common.discount}</dt>
               <dd>-{formatUsd(invoice.discount_cents)}</dd>
             </div>
           ) : null}
           <div>
-            <dt>Tax</dt>
+            <dt>{t.common.tax}</dt>
             <dd>{formatUsd(invoice.tax_cents)}</dd>
           </div>
           <div>
-            <dt>Recorded paid</dt>
+            <dt>{t.invoice.recordedPaid}</dt>
             <dd>{formatUsd(invoice.paid_cents)}</dd>
           </div>
           <div className="public-quote-total">
-            <dt>Outstanding</dt>
+            <dt>{t.invoice.outstanding}</dt>
             <dd>{formatUsd(invoice.outstanding_cents)}</dd>
           </div>
         </dl>
 
         <div className="public-invoice-download">
           <a download href={`/invoice/${token}/pdf`}>
-            Download{' '}
-            {invoice.status === 'paid' ? 'paid receipt' : 'invoice PDF'}
+            {t.invoice.download(invoice.status === 'paid')}
           </a>
         </div>
 
         {invoice.status === 'void' ? (
           <p className="public-quote-error" role="status">
-            This invoice is void. {invoice.void_reason}
+            {t.invoice.void} {invoice.void_reason}
           </p>
         ) : invoice.status === 'paid' ? (
           <p className="public-quote-success" role="status">
-            This invoice is recorded as paid by {invoice.company_name}.
+            {t.invoice.paid(invoice.company_name)}
           </p>
         ) : invoice.payment_url ? (
           <div className="public-quote-actions public-invoice-payment">
@@ -116,24 +136,17 @@ export default async function PublicInvoicePage({
               rel="noreferrer noopener"
               target="_blank"
             >
-              Open {invoice.company_name}&apos;s payment page
+              {t.invoice.payButton(invoice.company_name)}
             </a>
-            <p>
-              You will leave CrewFlow360. The service business—not
-              CrewFlow360—is the payee and controls that page.
-            </p>
+            <p>{t.invoice.leaveNotice}</p>
           </div>
         ) : (
           <p className="public-quote-status">
-            Contact {invoice.company_name} for payment instructions.
+            {t.invoice.contactForPayment(invoice.company_name)}
           </p>
         )}
 
-        <p className="public-quote-security">
-          Opening an external payment page never marks this invoice paid.
-          CrewFlow360 updates the balance only after the business records or
-          verifies receipt.
-        </p>
+        <p className="public-quote-security">{t.invoice.security}</p>
       </section>
     </main>
   );

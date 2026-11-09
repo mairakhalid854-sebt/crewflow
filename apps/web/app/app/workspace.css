@@ -2569,3 +2569,23 @@
     grid-column: auto;
   }
 }
+
+.form-consent .form-language {
+  display: grid;
+  max-width: 280px;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.form-consent .form-language span {
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.form-consent .form-language select {
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid #c9d6ce;
+  border-radius: 9px;
+  background: #fff;
+}

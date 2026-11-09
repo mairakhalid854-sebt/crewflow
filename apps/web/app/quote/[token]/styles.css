@@ -250,3 +250,26 @@
     width: 100%;
   }
 }
+
+.public-language-switch {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: -6px 0 12px;
+}
+
+.public-language-switch a {
+  padding: 5px 11px;
+  border: 1px solid #d8e1ed;
+  border-radius: 999px;
+  color: #53657d;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.public-language-switch a[aria-current='true'] {
+  border-color: #1769f4;
+  background: #eef4ff;
+  color: #0d4cc4;
+}

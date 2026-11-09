@@ -663,6 +663,7 @@ export type Database = {
           notes: string | null;
           phone: string | null;
           postal_code: string | null;
+          preferred_language: string;
           state_code: string | null;
           street_address: string | null;
           tenant_id: string;
@@ -684,6 +685,7 @@ export type Database = {
           notes?: string | null;
           phone?: string | null;
           postal_code?: string | null;
+          preferred_language?: string;
           state_code?: string | null;
           street_address?: string | null;
           tenant_id: string;
@@ -705,6 +707,7 @@ export type Database = {
           notes?: string | null;
           phone?: string | null;
           postal_code?: string | null;
+          preferred_language?: string;
           state_code?: string | null;
           street_address?: string | null;
           tenant_id?: string;
