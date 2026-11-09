@@ -8,19 +8,25 @@ export const dynamic = 'force-dynamic';
 export default async function CompanySettingsPage() {
   const context = await requireTenantContext(['owner']);
   const supabase = await createClient();
-  const [tenantResult, settingsResult, hoursResult] = await Promise.all([
-    supabase.from('tenants').select('*').eq('id', context.tenantId).single(),
-    supabase
-      .from('tenant_settings')
-      .select('*')
-      .eq('tenant_id', context.tenantId)
-      .single(),
-    supabase
-      .from('business_hours')
-      .select('*')
-      .eq('tenant_id', context.tenantId)
-      .order('day_of_week'),
-  ]);
+  const [tenantResult, settingsResult, hoursResult, previewResult] =
+    await Promise.all([
+      supabase.from('tenants').select('*').eq('id', context.tenantId).single(),
+      supabase
+        .from('tenant_settings')
+        .select('*')
+        .eq('tenant_id', context.tenantId)
+        .single(),
+      supabase
+        .from('business_hours')
+        .select('*')
+        .eq('tenant_id', context.tenantId)
+        .order('day_of_week'),
+      supabase.rpc('preview_owner_summary', {
+        target_kind: 'owner_daily_summary',
+        target_tenant_id: context.tenantId,
+      }),
+    ]);
+  const preview = previewResult.error ? null : previewResult.data?.[0];
 
   if (
     tenantResult.error ||
@@ -49,6 +55,15 @@ export default async function CompanySettingsPage() {
         settings={settingsResult.data}
         tenant={tenantResult.data}
       />
+      {preview ? (
+        <details className="summary-preview">
+          <summary>Preview today&apos;s daily summary email</summary>
+          <p className="summary-preview-subject">
+            <strong>Subject:</strong> {preview.subject}
+          </p>
+          <pre>{preview.body}</pre>
+        </details>
+      ) : null}
     </div>
   );
 }

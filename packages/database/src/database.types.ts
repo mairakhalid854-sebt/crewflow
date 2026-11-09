@@ -2556,6 +2556,8 @@ export type Database = {
           ai_operations_enabled: boolean;
           created_at: string;
           customer_appointment_emails_enabled: boolean;
+          owner_daily_summary_enabled: boolean;
+          owner_weekly_summary_enabled: boolean;
           id: string;
           intake_widget_enabled: boolean;
           intake_widget_key: string;
@@ -2568,6 +2570,8 @@ export type Database = {
           ai_operations_enabled?: boolean;
           created_at?: string;
           customer_appointment_emails_enabled?: boolean;
+          owner_daily_summary_enabled?: boolean;
+          owner_weekly_summary_enabled?: boolean;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -2580,6 +2584,8 @@ export type Database = {
           ai_operations_enabled?: boolean;
           created_at?: string;
           customer_appointment_emails_enabled?: boolean;
+          owner_daily_summary_enabled?: boolean;
+          owner_weekly_summary_enabled?: boolean;
           id?: string;
           intake_widget_enabled?: boolean;
           intake_widget_key?: string;
@@ -3307,6 +3313,17 @@ export type Database = {
           result_message: string;
         }[];
       };
+      preview_owner_summary: {
+        Args: {
+          target_kind: Database['public']['Enums']['transactional_email_kind'];
+          target_tenant_id: string;
+        };
+        Returns: { body: string; subject: string }[];
+      };
+      queue_owner_summaries: {
+        Args: { target_now: string };
+        Returns: number;
+      };
       run_ai_autopilot: {
         Args: { max_items?: number };
         Returns: {
@@ -3644,7 +3661,9 @@ export type Database = {
         | 'work_report'
         | 'job_scheduled'
         | 'job_rescheduled'
-        | 'job_cancelled';
+        | 'job_cancelled'
+        | 'owner_daily_summary'
+        | 'owner_weekly_summary';
       work_report_status: 'draft' | 'sent' | 'void';
     };
     CompositeTypes: {
@@ -3904,6 +3923,8 @@ export const Constants = {
         'job_scheduled',
         'job_rescheduled',
         'job_cancelled',
+        'owner_daily_summary',
+        'owner_weekly_summary',
       ],
       work_report_status: ['draft', 'sent', 'void'],
     },
