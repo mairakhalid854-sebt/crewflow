@@ -26,7 +26,7 @@ const reviewedAdvisories = new Map([
       packageName: 'minimatch',
       reviewBy: '2026-12-04',
       severity: 'moderate',
-      source: 1244012,
+      source: 1244623,
     },
   ],
 ]);
