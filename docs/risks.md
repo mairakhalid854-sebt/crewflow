@@ -18,6 +18,8 @@ The same review added moderate GHSA-g3hv-75wg-m249 (`minimatch` denial of servic
 
 The 2026-11-04 review found no new mobile advisories and no compatible fix for the three reviewed ones. `glob` 14.0.3 and `minimatch` 11.0.4 are the latest releases, but even the latest Expo SDK 58 packages still require `glob ^13` (`@expo/cli`, `@expo/fingerprint`) and `minimatch ^10` (`@expo/fingerprint`). SDK 58's `@expo/config` no longer depends on `deepmerge`, so the SDK 58 upgrade will remove that advisory; it is a major mobile upgrade and is tracked separately rather than taken as an audit fix. The review was renewed to 2026-12-04.
 
+On 2026-11-09 GitHub reissued GHSA-g3hv-75wg-m249 under a new npm advisory source ID (1244012 to 1244623). The package, moderate severity, and fixed version (`minimatch` 11.0.1) are unchanged, so the policy now pins the new source ID with the same 2026-12-04 review date.
+
 Mitigation:
 
 1. Keep a strict blocking audit for the deployable web, API, and worker workspaces.
