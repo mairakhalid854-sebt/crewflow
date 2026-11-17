@@ -1,21 +1,27 @@
 #!/usr/bin/env bash
 # One-time install of the nightly database backup. Run as root on the VPS.
-# Prompts for the Supabase connection string without echoing it.
+# Prompts for the Supabase database password without echoing it.
+# Re-enter the password later with: install-backup.sh --reset
 set -euo pipefail
 
 install -d -m 700 /etc/crewflow360 /opt/crewflow360-backup
 install -m 700 "$(dirname "$0")/db-backup.sh" /opt/crewflow360-backup/db-backup.sh
 
+if [ "${1:-}" = "--reset" ]; then
+  rm -f /etc/crewflow360/backup-db-url
+fi
+
 if [ ! -s /etc/crewflow360/backup-db-url ]; then
-  read -r -s -p 'Paste the Supabase Session pooler connection string, then Enter: ' url
+  # Ask only for the database password (hidden) and build the Session pooler
+  # URI here, so special characters are encoded correctly.
+  read -r -s -p 'Database password (paste ONCE, then Enter; nothing will show): ' password
   echo
-  case "$url" in
-    postgres://* | postgresql://*) ;;
-    *) echo 'That does not look like a postgres connection string.' >&2; exit 1 ;;
-  esac
+  [ -n "$password" ] || { echo 'No password entered.' >&2; exit 1; }
+  encoded="$(PASSWORD="$password" python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["PASSWORD"], safe=""))')"
+  unset password
   umask 077
-  printf '%s' "$url" > /etc/crewflow360/backup-db-url
-  unset url
+  printf 'postgresql://postgres.mlgfyxsqorualqwbecmp:%s@aws-0-us-east-1.pooler.supabase.com:5432/postgres'     "$encoded" > /etc/crewflow360/backup-db-url
+  unset encoded
 fi
 chmod 600 /etc/crewflow360/backup-db-url
 
