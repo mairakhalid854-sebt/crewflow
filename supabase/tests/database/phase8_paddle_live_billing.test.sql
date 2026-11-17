@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(20);
+SELECT plan(21);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -131,6 +131,15 @@ SELECT is(
     'pro_monthly:pri_01m6k8x4a6ehvnyex8bqtgs2ts'
   ],
   'Owners see the live catalog in price order'
+);
+
+SELECT is(
+  ARRAY(
+    SELECT code || ':' || amount_cents
+    FROM public.list_owner_paddle_plans('paddle')
+  ),
+  ARRAY['starter_monthly:4900', 'growth_monthly:11900', 'pro_monthly:19900'],
+  'Live catalog shows the 2026-11 monthly prices'
 );
 
 SELECT is(
