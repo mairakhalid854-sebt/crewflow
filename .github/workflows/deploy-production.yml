@@ -1,0 +1,74 @@
+name: Deploy production (VPS)
+
+# Builds the web image, pushes it to GitHub Container Registry, and rolls it
+# out on the Hostinger VPS. Runs on every push to main once the VPS variables
+# and secrets are configured.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/crewflow-web
+
+jobs:
+  deploy:
+    name: Build and deploy web
+    if: ${{ vars.CREWFLOW_VPS_HOST != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:production
+          build-args: |
+            NEXT_PUBLIC_APP_URL=${{ vars.CREWFLOW_PRODUCTION_APP_URL }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ vars.CREWFLOW_PRODUCTION_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ vars.CREWFLOW_PRODUCTION_SUPABASE_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=${{ vars.CREWFLOW_PRODUCTION_PADDLE_CLIENT_TOKEN }}
+
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.CREWFLOW_VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.CREWFLOW_VPS_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Roll out on the VPS
+        env:
+          HOST: ${{ vars.CREWFLOW_VPS_HOST }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+        run: |
+          scp deploy/production/compose.yaml deploy/production/rollout.sh             "deploy@$HOST:/opt/crewflow360/"
+          printf '%s' "$REGISTRY_TOKEN" | ssh "deploy@$HOST"             "docker login ghcr.io -u '$REGISTRY_USER' --password-stdin"
+          ssh "deploy@$HOST" "bash /opt/crewflow360/rollout.sh '$IMAGE:$GITHUB_SHA'"

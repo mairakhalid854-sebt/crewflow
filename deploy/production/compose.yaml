@@ -1,0 +1,21 @@
+# CrewFlow360 production web on the shared Hostinger VPS.
+# The host's existing nginx terminates TLS and proxies crewflow360.com to
+# 127.0.0.1:3100, so this stack never binds public ports and does not touch
+# other sites on the server.
+name: crewflow360
+
+services:
+  web:
+    image: ${CREWFLOW_WEB_IMAGE:?set CREWFLOW_WEB_IMAGE}
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - '127.0.0.1:3100:3000'
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
