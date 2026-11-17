@@ -29,6 +29,18 @@ const reviewedAdvisories = new Map([
       source: 1244623,
     },
   ],
+  [
+    // No patched picomatch release yet (<= 4.0.7). Reached only through Expo
+    // CLI / Metro build tooling with project-controlled glob patterns; it is
+    // not part of the shipped app bundle. Owner approved 2026-11-17.
+    'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
+    {
+      packageName: 'picomatch',
+      reviewBy: '2026-12-04',
+      severity: 'high',
+      source: 1247710,
+    },
+  ],
 ]);
 
 function fail(message) {
