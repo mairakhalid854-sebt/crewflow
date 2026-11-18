@@ -82,7 +82,7 @@ function loadNotificationsModule(): Promise<NotificationsModule> {
       notifications.setNotificationHandler({
         handleNotification: () =>
           Promise.resolve({
-            shouldPlaySound: false,
+            shouldPlaySound: true,
             shouldSetBadge: false,
             shouldShowBanner: true,
             shouldShowList: true,
@@ -191,7 +191,10 @@ export async function synchronizeMobilePushToken(
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(NOTIFICATION_CHANNEL_ID, {
       name: 'CrewFlow360 operations',
+      enableVibrate: true,
       importance: Notifications.AndroidImportance.HIGH,
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      sound: 'default',
       vibrationPattern: [0, 250, 250, 250],
     });
   }

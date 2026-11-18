@@ -22,3 +22,6 @@ supabase/.temp/
 
 # Generated Prisma client
 packages/database/generated/
+
+# Firebase Android config (stored as the EAS file variable GOOGLE_SERVICES_JSON)
+apps/mobile/google-services.json

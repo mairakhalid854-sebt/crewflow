@@ -10,7 +10,6 @@ import {
   PanResponder,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   RefreshControl,
   Share,
@@ -19,6 +18,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import {
@@ -134,6 +135,15 @@ const roleLabels = {
 } as const;
 
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <StatusBar style="dark" />
+      <CrewFlowApp />
+    </SafeAreaProvider>
+  );
+}
+
+function CrewFlowApp() {
   const linkedUrl = Linking.useLinkingURL();
   const handledAppUrl = useRef<string | undefined>(undefined);
   const handledRecoveryUrl = useRef<string | undefined>(undefined);
@@ -329,7 +339,7 @@ export default function App() {
     };
     const responseSubscription = addNotificationResponseListener(receive);
     const tokenSubscription = addPushTokenRotationListener(authClient);
-    void synchronizeMobilePushToken(authClient).catch(() => undefined);
+    void synchronizeMobilePushToken(authClient, true).catch(() => undefined);
     void getInitialNotificationDeepLink()
       .then((deepLink) => {
         if (deepLink) receive(deepLink);
