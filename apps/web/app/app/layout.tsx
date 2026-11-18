@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Database } from '@crewflow/database';
 
 import { logoutAction } from '../(auth)/actions';
+import { VoiceAssistant } from '../../components/voice-assistant';
 import { requireTenantContext } from '../../lib/auth/tenant-context';
 import { createClient } from '../../lib/supabase/server';
 
@@ -97,6 +98,7 @@ export default async function AuthenticatedAppLayout({
 
   return (
     <main className="authenticated-shell">
+      <VoiceAssistant role={context.role} />
       <aside className="authenticated-sidebar" aria-label="Primary navigation">
         <Link className="workspace-brand" href="/app">
           <span aria-hidden="true">C</span>

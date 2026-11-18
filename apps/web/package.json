@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@alan-ai/alan-sdk-web": "^1.8.145",
     "@crewflow/database": "*",
     "@crewflow/types": "*",
     "@crewflow/ui": "*",
