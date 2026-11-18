@@ -417,6 +417,14 @@ entrypoint = './functions/reconcile-paddle-live-billing/index.js'
 verify_jwt = false
 entrypoint = './functions/weather-risk-check/index.js'
 
+[functions.weather-campaign-check]
+verify_jwt = false
+entrypoint = './functions/weather-campaign-check/index.js'
+
+[functions.process-campaign-emails]
+verify_jwt = false
+entrypoint = './functions/process-campaign-emails/index.js'
+
 [functions.quote-assistant]
 verify_jwt = false
 entrypoint = './functions/quote-assistant/index.js'
