@@ -960,6 +960,96 @@ export type Database = {
           },
         ];
       };
+      weather_campaign_settings: {
+        Row: {
+          auto_send: boolean;
+          cold_threshold_f: number;
+          cooldown_days: number;
+          created_at: string;
+          enabled: boolean;
+          heat_threshold_f: number;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          auto_send?: boolean;
+          cold_threshold_f?: number;
+          cooldown_days?: number;
+          created_at?: string;
+          enabled?: boolean;
+          heat_threshold_f?: number;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          auto_send?: boolean;
+          cold_threshold_f?: number;
+          cooldown_days?: number;
+          created_at?: string;
+          enabled?: boolean;
+          heat_threshold_f?: number;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      weather_campaigns: {
+        Row: {
+          approved_at: string | null;
+          approved_by_user_id: string | null;
+          audience_count: number;
+          body: string;
+          cancelled_at: string | null;
+          created_at: string;
+          forecast_date: string | null;
+          forecast_temp_f: number | null;
+          id: string;
+          kind: string;
+          queued_count: number;
+          source: string;
+          status: string;
+          subject: string;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          approved_at?: string | null;
+          approved_by_user_id?: string | null;
+          audience_count?: number;
+          body: string;
+          cancelled_at?: string | null;
+          created_at?: string;
+          forecast_date?: string | null;
+          forecast_temp_f?: number | null;
+          id?: string;
+          kind: string;
+          queued_count?: number;
+          source?: string;
+          status?: string;
+          subject: string;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          approved_at?: string | null;
+          approved_by_user_id?: string | null;
+          audience_count?: number;
+          body?: string;
+          cancelled_at?: string | null;
+          created_at?: string;
+          forecast_date?: string | null;
+          forecast_temp_f?: number | null;
+          id?: string;
+          kind?: string;
+          queued_count?: number;
+          source?: string;
+          status?: string;
+          subject?: string;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       billing_plans: {
         Row: {
           ai_monthly_budget_cents: number | null;
@@ -3723,6 +3813,41 @@ export type Database = {
       };
       get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
       get_public_quote: { Args: { quote_token: string }; Returns: Json };
+      save_weather_campaign_settings: {
+        Args: {
+          target_auto_send: boolean;
+          target_cold_threshold_f: number;
+          target_enabled: boolean;
+          target_heat_threshold_f: number;
+          target_tenant_id: string;
+        };
+        Returns: undefined;
+      };
+      create_manual_weather_campaign: {
+        Args: { target_kind: string; target_tenant_id: string };
+        Returns: string;
+      };
+      send_weather_campaign: {
+        Args: {
+          target_body: string;
+          target_campaign_id: string;
+          target_subject: string;
+        };
+        Returns: number;
+      };
+      cancel_weather_campaign: {
+        Args: { target_campaign_id: string };
+        Returns: string;
+      };
+      get_weather_campaign_stats: {
+        Args: { target_tenant_id: string };
+        Returns: {
+          campaign_id: string;
+          delivered: number;
+          failed: number;
+          waiting: number;
+        }[];
+      };
       save_membership_plan: {
         Args: {
           target_billing_interval: string;
@@ -4405,7 +4530,8 @@ export type Database = {
         | 'quote_reminder'
         | 'weather_risk_alert'
         | 'booking_request_owner'
-        | 'booking_request_customer';
+        | 'booking_request_customer'
+        | 'weather_campaign_ready';
       work_report_status: 'draft' | 'sent' | 'void';
     };
     CompositeTypes: {
@@ -4678,6 +4804,7 @@ export const Constants = {
         'weather_risk_alert',
         'booking_request_owner',
         'booking_request_customer',
+        'weather_campaign_ready',
       ],
       work_report_status: ['draft', 'sent', 'void'],
     },

@@ -49,6 +49,7 @@ const navItems: readonly {
     label: 'Memberships',
     roles: ['owner', 'office'],
   },
+  { href: '/app/campaigns', label: 'Campaigns', roles: ['owner'] },
   { href: '/app/profit', label: 'Profit Guard', roles: ['owner'] },
   {
     href: '/app/team',
