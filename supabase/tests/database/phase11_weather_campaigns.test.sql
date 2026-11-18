@@ -15,6 +15,9 @@ INSERT INTO auth.users (
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now()),
   ('11000000-0000-4000-8000-000000000004', 'authenticated', 'authenticated',
    'wx-office@crewflow.test', '', now(),
+   '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now()),
+  ('11000000-0000-4000-8000-000000000003', 'authenticated', 'authenticated',
+   'wx-tech@crewflow.test', '', now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now());
 
 INSERT INTO public.tenants (
@@ -39,7 +42,9 @@ VALUES
   ('33000000-0000-4000-8000-000000000002', '22000000-0000-4000-8000-000000000002',
    '11000000-0000-4000-8000-000000000002', 'owner', 'active', now()),
   ('33000000-0000-4000-8000-000000000004', '22000000-0000-4000-8000-000000000001',
-   '11000000-0000-4000-8000-000000000004', 'office', 'active', now());
+   '11000000-0000-4000-8000-000000000004', 'office', 'active', now()),
+  ('33000000-0000-4000-8000-000000000003', '22000000-0000-4000-8000-000000000001',
+   '11000000-0000-4000-8000-000000000003', 'technician', 'active', now());
 
 -- Ana: eligible. Ben: no marketing consent. Cara: has an open job.
 -- Dee: suppressed. Eli: never had a completed job.
@@ -72,7 +77,11 @@ INSERT INTO public.jobs (id, tenant_id, customer_id, title) VALUES (
 );
 -- Completed history is set directly; the job workflow itself is tested elsewhere.
 ALTER TABLE public.jobs DISABLE TRIGGER USER;
-UPDATE public.jobs SET status = 'completed'
+UPDATE public.jobs
+SET status = 'completed',
+    assigned_membership_id = '33000000-0000-4000-8000-000000000003',
+    scheduled_start_at = now() - interval '30 days',
+    scheduled_end_at = now() - interval '30 days' + interval '1 hour'
 WHERE id IN (
   '55000000-0000-4000-8000-000000000001', '55000000-0000-4000-8000-000000000002',
   '55000000-0000-4000-8000-000000000003', '55000000-0000-4000-8000-000000000004'
