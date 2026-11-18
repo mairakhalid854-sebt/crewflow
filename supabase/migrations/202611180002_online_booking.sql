@@ -59,6 +59,7 @@ CREATE TABLE public.booking_requests (
   hold_expires_at timestamptz NOT NULL,
   contact_key text NOT NULL,
   customer_note text,
+  referral_code text,
   decided_at timestamptz,
   decided_by_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -85,6 +86,9 @@ CREATE TABLE public.booking_requests (
   ),
   CONSTRAINT booking_requests_note_length CHECK (
     customer_note IS NULL OR char_length(customer_note) <= 1000
+  ),
+  CONSTRAINT booking_requests_referral_code_format CHECK (
+    referral_code IS NULL OR referral_code ~ '^[A-Z0-9]{8}$'
   )
 );
 
@@ -762,7 +766,8 @@ CREATE FUNCTION public.submit_public_booking(
   target_note text DEFAULT NULL,
   target_language text DEFAULT 'en',
   target_marketing_opt_in boolean DEFAULT false,
-  target_website text DEFAULT NULL
+  target_website text DEFAULT NULL,
+  target_referral_code text DEFAULT NULL
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -785,6 +790,7 @@ DECLARE
   clean_note text := nullif(left(trim(coalesce(target_note, '')), 1000), '');
   clean_language text := CASE WHEN target_language = 'es' THEN 'es' ELSE 'en' END;
   contact_hash text;
+  clean_referral text := upper(trim(coalesce(target_referral_code, '')));
   slot_end timestamptz;
   technician uuid;
   matched_customer uuid;
@@ -908,11 +914,12 @@ BEGIN
   INSERT INTO public.booking_requests (
     tenant_id, job_id, customer_id, service_id, requested_start_at,
     requested_end_at, suggested_membership_id, hold_expires_at, contact_key,
-    customer_note
+    customer_note, referral_code
   ) VALUES (
     page_tenant, new_job, matched_customer, service.id, target_starts_at,
     slot_end, technician, least(target_starts_at, now() + interval '48 hours'),
-    contact_hash, clean_note
+    contact_hash, clean_note,
+    CASE WHEN clean_referral ~ '^[A-Z0-9]{8}$' THEN clean_referral END
   ) RETURNING id INTO new_request;
 
   INSERT INTO public.audit_events (
@@ -1155,7 +1162,7 @@ $$;
 REVOKE ALL ON FUNCTION public.get_public_booking_page(text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.get_public_booking_slots(text, uuid, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.submit_public_booking(
-  text, uuid, timestamptz, text, text, text, text, text, text, text, text, boolean, text
+  text, uuid, timestamptz, text, text, text, text, text, text, text, text, boolean, text, text
 ) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.save_booking_page(uuid, text, boolean, text, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.set_service_online_booking(uuid, boolean) FROM PUBLIC, anon;
@@ -1168,7 +1175,7 @@ REVOKE ALL ON FUNCTION public.booking_email_hash(text, uuid, text) FROM PUBLIC, 
 GRANT EXECUTE ON FUNCTION public.get_public_booking_page(text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_public_booking_slots(text, uuid, text) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.submit_public_booking(
-  text, uuid, timestamptz, text, text, text, text, text, text, text, text, boolean, text
+  text, uuid, timestamptz, text, text, text, text, text, text, text, text, boolean, text, text
 ) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.save_booking_page(uuid, text, boolean, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.set_service_online_booking(uuid, boolean) TO authenticated;
