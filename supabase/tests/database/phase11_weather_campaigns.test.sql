@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(28);
+SELECT plan(29);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -201,12 +201,9 @@ SELECT is(
   1,
   'the owner sends the campaign to the audience'
 );
-SELECT is(
-  (SELECT row(subject, body, booking_path)::text FROM public.campaign_messages
-   WHERE campaign_id = current_setting('crewflow.cold')::uuid),
-  row('Cold snap coming: is your heat ready?',
-    'Hi Ana, a freeze is coming. Reply to book a heating check.', NULL::text)::text,
-  'each message is personalized with the edited wording'
+SELECT throws_ok(
+  $$SELECT count(*) FROM public.campaign_messages$$,
+  '42501', NULL, 'message rows are not readable from the app'
 );
 SELECT throws_ok(
   $$SELECT public.cancel_weather_campaign(current_setting('crewflow.cold')::uuid)$$,
@@ -217,6 +214,14 @@ SELECT throws_ok(
   '22023', NULL, 'customers just emailed are rested before the next campaign'
 );
 RESET ROLE;
+
+SELECT is(
+  (SELECT row(subject, body, booking_path)::text FROM public.campaign_messages
+   WHERE campaign_id = current_setting('crewflow.cold')::uuid),
+  row('Cold snap coming: is your heat ready?',
+    'Hi Ana, a freeze is coming. Reply to book a heating check.', NULL::text)::text,
+  'each message is personalized with the edited wording'
+);
 
 -- ---------------------------------------------------------------------------
 -- Delivery
