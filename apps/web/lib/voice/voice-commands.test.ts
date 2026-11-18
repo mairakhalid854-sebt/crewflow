@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveVoiceCommand, voiceVisualState } from './voice-commands';
+import { resolveVoiceCommand } from './voice-commands';
 
 describe('resolveVoiceCommand', () => {
   it('navigates to a page the role can see', () => {
@@ -74,16 +74,5 @@ describe('resolveVoiceCommand', () => {
     });
     expect(resolveVoiceCommand('navigate', 'owner')).toBeUndefined();
     expect(resolveVoiceCommand(null, 'owner')).toBeUndefined();
-  });
-});
-
-describe('voiceVisualState', () => {
-  it('shares only the screen name, role, and allowed pages', () => {
-    const state = voiceVisualState('/app/jobs', 'technician');
-    expect(state.screen).toBe('jobs');
-    expect(state.role).toBe('technician');
-    expect(state.pages).toContain('jobs');
-    expect(state.pages).not.toContain('settings');
-    expect(voiceVisualState('/app/jobs/123', 'owner').screen).toBe('other');
   });
 });

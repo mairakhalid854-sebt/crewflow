@@ -1,7 +1,6 @@
-// Turns a command sent by the Alan AI dialog script into a safe in-app action.
-// The script only names a page or a search; the app decides the URL and checks
-// the signed-in role, so a spoken command can never open a page the user's
-// role cannot see.
+// Turns a parsed voice command into a safe in-app action. The command only
+// names a page or a search; this decides the URL and checks the signed-in
+// role, so a spoken command can never open a page the user's role cannot see.
 
 export type VoiceRole = 'owner' | 'office' | 'technician';
 
@@ -122,17 +121,4 @@ export function resolveVoiceCommand(
   }
 
   return undefined;
-}
-
-// What the dialog script may know about the current screen. Never include
-// customer names, addresses, prices, or other business records here: this is
-// sent to Alan AI's servers.
-export function voiceVisualState(pathname: string, role: VoiceRole) {
-  const pages = Object.entries(voicePages)
-    .filter(([, page]) => (page.roles as readonly VoiceRole[]).includes(role))
-    .map(([name]) => name);
-  const current = Object.entries(voicePages)
-    .filter(([, page]) => page.href === pathname)
-    .map(([name]) => name)[0];
-  return { screen: current ?? 'other', role, pages };
 }
