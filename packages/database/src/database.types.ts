@@ -529,6 +529,119 @@ export type Database = {
           },
         ];
       };
+      booking_pages: {
+        Row: {
+          created_at: string;
+          enabled: boolean;
+          headline: string | null;
+          intro: string | null;
+          slug: string;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          enabled?: boolean;
+          headline?: string | null;
+          intro?: string | null;
+          slug: string;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          enabled?: boolean;
+          headline?: string | null;
+          intro?: string | null;
+          slug?: string;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      booking_requests: {
+        Row: {
+          contact_key: string;
+          created_at: string;
+          customer_id: string;
+          customer_note: string | null;
+          decided_at: string | null;
+          decided_by_user_id: string | null;
+          hold_expires_at: string;
+          id: string;
+          job_id: string;
+          requested_end_at: string;
+          requested_start_at: string;
+          service_id: string;
+          status: string;
+          suggested_membership_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          contact_key: string;
+          created_at?: string;
+          customer_id: string;
+          customer_note?: string | null;
+          decided_at?: string | null;
+          decided_by_user_id?: string | null;
+          hold_expires_at: string;
+          id?: string;
+          job_id: string;
+          requested_end_at: string;
+          requested_start_at: string;
+          service_id: string;
+          status?: string;
+          suggested_membership_id: string;
+          tenant_id: string;
+        };
+        Update: {
+          contact_key?: string;
+          created_at?: string;
+          customer_id?: string;
+          customer_note?: string | null;
+          decided_at?: string | null;
+          decided_by_user_id?: string | null;
+          hold_expires_at?: string;
+          id?: string;
+          job_id?: string;
+          requested_end_at?: string;
+          requested_start_at?: string;
+          service_id?: string;
+          status?: string;
+          suggested_membership_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'booking_requests_customer_fk';
+            columns: ['customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'booking_requests_job_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'booking_requests_service_fk';
+            columns: ['service_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'services';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'booking_requests_technician_fk';
+            columns: ['suggested_membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
       billing_plans: {
         Row: {
           ai_monthly_budget_cents: number | null;
@@ -2401,6 +2514,7 @@ export type Database = {
           tenant_id: string;
           unit_price_cents: number;
           weather_sensitive: boolean;
+          online_booking_enabled: boolean;
           market_price_low_cents: number | null;
           market_price_high_cents: number | null;
           market_price_source: string | null;
@@ -2420,6 +2534,7 @@ export type Database = {
           tenant_id: string;
           unit_price_cents: number;
           weather_sensitive?: boolean;
+          online_booking_enabled?: boolean;
           market_price_low_cents?: number | null;
           market_price_high_cents?: number | null;
           market_price_source?: string | null;
@@ -2439,6 +2554,7 @@ export type Database = {
           tenant_id?: string;
           unit_price_cents?: number;
           weather_sensitive?: boolean;
+          online_booking_enabled?: boolean;
           market_price_low_cents?: number | null;
           market_price_high_cents?: number | null;
           market_price_source?: string | null;
@@ -3289,6 +3405,55 @@ export type Database = {
       };
       get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
       get_public_quote: { Args: { quote_token: string }; Returns: Json };
+      get_public_booking_page: { Args: { target_slug: string }; Returns: Json };
+      get_public_booking_slots: {
+        Args: {
+          target_postal_code: string;
+          target_service_id: string;
+          target_slug: string;
+        };
+        Returns: { ends_at: string; starts_at: string }[];
+      };
+      submit_public_booking: {
+        Args: {
+          target_email: string;
+          target_first_name: string;
+          target_language?: string;
+          target_last_name: string;
+          target_marketing_opt_in?: boolean;
+          target_note?: string;
+          target_phone: string;
+          target_postal_code: string;
+          target_service_id: string;
+          target_slug: string;
+          target_starts_at: string;
+          target_street_address: string;
+          target_website?: string;
+        };
+        Returns: Json;
+      };
+      save_booking_page: {
+        Args: {
+          target_enabled: boolean;
+          target_headline?: string;
+          target_intro?: string;
+          target_slug: string;
+          target_tenant_id: string;
+        };
+        Returns: Database['public']['Tables']['booking_pages']['Row'];
+      };
+      set_service_online_booking: {
+        Args: { target_enabled: boolean; target_service_id: string };
+        Returns: undefined;
+      };
+      apply_booking_request: {
+        Args: { target_request_id: string };
+        Returns: string;
+      };
+      dismiss_booking_request: {
+        Args: { target_request_id: string };
+        Returns: string;
+      };
       get_public_work_report: { Args: { report_token: string }; Returns: Json };
       get_push_notification_cron_status: {
         Args: never;
@@ -3857,7 +4022,9 @@ export type Database = {
         | 'owner_daily_summary'
         | 'owner_weekly_summary'
         | 'quote_reminder'
-        | 'weather_risk_alert';
+        | 'weather_risk_alert'
+        | 'booking_request_owner'
+        | 'booking_request_customer';
       work_report_status: 'draft' | 'sent' | 'void';
     };
     CompositeTypes: {
@@ -4128,6 +4295,8 @@ export const Constants = {
         'owner_weekly_summary',
         'quote_reminder',
         'weather_risk_alert',
+        'booking_request_owner',
+        'booking_request_customer',
       ],
       work_report_status: ['draft', 'sent', 'void'],
     },
