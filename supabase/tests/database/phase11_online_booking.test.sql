@@ -392,7 +392,7 @@ SELECT is(
 -- Page availability
 -- ---------------------------------------------------------------------------
 
-UPDATE public.tenant_subscriptions SET access_mode = 'read_only'
+UPDATE public.tenant_subscriptions SET status = 'canceled', access_mode = 'read_only'
 WHERE tenant_id = '22000000-0000-4000-8000-000000000001';
 
 SET LOCAL ROLE anon;
