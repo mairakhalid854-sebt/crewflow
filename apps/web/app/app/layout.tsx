@@ -39,6 +39,11 @@ const navItems: readonly {
     label: 'Online booking',
     roles: ['owner', 'office'],
   },
+  {
+    href: '/app/referrals',
+    label: 'Referrals',
+    roles: ['owner', 'office'],
+  },
   { href: '/app/profit', label: 'Profit Guard', roles: ['owner'] },
   {
     href: '/app/team',

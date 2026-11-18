@@ -19,6 +19,7 @@ import { fetchBookingSlotsAction, submitBookingAction } from './actions';
 type Props = {
   readonly locale: PublicLocale;
   readonly page: PublicBookingPage;
+  readonly referralCode?: string | undefined;
 };
 
 const zoneNames: Record<string, string> = {
@@ -31,7 +32,7 @@ const zoneNames: Record<string, string> = {
   'Pacific/Honolulu': 'Hawaii',
 };
 
-export function BookingFlow({ locale, page }: Props) {
+export function BookingFlow({ locale, page, referralCode }: Props) {
   const t = bookingCopy(locale);
   const [serviceId, setServiceId] = useState<string>();
   const [zip, setZip] = useState('');
@@ -94,6 +95,7 @@ export function BookingFlow({ locale, page }: Props) {
         slug: page.slug,
         startsAt,
         street: text('street'),
+        referralCode: referralCode ?? '',
         website: text('website'),
         zip: zip.trim(),
       });

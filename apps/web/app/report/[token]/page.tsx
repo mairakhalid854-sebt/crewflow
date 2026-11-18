@@ -10,6 +10,12 @@ import {
 } from '../../../lib/i18n/public-copy';
 import { publicWorkReportSchema } from '../../../lib/reports/public-report';
 import { createClient } from '../../../lib/supabase/server';
+import { ReferralInvite } from '../../../components/referral-invite';
+import { appUrl } from '../../../lib/app-url';
+import {
+  referralInviteCopy,
+  reportReferralInviteSchema,
+} from '../../../lib/booking/public-booking';
 import '../../quote/[token]/styles.css';
 
 export const dynamic = 'force-dynamic';
@@ -61,6 +67,11 @@ export default async function PublicWorkReportPage({
   const parsed = publicWorkReportSchema.safeParse(data);
   if (error || !parsed.success) notFound();
   const report = parsed.data;
+  const { data: inviteData } = await supabase.rpc(
+    'get_report_referral_invite',
+    { report_token: token },
+  );
+  const invite = reportReferralInviteSchema.safeParse(inviteData);
   const serviceDate = displayDate(report.scheduled_start_at, locale);
 
   return (
@@ -105,6 +116,18 @@ export default async function PublicWorkReportPage({
             displayDate(report.approved_at, locale),
           )}
         </p>
+        {invite.success ? (
+          <ReferralInvite
+            copy={referralInviteCopy(
+              locale,
+              report.company_name,
+              invite.data.referrer_reward_cents,
+              invite.data.friend_reward_cents,
+            )}
+            link={`${appUrl()}/book/${invite.data.slug}?ref=${invite.data.code}`}
+            note={invite.data.reward_note}
+          />
+        ) : null}
         <p className="public-quote-security">
           {t.report.security(report.company_name)}
         </p>

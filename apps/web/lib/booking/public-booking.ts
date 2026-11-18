@@ -44,6 +44,51 @@ export const bookingConfirmationSchema = z.object({
 
 export type BookingConfirmation = z.infer<typeof bookingConfirmationSchema>;
 
+export const referralCodePattern = /^[A-Za-z0-9]{8}$/;
+
+export const referralOfferSchema = z.object({
+  referrer_name: z.string(),
+  friend_reward_cents: z.number().int().nonnegative(),
+  reward_note: z.string().nullable(),
+});
+
+export type ReferralOffer = z.infer<typeof referralOfferSchema>;
+
+export const reportReferralInviteSchema = z.object({
+  slug: z.string(),
+  code: z.string().regex(/^[A-Z0-9]{8}$/),
+  referrer_reward_cents: z.number().int().nonnegative(),
+  friend_reward_cents: z.number().int().nonnegative(),
+  reward_note: z.string().nullable(),
+});
+
+export function referralInviteCopy(
+  locale: PublicLocale,
+  business: string,
+  referrerCents: number,
+  friendCents: number,
+) {
+  const you = formatPrice(referrerCents, locale);
+  const friend = formatPrice(friendCents, locale);
+  return locale === 'es'
+    ? {
+        title: 'Recomiende a un amigo',
+        body: `Comparta este enlace. Cuando su amigo reserve y el trabajo termine, usted recibe ${you} y su amigo ${friend}.`,
+        copy: 'Copiar enlace',
+        copied: 'Copiado',
+        share: 'Compartir',
+        shareText: `Uso ${business} y los recomiendo. Reserve aquí:`,
+      }
+    : {
+        title: 'Refer a friend',
+        body: `Share this link. When your friend books and the job is done, you get ${you} and your friend gets ${friend}.`,
+        copy: 'Copy link',
+        copied: 'Copied',
+        share: 'Share',
+        shareText: `I use ${business} and recommend them. Book here:`,
+      };
+}
+
 export function normalizeBookingSlug(value: string): string {
   return value
     .trim()
@@ -210,6 +255,9 @@ const en = {
     unknown: 'Something went wrong. Please try again.',
   } satisfies Record<BookingErrorCode, string>,
   poweredBy: 'Online booking by CrewFlow360',
+  referredBy: (name: string) => `${name} referred you`,
+  referralReward: (amount: string) =>
+    `You get ${amount} off your first visit once the work is done.`,
 };
 
 const es: typeof en = {
@@ -260,6 +308,9 @@ const es: typeof en = {
     unknown: 'Algo salió mal. Intente de nuevo.',
   },
   poweredBy: 'Reservas en línea por CrewFlow360',
+  referredBy: (name) => `${name} le recomendó`,
+  referralReward: (amount) =>
+    `Usted recibe ${amount} de descuento en su primera visita al terminar el trabajo.`,
 };
 
 export function bookingCopy(locale: PublicLocale): typeof en {
