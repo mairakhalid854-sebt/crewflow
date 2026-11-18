@@ -777,6 +777,189 @@ export type Database = {
           },
         ];
       };
+      membership_plans: {
+        Row: {
+          billing_interval: string;
+          created_at: string;
+          description: string | null;
+          discount_percent: number;
+          id: string;
+          is_active: boolean;
+          name: string;
+          price_cents: number;
+          service_id: string | null;
+          tenant_id: string;
+          updated_at: string;
+          visits_per_year: number;
+        };
+        Insert: {
+          billing_interval?: string;
+          created_at?: string;
+          description?: string | null;
+          discount_percent?: number;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          price_cents: number;
+          service_id?: string | null;
+          tenant_id: string;
+          updated_at?: string;
+          visits_per_year?: number;
+        };
+        Update: {
+          billing_interval?: string;
+          created_at?: string;
+          description?: string | null;
+          discount_percent?: number;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          price_cents?: number;
+          service_id?: string | null;
+          tenant_id?: string;
+          updated_at?: string;
+          visits_per_year?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'membership_plans_service_fk';
+            columns: ['service_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'services';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
+      customer_memberships: {
+        Row: {
+          billing_interval: string;
+          cancel_reason: string | null;
+          cancelled_at: string | null;
+          created_at: string;
+          created_by_user_id: string | null;
+          customer_id: string;
+          discount_percent: number;
+          id: string;
+          next_visit_on: string;
+          plan_id: string;
+          plan_name: string;
+          price_cents: number;
+          renews_on: string;
+          service_id: string | null;
+          started_on: string;
+          status: string;
+          tenant_id: string;
+          updated_at: string;
+          visits_per_year: number;
+        };
+        Insert: {
+          billing_interval: string;
+          cancel_reason?: string | null;
+          cancelled_at?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          customer_id: string;
+          discount_percent: number;
+          id?: string;
+          next_visit_on: string;
+          plan_id: string;
+          plan_name: string;
+          price_cents: number;
+          renews_on: string;
+          service_id?: string | null;
+          started_on: string;
+          status?: string;
+          tenant_id: string;
+          updated_at?: string;
+          visits_per_year: number;
+        };
+        Update: {
+          billing_interval?: string;
+          cancel_reason?: string | null;
+          cancelled_at?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          customer_id?: string;
+          discount_percent?: number;
+          id?: string;
+          next_visit_on?: string;
+          plan_id?: string;
+          plan_name?: string;
+          price_cents?: number;
+          renews_on?: string;
+          service_id?: string | null;
+          started_on?: string;
+          status?: string;
+          tenant_id?: string;
+          updated_at?: string;
+          visits_per_year?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'customer_memberships_customer_fk';
+            columns: ['customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'customer_memberships_plan_fk';
+            columns: ['plan_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'membership_plans';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'customer_memberships_service_fk';
+            columns: ['service_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'services';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
+      membership_visits: {
+        Row: {
+          created_at: string;
+          customer_membership_id: string;
+          due_on: string;
+          id: string;
+          job_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          customer_membership_id: string;
+          due_on: string;
+          id?: string;
+          job_id: string;
+          tenant_id: string;
+        };
+        Update: {
+          created_at?: string;
+          customer_membership_id?: string;
+          due_on?: string;
+          id?: string;
+          job_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'membership_visits_job_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'membership_visits_membership_fk';
+            columns: ['customer_membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customer_memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
       billing_plans: {
         Row: {
           ai_monthly_budget_cents: number | null;
@@ -3540,6 +3723,38 @@ export type Database = {
       };
       get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
       get_public_quote: { Args: { quote_token: string }; Returns: Json };
+      save_membership_plan: {
+        Args: {
+          target_billing_interval: string;
+          target_description: string;
+          target_discount_percent: number;
+          target_is_active: boolean;
+          target_name: string;
+          target_plan_id: string | null;
+          target_price_cents: number;
+          target_service_id: string | null;
+          target_tenant_id: string;
+          target_visits_per_year: number;
+        };
+        Returns: string;
+      };
+      enroll_customer_membership: {
+        Args: {
+          target_customer_id: string;
+          target_first_visit_on: string;
+          target_plan_id: string;
+          target_started_on: string;
+        };
+        Returns: string;
+      };
+      cancel_customer_membership: {
+        Args: { target_membership_id: string; target_reason: string };
+        Returns: string;
+      };
+      create_my_due_membership_visits: {
+        Args: { target_tenant_id: string };
+        Returns: number;
+      };
       get_customer_referral_code: {
         Args: { target_customer_id: string };
         Returns: string;
