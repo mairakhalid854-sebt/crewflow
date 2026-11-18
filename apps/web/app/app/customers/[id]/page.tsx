@@ -9,6 +9,8 @@ import { createClient } from '../../../../lib/supabase/server';
 import { archiveCustomerAction } from '../actions';
 import { ArchiveCustomerButton } from '../archive-customer-button';
 import { CustomerForm } from '../customer-form';
+import { ReferralLinkCard } from '../../referrals/referral-forms';
+import '../../referrals/referrals.css';
 import { jobStatusLabels } from '../../jobs/job-status';
 
 interface CustomerDetailPageProps {
@@ -81,6 +83,7 @@ export default async function CustomerDetailPage({
         />
       </header>
       <CustomerForm customer={customer} />
+      <ReferralLinkCard customerId={customer.id} />
       <section className="team-panel customer-jobs-panel">
         <div className="team-panel-heading">
           <div>

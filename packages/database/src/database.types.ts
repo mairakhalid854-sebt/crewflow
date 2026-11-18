@@ -565,6 +565,7 @@ export type Database = {
           created_at: string;
           customer_id: string;
           customer_note: string | null;
+          referral_code: string | null;
           decided_at: string | null;
           decided_by_user_id: string | null;
           hold_expires_at: string;
@@ -582,6 +583,7 @@ export type Database = {
           created_at?: string;
           customer_id: string;
           customer_note?: string | null;
+          referral_code?: string | null;
           decided_at?: string | null;
           decided_by_user_id?: string | null;
           hold_expires_at: string;
@@ -599,6 +601,7 @@ export type Database = {
           created_at?: string;
           customer_id?: string;
           customer_note?: string | null;
+          referral_code?: string | null;
           decided_at?: string | null;
           decided_by_user_id?: string | null;
           hold_expires_at?: string;
@@ -638,6 +641,138 @@ export type Database = {
             columns: ['suggested_membership_id', 'tenant_id'];
             isOneToOne: false;
             referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
+      customer_referral_codes: {
+        Row: {
+          code: string;
+          created_at: string;
+          customer_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          code: string;
+          created_at?: string;
+          customer_id: string;
+          tenant_id: string;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          customer_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'customer_referral_codes_customer_fk';
+            columns: ['customer_id', 'tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
+      referral_programs: {
+        Row: {
+          created_at: string;
+          enabled: boolean;
+          friend_reward_cents: number;
+          referrer_reward_cents: number;
+          reward_note: string | null;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          enabled?: boolean;
+          friend_reward_cents?: number;
+          referrer_reward_cents?: number;
+          reward_note?: string | null;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          enabled?: boolean;
+          friend_reward_cents?: number;
+          referrer_reward_cents?: number;
+          reward_note?: string | null;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      referrals: {
+        Row: {
+          booking_request_id: string;
+          created_at: string;
+          friend_reward_cents: number;
+          id: string;
+          job_id: string;
+          qualified_at: string | null;
+          referred_customer_id: string;
+          referrer_customer_id: string;
+          referrer_reward_cents: number;
+          rewarded_at: string | null;
+          rewarded_by_user_id: string | null;
+          status: string;
+          tenant_id: string;
+          void_reason: string | null;
+        };
+        Insert: {
+          booking_request_id: string;
+          created_at?: string;
+          friend_reward_cents: number;
+          id?: string;
+          job_id: string;
+          qualified_at?: string | null;
+          referred_customer_id: string;
+          referrer_customer_id: string;
+          referrer_reward_cents: number;
+          rewarded_at?: string | null;
+          rewarded_by_user_id?: string | null;
+          status?: string;
+          tenant_id: string;
+          void_reason?: string | null;
+        };
+        Update: {
+          booking_request_id?: string;
+          created_at?: string;
+          friend_reward_cents?: number;
+          id?: string;
+          job_id?: string;
+          qualified_at?: string | null;
+          referred_customer_id?: string;
+          referrer_customer_id?: string;
+          referrer_reward_cents?: number;
+          rewarded_at?: string | null;
+          rewarded_by_user_id?: string | null;
+          status?: string;
+          tenant_id?: string;
+          void_reason?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'referrals_job_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'referrals_referred_fk';
+            columns: ['referred_customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'referrals_referrer_fk';
+            columns: ['referrer_customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
             referencedColumns: ['id', 'tenant_id'];
           },
         ];
@@ -3405,6 +3540,36 @@ export type Database = {
       };
       get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
       get_public_quote: { Args: { quote_token: string }; Returns: Json };
+      get_customer_referral_code: {
+        Args: { target_customer_id: string };
+        Returns: string;
+      };
+      save_referral_program: {
+        Args: {
+          target_enabled: boolean;
+          target_friend_reward_cents: number;
+          target_referrer_reward_cents: number;
+          target_reward_note?: string;
+          target_tenant_id: string;
+        };
+        Returns: Database['public']['Tables']['referral_programs']['Row'];
+      };
+      mark_referral_rewarded: {
+        Args: { target_referral_id: string };
+        Returns: string;
+      };
+      void_referral: {
+        Args: { target_reason: string; target_referral_id: string };
+        Returns: string;
+      };
+      get_public_referral_offer: {
+        Args: { target_code: string; target_slug: string };
+        Returns: Json;
+      };
+      get_report_referral_invite: {
+        Args: { report_token: string };
+        Returns: Json;
+      };
       get_public_booking_page: { Args: { target_slug: string }; Returns: Json };
       get_public_booking_slots: {
         Args: {
@@ -3429,6 +3594,7 @@ export type Database = {
           target_starts_at: string;
           target_street_address: string;
           target_website?: string;
+          target_referral_code?: string;
         };
         Returns: Json;
       };

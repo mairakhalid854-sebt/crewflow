@@ -63,6 +63,7 @@ const submitInput = z.object({
   language: z.enum(['en', 'es']),
   marketing: z.boolean(),
   website: z.string().max(200),
+  referralCode: z.union([z.literal(''), z.string().regex(/^[A-Z0-9]{8}$/)]),
 });
 
 export async function submitBookingAction(
@@ -87,6 +88,9 @@ export async function submitBookingAction(
     target_starts_at: values.startsAt,
     target_street_address: values.street,
     target_website: values.website,
+    ...(values.referralCode
+      ? { target_referral_code: values.referralCode }
+      : {}),
   });
   if (error) return { ok: false, error: bookingErrorCode(error.message) };
   const confirmation = bookingConfirmationSchema.safeParse(data);
