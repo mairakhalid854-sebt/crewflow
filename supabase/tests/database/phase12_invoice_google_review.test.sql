@@ -67,6 +67,12 @@ UPDATE public.jobs SET status = 'quoted' WHERE id = '6c000000-0000-4000-8000-000
 UPDATE public.jobs SET status = 'accepted' WHERE id = '6c000000-0000-4000-8000-000000000001';
 UPDATE public.jobs SET status = 'scheduled' WHERE id = '6c000000-0000-4000-8000-000000000001';
 UPDATE public.jobs SET status = 'in_progress' WHERE id = '6c000000-0000-4000-8000-000000000001';
+UPDATE public.jobs SET status = 'completed' WHERE id = '6c000000-0000-4000-8000-000000000001';
+
+INSERT INTO public.tenant_settings (tenant_id)
+VALUES ('2c000000-0000-4000-8000-000000000001')
+ON CONFLICT (tenant_id) DO NOTHING;
+
 SET LOCAL ROLE authenticated;
 SELECT set_config(
   'request.jwt.claims',
