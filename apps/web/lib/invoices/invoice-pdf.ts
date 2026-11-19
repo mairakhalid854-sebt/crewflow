@@ -6,6 +6,7 @@ import {
   type PDFFont,
   type PDFPage,
 } from 'pdf-lib';
+import qrcode from 'qrcode-generator';
 
 export interface InvoicePdfItem {
   readonly description: string;
@@ -147,6 +148,24 @@ function drawRight(
     x: right - font.widthOfTextAtSize(value, size),
     y,
   });
+}
+
+/**
+ * QR code for the Google review link as rows of dark/light modules, or null
+ * if the link cannot be encoded (the clickable link still works then).
+ */
+export function reviewQrModules(url: string): boolean[][] | null {
+  try {
+    const code = qrcode(0, 'M');
+    code.addData(url, 'Byte');
+    code.make();
+    const count = code.getModuleCount();
+    return Array.from({ length: count }, (_, row) =>
+      Array.from({ length: count }, (_, col) => code.isDark(row, col)),
+    );
+  } catch {
+    return null;
+  }
 }
 
 export function invoicePdfFileName(data: InvoicePdfData): string {
@@ -413,16 +432,26 @@ export async function createInvoicePdf(
 
   if (data.googleReviewUrl && data.status !== 'void') {
     const boxWidth = PAGE_WIDTH - 2 * MARGIN;
-    const innerWidth = boxWidth - 28;
+    const qrModules = reviewQrModules(data.googleReviewUrl);
+    const qrSize = 86;
+    const qrPadding = 4;
+    const qrColumnWidth = qrModules ? qrSize + 2 * qrPadding + 14 : 0;
+    const innerWidth = boxWidth - 28 - qrColumnWidth;
     const urlLines = wrapText(data.googleReviewUrl, regular, 9, innerWidth);
     const messageLines = wrapText(
-      `Thank you for choosing ${data.companyName}. If you were happy with our work, please take a minute to leave us a Google review:`,
+      `Thank you for choosing ${data.companyName}. If you were happy with our work, please take a minute to leave us a Google review.${
+        qrModules
+          ? ' Scan the QR code with your phone camera, or open this link:'
+          : ' Open this link:'
+      }`,
       regular,
       9,
       innerWidth,
     );
-    const boxHeight =
+    const textHeight =
       24 + 14 + messageLines.length * 12 + 4 + urlLines.length * 12;
+    const qrHeight = qrModules ? qrSize + 2 * qrPadding + 12 + 26 : 0;
+    const boxHeight = Math.max(textHeight, qrHeight);
     ensureSpace(boxHeight + 20);
     y -= 14;
     const boxTop = y;
@@ -436,6 +465,45 @@ export async function createInvoicePdf(
       x: MARGIN,
       y: boxBottom,
     });
+    if (qrModules) {
+      const qrX = MARGIN + boxWidth - 14 - qrPadding - qrSize;
+      const qrTop = boxTop - 13 - qrPadding;
+      // White quiet zone so phone cameras can read the code.
+      page.drawRectangle({
+        color: rgb(1, 1, 1),
+        height: qrSize + 2 * qrPadding,
+        width: qrSize + 2 * qrPadding,
+        x: qrX - qrPadding,
+        y: qrTop - qrSize - qrPadding,
+      });
+      const cell = qrSize / qrModules.length;
+      for (const [row, cells] of qrModules.entries()) {
+        let col = 0;
+        while (col < cells.length) {
+          if (!cells[col]) {
+            col += 1;
+            continue;
+          }
+          const start = col;
+          while (col < cells.length && cells[col]) col += 1;
+          page.drawRectangle({
+            color: rgb(0, 0, 0),
+            height: cell,
+            width: (col - start) * cell,
+            x: qrX + start * cell,
+            y: qrTop - (row + 1) * cell,
+          });
+        }
+      }
+      const caption = 'Scan to review';
+      page.drawText(caption, {
+        color: NAVY,
+        font: bold,
+        size: 8,
+        x: qrX + qrSize / 2 - bold.widthOfTextAtSize(caption, 8) / 2,
+        y: qrTop - qrSize - qrPadding - 12,
+      });
+    }
     let textY = boxTop - 20;
     page.drawText('Happy with our work? Leave us a Google review', {
       color: NAVY,
