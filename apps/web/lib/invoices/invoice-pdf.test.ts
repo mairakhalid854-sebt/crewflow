@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createInvoicePdf,
   invoicePdfFileName,
+  reviewQrModules,
   type InvoicePdfData,
 } from './invoice-pdf';
 
@@ -97,5 +98,25 @@ describe('invoice PDF', () => {
         voidReason: 'Duplicate',
       }),
     ).toEqual([]);
+  });
+
+  it('builds a scannable QR code for the review link', () => {
+    const modules = reviewQrModules(
+      'https://g.page/r/CrewFlowReview123/review',
+    );
+    expect(modules).not.toBeNull();
+    const size = modules!.length;
+    expect(size).toBeGreaterThanOrEqual(21);
+    expect((size - 17) % 4).toBe(0);
+    for (const row of modules!) expect(row).toHaveLength(size);
+    // Top-left finder pattern: dark 7x7 ring with a light ring inside.
+    for (let i = 0; i < 7; i += 1) {
+      expect(modules![0]![i]).toBe(true);
+      expect(modules![6]![i]).toBe(true);
+      expect(modules![i]![0]).toBe(true);
+      expect(modules![i]![6]).toBe(true);
+    }
+    expect(modules![1]![1]).toBe(false);
+    expect(modules![3]![3]).toBe(true);
   });
 });
