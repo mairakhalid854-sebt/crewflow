@@ -146,6 +146,19 @@ export default async function PublicInvoicePage({
           </p>
         )}
 
+        {invoice.google_review_url && invoice.status !== 'void' ? (
+          <div className="public-invoice-review">
+            <p>{t.invoice.reviewPrompt(invoice.company_name)}</p>
+            <a
+              href={invoice.google_review_url}
+              rel="noreferrer noopener"
+              target="_blank"
+            >
+              {t.invoice.reviewButton}
+            </a>
+          </div>
+        ) : null}
+
         <p className="public-quote-security">{t.invoice.security}</p>
       </section>
     </main>

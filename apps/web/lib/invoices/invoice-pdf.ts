@@ -1,5 +1,6 @@
 import {
   PDFDocument,
+  PDFString,
   StandardFonts,
   rgb,
   type PDFFont,
@@ -19,6 +20,8 @@ export interface InvoicePdfData {
   readonly customerName: string;
   readonly discountCents: number;
   readonly dueAt: string;
+  /** Google review link from Company settings; null hides the review box. */
+  readonly googleReviewUrl?: string | null;
   readonly invoiceNumber: number;
   readonly items: readonly InvoicePdfItem[];
   readonly jobTitle: string;
@@ -406,6 +409,88 @@ export async function createInvoicePdf(
       page.drawText(line, { color: RED, font: regular, size: 9, x: MARGIN, y });
       y -= 12;
     }
+  }
+
+  if (data.googleReviewUrl && data.status !== 'void') {
+    const boxWidth = PAGE_WIDTH - 2 * MARGIN;
+    const innerWidth = boxWidth - 28;
+    const urlLines = wrapText(data.googleReviewUrl, regular, 9, innerWidth);
+    const messageLines = wrapText(
+      `Thank you for choosing ${data.companyName}. If you were happy with our work, please take a minute to leave us a Google review:`,
+      regular,
+      9,
+      innerWidth,
+    );
+    const boxHeight =
+      24 + 14 + messageLines.length * 12 + 4 + urlLines.length * 12;
+    ensureSpace(boxHeight + 20);
+    y -= 14;
+    const boxTop = y;
+    const boxBottom = boxTop - boxHeight;
+    page.drawRectangle({
+      borderColor: BLUE,
+      borderWidth: 1,
+      color: rgb(239 / 255, 246 / 255, 255 / 255),
+      height: boxHeight,
+      width: boxWidth,
+      x: MARGIN,
+      y: boxBottom,
+    });
+    let textY = boxTop - 20;
+    page.drawText('Happy with our work? Leave us a Google review', {
+      color: NAVY,
+      font: bold,
+      size: 11,
+      x: MARGIN + 14,
+      y: textY,
+    });
+    textY -= 16;
+    for (const line of messageLines) {
+      page.drawText(line, {
+        color: SLATE,
+        font: regular,
+        size: 9,
+        x: MARGIN + 14,
+        y: textY,
+      });
+      textY -= 12;
+    }
+    textY -= 4;
+    for (const line of urlLines) {
+      page.drawText(line, {
+        color: BLUE,
+        font: regular,
+        size: 9,
+        x: MARGIN + 14,
+        y: textY,
+      });
+      page.drawLine({
+        color: BLUE,
+        end: {
+          x: MARGIN + 14 + regular.widthOfTextAtSize(line, 9),
+          y: textY - 1.5,
+        },
+        start: { x: MARGIN + 14, y: textY - 1.5 },
+        thickness: 0.5,
+      });
+      textY -= 12;
+    }
+    // The whole box opens the review page when clicked in a PDF viewer.
+    const link = document.context.register(
+      document.context.obj({
+        A: {
+          S: 'URI',
+          Type: 'Action',
+          URI: PDFString.of(pdfText(data.googleReviewUrl)),
+        },
+        Border: [0, 0, 0],
+        Rect: [MARGIN, boxBottom, MARGIN + boxWidth, boxTop],
+        Subtype: 'Link',
+        Type: 'Annot',
+      }),
+    );
+    page.node.addAnnot(link);
+    y = boxBottom - 10;
   }
 
   for (const [index, currentPage] of pages.entries()) {
