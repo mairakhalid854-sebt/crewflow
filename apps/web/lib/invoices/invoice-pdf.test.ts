@@ -1,9 +1,10 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFArray, PDFDict, PDFDocument, PDFName, PDFString } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 
 import {
   createInvoicePdf,
   invoicePdfFileName,
+  reviewQrModules,
   type InvoicePdfData,
 } from './invoice-pdf';
 
@@ -67,5 +68,55 @@ describe('invoice PDF', () => {
     expect(document.getPageCount()).toBeGreaterThan(1);
     expect(document.getTitle()).toBe('Receipt INV-000042');
     expect(invoicePdfFileName(paidInvoice)).toBe('receipt-INV-000042.pdf');
+  });
+
+  it('adds a clickable Google review link when the business saved one', async () => {
+    const reviewUrl = 'https://g.page/r/CrewFlowReview123/review';
+    const reviewLinks = async (data: InvoicePdfData) => {
+      const document = await PDFDocument.load(await createInvoicePdf(data));
+      const annots = document
+        .getPage(document.getPageCount() - 1)
+        .node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+      if (!annots) return [];
+      return annots.asArray().map((ref) => {
+        const action = document.context
+          .lookup(ref, PDFDict)
+          .lookup(PDFName.of('A'), PDFDict);
+        return action.lookup(PDFName.of('URI'), PDFString).decodeText();
+      });
+    };
+
+    expect(
+      await reviewLinks({ ...invoice, googleReviewUrl: reviewUrl }),
+    ).toEqual([reviewUrl]);
+    expect(await reviewLinks(invoice)).toEqual([]);
+    expect(
+      await reviewLinks({
+        ...invoice,
+        googleReviewUrl: reviewUrl,
+        status: 'void',
+        voidReason: 'Duplicate',
+      }),
+    ).toEqual([]);
+  });
+
+  it('builds a scannable QR code for the review link', () => {
+    const modules = reviewQrModules(
+      'https://g.page/r/CrewFlowReview123/review',
+    );
+    expect(modules).not.toBeNull();
+    const size = modules!.length;
+    expect(size).toBeGreaterThanOrEqual(21);
+    expect((size - 17) % 4).toBe(0);
+    for (const row of modules!) expect(row).toHaveLength(size);
+    // Top-left finder pattern: dark 7x7 ring with a light ring inside.
+    for (let i = 0; i < 7; i += 1) {
+      expect(modules![0]![i]).toBe(true);
+      expect(modules![6]![i]).toBe(true);
+      expect(modules![i]![0]).toBe(true);
+      expect(modules![i]![6]).toBe(true);
+    }
+    expect(modules![1]![1]).toBe(false);
+    expect(modules![3]![3]).toBe(true);
   });
 });

@@ -61,6 +61,9 @@ const en = {
       `This invoice is recorded as paid by ${company}.`,
     payButton: (company: string) => `Open ${company}'s payment page`,
     recordedPaid: 'Recorded paid',
+    reviewButton: 'Leave a Google review',
+    reviewPrompt: (company: string) =>
+      `Happy with the work? A quick Google review helps ${company} a lot.`,
     security:
       'Opening an external payment page never marks this invoice paid. CrewFlow360 updates the balance only after the business records or verifies receipt.',
     void: 'This invoice is void.',
@@ -127,6 +130,9 @@ const es: typeof en = {
     paid: (company) => `${company} registró esta factura como pagada.`,
     payButton: (company) => `Abrir la página de pago de ${company}`,
     recordedPaid: 'Pagos registrados',
+    reviewButton: 'Dejar una reseña en Google',
+    reviewPrompt: (company) =>
+      `¿Quedó satisfecho con el trabajo? Una reseña rápida en Google ayuda mucho a ${company}.`,
     security:
       'Abrir una página de pago externa no marca esta factura como pagada. CrewFlow360 actualiza el saldo solo después de que la empresa registra o verifica el pago.',
     void: 'Esta factura fue anulada.',

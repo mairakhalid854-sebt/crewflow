@@ -3195,6 +3195,7 @@ export type Database = {
           owner_weekly_summary_enabled: boolean;
           quote_follow_up_emails_enabled: boolean;
           weather_alerts_enabled: boolean;
+          google_review_url: string | null;
           profit_labor_cost_cents_per_hour: number | null;
           profit_target_margin_bps: number;
           id: string;
@@ -3213,6 +3214,7 @@ export type Database = {
           owner_weekly_summary_enabled?: boolean;
           quote_follow_up_emails_enabled?: boolean;
           weather_alerts_enabled?: boolean;
+          google_review_url?: string | null;
           profit_labor_cost_cents_per_hour?: number | null;
           profit_target_margin_bps?: number;
           id?: string;
@@ -3231,6 +3233,7 @@ export type Database = {
           owner_weekly_summary_enabled?: boolean;
           quote_follow_up_emails_enabled?: boolean;
           weather_alerts_enabled?: boolean;
+          google_review_url?: string | null;
           profit_labor_cost_cents_per_hour?: number | null;
           profit_target_margin_bps?: number;
           id?: string;

@@ -29,6 +29,7 @@ export async function GET(
     customerName: invoice.customer_name,
     discountCents: invoice.discount_cents,
     dueAt: invoice.due_at,
+    googleReviewUrl: invoice.google_review_url,
     invoiceNumber: invoice.invoice_number,
     items: invoice.items.map((item) => ({
       description: item.description,

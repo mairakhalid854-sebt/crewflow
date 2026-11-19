@@ -6,6 +6,7 @@ import { z } from 'zod';
 import type { Json } from '@crewflow/database';
 
 import { requireTenantContext } from '../../../lib/auth/tenant-context';
+import { normalizeGoogleReviewUrl } from '../../../lib/invoices/google-review-url';
 import {
   isUsCityForState,
   usStateName,
@@ -113,6 +114,21 @@ export async function updateCompanySettingsAction(
     };
   }
 
+  const googleReview = normalizeGoogleReviewUrl(
+    formData.get('googleReviewUrl'),
+  );
+  if (!googleReview.ok) {
+    return {
+      fieldErrors: {
+        googleReviewUrl: [
+          'Paste the review link from your Google Business Profile (it starts with https://g.page/ or https://search.google.com/).',
+        ],
+      },
+      message: 'Please correct the highlighted company details.',
+      status: 'error',
+    };
+  }
+
   const weeklyHours: Json[] = [];
   for (let dayOfWeek = 0; dayOfWeek <= 6; dayOfWeek += 1) {
     const isOpen = formData.get(`open-${dayOfWeek}`) === 'on';
@@ -174,6 +190,7 @@ export async function updateCompanySettingsAction(
     .update({
       customer_appointment_emails_enabled:
         formData.get('customerAppointmentEmailsEnabled') === 'on',
+      google_review_url: googleReview.url,
       owner_daily_summary_enabled:
         formData.get('ownerDailySummaryEnabled') === 'on',
       owner_weekly_summary_enabled:
@@ -185,7 +202,7 @@ export async function updateCompanySettingsAction(
     .eq('tenant_id', context.tenantId);
   if (emailSettingError)
     return failure(
-      'Company settings were saved, but the email preferences could not be updated.',
+      'Company settings were saved, but the email preferences and Google review link could not be updated.',
     );
 
   revalidatePath('/app', 'layout');
