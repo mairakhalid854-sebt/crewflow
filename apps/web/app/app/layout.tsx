@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Database } from '@crewflow/database';
 
 import { logoutAction } from '../(auth)/actions';
+import { VoiceAssistant } from '../../components/voice-assistant';
 import { requireTenantContext } from '../../lib/auth/tenant-context';
 import { createClient } from '../../lib/supabase/server';
 
@@ -33,6 +34,22 @@ const navItems: readonly {
     roles: ['owner', 'office'],
   },
   { href: '/app/services', label: 'Services' },
+  {
+    href: '/app/booking',
+    label: 'Online booking',
+    roles: ['owner', 'office'],
+  },
+  {
+    href: '/app/referrals',
+    label: 'Referrals',
+    roles: ['owner', 'office'],
+  },
+  {
+    href: '/app/memberships',
+    label: 'Memberships',
+    roles: ['owner', 'office'],
+  },
+  { href: '/app/campaigns', label: 'Campaigns', roles: ['owner'] },
   { href: '/app/profit', label: 'Profit Guard', roles: ['owner'] },
   {
     href: '/app/team',
@@ -97,6 +114,7 @@ export default async function AuthenticatedAppLayout({
 
   return (
     <main className="authenticated-shell">
+      <VoiceAssistant role={context.role} />
       <aside className="authenticated-sidebar" aria-label="Primary navigation">
         <Link className="workspace-brand" href="/app">
           <span aria-hidden="true">C</span>

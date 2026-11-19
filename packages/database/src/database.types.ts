@@ -529,6 +529,527 @@ export type Database = {
           },
         ];
       };
+      booking_pages: {
+        Row: {
+          created_at: string;
+          enabled: boolean;
+          headline: string | null;
+          intro: string | null;
+          slug: string;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          enabled?: boolean;
+          headline?: string | null;
+          intro?: string | null;
+          slug: string;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          enabled?: boolean;
+          headline?: string | null;
+          intro?: string | null;
+          slug?: string;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      booking_requests: {
+        Row: {
+          contact_key: string;
+          created_at: string;
+          customer_id: string;
+          customer_note: string | null;
+          referral_code: string | null;
+          decided_at: string | null;
+          decided_by_user_id: string | null;
+          hold_expires_at: string;
+          id: string;
+          job_id: string;
+          requested_end_at: string;
+          requested_start_at: string;
+          service_id: string;
+          status: string;
+          suggested_membership_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          contact_key: string;
+          created_at?: string;
+          customer_id: string;
+          customer_note?: string | null;
+          referral_code?: string | null;
+          decided_at?: string | null;
+          decided_by_user_id?: string | null;
+          hold_expires_at: string;
+          id?: string;
+          job_id: string;
+          requested_end_at: string;
+          requested_start_at: string;
+          service_id: string;
+          status?: string;
+          suggested_membership_id: string;
+          tenant_id: string;
+        };
+        Update: {
+          contact_key?: string;
+          created_at?: string;
+          customer_id?: string;
+          customer_note?: string | null;
+          referral_code?: string | null;
+          decided_at?: string | null;
+          decided_by_user_id?: string | null;
+          hold_expires_at?: string;
+          id?: string;
+          job_id?: string;
+          requested_end_at?: string;
+          requested_start_at?: string;
+          service_id?: string;
+          status?: string;
+          suggested_membership_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'booking_requests_customer_fk';
+            columns: ['customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'booking_requests_job_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'booking_requests_service_fk';
+            columns: ['service_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'services';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'booking_requests_technician_fk';
+            columns: ['suggested_membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
+      customer_referral_codes: {
+        Row: {
+          code: string;
+          created_at: string;
+          customer_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          code: string;
+          created_at?: string;
+          customer_id: string;
+          tenant_id: string;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          customer_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'customer_referral_codes_customer_fk';
+            columns: ['customer_id', 'tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
+      referral_programs: {
+        Row: {
+          created_at: string;
+          enabled: boolean;
+          friend_reward_cents: number;
+          referrer_reward_cents: number;
+          reward_note: string | null;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          enabled?: boolean;
+          friend_reward_cents?: number;
+          referrer_reward_cents?: number;
+          reward_note?: string | null;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          enabled?: boolean;
+          friend_reward_cents?: number;
+          referrer_reward_cents?: number;
+          reward_note?: string | null;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      referrals: {
+        Row: {
+          booking_request_id: string;
+          created_at: string;
+          friend_reward_cents: number;
+          id: string;
+          job_id: string;
+          qualified_at: string | null;
+          referred_customer_id: string;
+          referrer_customer_id: string;
+          referrer_reward_cents: number;
+          rewarded_at: string | null;
+          rewarded_by_user_id: string | null;
+          status: string;
+          tenant_id: string;
+          void_reason: string | null;
+        };
+        Insert: {
+          booking_request_id: string;
+          created_at?: string;
+          friend_reward_cents: number;
+          id?: string;
+          job_id: string;
+          qualified_at?: string | null;
+          referred_customer_id: string;
+          referrer_customer_id: string;
+          referrer_reward_cents: number;
+          rewarded_at?: string | null;
+          rewarded_by_user_id?: string | null;
+          status?: string;
+          tenant_id: string;
+          void_reason?: string | null;
+        };
+        Update: {
+          booking_request_id?: string;
+          created_at?: string;
+          friend_reward_cents?: number;
+          id?: string;
+          job_id?: string;
+          qualified_at?: string | null;
+          referred_customer_id?: string;
+          referrer_customer_id?: string;
+          referrer_reward_cents?: number;
+          rewarded_at?: string | null;
+          rewarded_by_user_id?: string | null;
+          status?: string;
+          tenant_id?: string;
+          void_reason?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'referrals_job_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'referrals_referred_fk';
+            columns: ['referred_customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'referrals_referrer_fk';
+            columns: ['referrer_customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
+      membership_plans: {
+        Row: {
+          billing_interval: string;
+          created_at: string;
+          description: string | null;
+          discount_percent: number;
+          id: string;
+          is_active: boolean;
+          name: string;
+          price_cents: number;
+          service_id: string | null;
+          tenant_id: string;
+          updated_at: string;
+          visits_per_year: number;
+        };
+        Insert: {
+          billing_interval?: string;
+          created_at?: string;
+          description?: string | null;
+          discount_percent?: number;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          price_cents: number;
+          service_id?: string | null;
+          tenant_id: string;
+          updated_at?: string;
+          visits_per_year?: number;
+        };
+        Update: {
+          billing_interval?: string;
+          created_at?: string;
+          description?: string | null;
+          discount_percent?: number;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          price_cents?: number;
+          service_id?: string | null;
+          tenant_id?: string;
+          updated_at?: string;
+          visits_per_year?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'membership_plans_service_fk';
+            columns: ['service_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'services';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
+      customer_memberships: {
+        Row: {
+          billing_interval: string;
+          cancel_reason: string | null;
+          cancelled_at: string | null;
+          created_at: string;
+          created_by_user_id: string | null;
+          customer_id: string;
+          discount_percent: number;
+          id: string;
+          next_visit_on: string;
+          plan_id: string;
+          plan_name: string;
+          price_cents: number;
+          renews_on: string;
+          service_id: string | null;
+          started_on: string;
+          status: string;
+          tenant_id: string;
+          updated_at: string;
+          visits_per_year: number;
+        };
+        Insert: {
+          billing_interval: string;
+          cancel_reason?: string | null;
+          cancelled_at?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          customer_id: string;
+          discount_percent: number;
+          id?: string;
+          next_visit_on: string;
+          plan_id: string;
+          plan_name: string;
+          price_cents: number;
+          renews_on: string;
+          service_id?: string | null;
+          started_on: string;
+          status?: string;
+          tenant_id: string;
+          updated_at?: string;
+          visits_per_year: number;
+        };
+        Update: {
+          billing_interval?: string;
+          cancel_reason?: string | null;
+          cancelled_at?: string | null;
+          created_at?: string;
+          created_by_user_id?: string | null;
+          customer_id?: string;
+          discount_percent?: number;
+          id?: string;
+          next_visit_on?: string;
+          plan_id?: string;
+          plan_name?: string;
+          price_cents?: number;
+          renews_on?: string;
+          service_id?: string | null;
+          started_on?: string;
+          status?: string;
+          tenant_id?: string;
+          updated_at?: string;
+          visits_per_year?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'customer_memberships_customer_fk';
+            columns: ['customer_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customers';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'customer_memberships_plan_fk';
+            columns: ['plan_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'membership_plans';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'customer_memberships_service_fk';
+            columns: ['service_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'services';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
+      membership_visits: {
+        Row: {
+          created_at: string;
+          customer_membership_id: string;
+          due_on: string;
+          id: string;
+          job_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          customer_membership_id: string;
+          due_on: string;
+          id?: string;
+          job_id: string;
+          tenant_id: string;
+        };
+        Update: {
+          created_at?: string;
+          customer_membership_id?: string;
+          due_on?: string;
+          id?: string;
+          job_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'membership_visits_job_fk';
+            columns: ['job_id', 'tenant_id'];
+            isOneToOne: true;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+          {
+            foreignKeyName: 'membership_visits_membership_fk';
+            columns: ['customer_membership_id', 'tenant_id'];
+            isOneToOne: false;
+            referencedRelation: 'customer_memberships';
+            referencedColumns: ['id', 'tenant_id'];
+          },
+        ];
+      };
+      weather_campaign_settings: {
+        Row: {
+          auto_send: boolean;
+          cold_threshold_f: number;
+          cooldown_days: number;
+          created_at: string;
+          enabled: boolean;
+          heat_threshold_f: number;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          auto_send?: boolean;
+          cold_threshold_f?: number;
+          cooldown_days?: number;
+          created_at?: string;
+          enabled?: boolean;
+          heat_threshold_f?: number;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          auto_send?: boolean;
+          cold_threshold_f?: number;
+          cooldown_days?: number;
+          created_at?: string;
+          enabled?: boolean;
+          heat_threshold_f?: number;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      weather_campaigns: {
+        Row: {
+          approved_at: string | null;
+          approved_by_user_id: string | null;
+          audience_count: number;
+          body: string;
+          cancelled_at: string | null;
+          created_at: string;
+          forecast_date: string | null;
+          forecast_temp_f: number | null;
+          id: string;
+          kind: string;
+          queued_count: number;
+          source: string;
+          status: string;
+          subject: string;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          approved_at?: string | null;
+          approved_by_user_id?: string | null;
+          audience_count?: number;
+          body: string;
+          cancelled_at?: string | null;
+          created_at?: string;
+          forecast_date?: string | null;
+          forecast_temp_f?: number | null;
+          id?: string;
+          kind: string;
+          queued_count?: number;
+          source?: string;
+          status?: string;
+          subject: string;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          approved_at?: string | null;
+          approved_by_user_id?: string | null;
+          audience_count?: number;
+          body?: string;
+          cancelled_at?: string | null;
+          created_at?: string;
+          forecast_date?: string | null;
+          forecast_temp_f?: number | null;
+          id?: string;
+          kind?: string;
+          queued_count?: number;
+          source?: string;
+          status?: string;
+          subject?: string;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       billing_plans: {
         Row: {
           ai_monthly_budget_cents: number | null;
@@ -2401,6 +2922,7 @@ export type Database = {
           tenant_id: string;
           unit_price_cents: number;
           weather_sensitive: boolean;
+          online_booking_enabled: boolean;
           market_price_low_cents: number | null;
           market_price_high_cents: number | null;
           market_price_source: string | null;
@@ -2420,6 +2942,7 @@ export type Database = {
           tenant_id: string;
           unit_price_cents: number;
           weather_sensitive?: boolean;
+          online_booking_enabled?: boolean;
           market_price_low_cents?: number | null;
           market_price_high_cents?: number | null;
           market_price_source?: string | null;
@@ -2439,6 +2962,7 @@ export type Database = {
           tenant_id?: string;
           unit_price_cents?: number;
           weather_sensitive?: boolean;
+          online_booking_enabled?: boolean;
           market_price_low_cents?: number | null;
           market_price_high_cents?: number | null;
           market_price_source?: string | null;
@@ -3289,6 +3813,153 @@ export type Database = {
       };
       get_public_invoice: { Args: { invoice_token: string }; Returns: Json };
       get_public_quote: { Args: { quote_token: string }; Returns: Json };
+      save_weather_campaign_settings: {
+        Args: {
+          target_auto_send: boolean;
+          target_cold_threshold_f: number;
+          target_enabled: boolean;
+          target_heat_threshold_f: number;
+          target_tenant_id: string;
+        };
+        Returns: undefined;
+      };
+      create_manual_weather_campaign: {
+        Args: { target_kind: string; target_tenant_id: string };
+        Returns: string;
+      };
+      send_weather_campaign: {
+        Args: {
+          target_body: string;
+          target_campaign_id: string;
+          target_subject: string;
+        };
+        Returns: number;
+      };
+      cancel_weather_campaign: {
+        Args: { target_campaign_id: string };
+        Returns: string;
+      };
+      get_weather_campaign_stats: {
+        Args: { target_tenant_id: string };
+        Returns: {
+          campaign_id: string;
+          delivered: number;
+          failed: number;
+          waiting: number;
+        }[];
+      };
+      save_membership_plan: {
+        Args: {
+          target_billing_interval: string;
+          target_description: string;
+          target_discount_percent: number;
+          target_is_active: boolean;
+          target_name: string;
+          target_plan_id: string | null;
+          target_price_cents: number;
+          target_service_id: string | null;
+          target_tenant_id: string;
+          target_visits_per_year: number;
+        };
+        Returns: string;
+      };
+      enroll_customer_membership: {
+        Args: {
+          target_customer_id: string;
+          target_first_visit_on: string;
+          target_plan_id: string;
+          target_started_on: string;
+        };
+        Returns: string;
+      };
+      cancel_customer_membership: {
+        Args: { target_membership_id: string; target_reason: string };
+        Returns: string;
+      };
+      create_my_due_membership_visits: {
+        Args: { target_tenant_id: string };
+        Returns: number;
+      };
+      get_customer_referral_code: {
+        Args: { target_customer_id: string };
+        Returns: string;
+      };
+      save_referral_program: {
+        Args: {
+          target_enabled: boolean;
+          target_friend_reward_cents: number;
+          target_referrer_reward_cents: number;
+          target_reward_note?: string;
+          target_tenant_id: string;
+        };
+        Returns: Database['public']['Tables']['referral_programs']['Row'];
+      };
+      mark_referral_rewarded: {
+        Args: { target_referral_id: string };
+        Returns: string;
+      };
+      void_referral: {
+        Args: { target_reason: string; target_referral_id: string };
+        Returns: string;
+      };
+      get_public_referral_offer: {
+        Args: { target_code: string; target_slug: string };
+        Returns: Json;
+      };
+      get_report_referral_invite: {
+        Args: { report_token: string };
+        Returns: Json;
+      };
+      get_public_booking_page: { Args: { target_slug: string }; Returns: Json };
+      get_public_booking_slots: {
+        Args: {
+          target_postal_code: string;
+          target_service_id: string;
+          target_slug: string;
+        };
+        Returns: { ends_at: string; starts_at: string }[];
+      };
+      submit_public_booking: {
+        Args: {
+          target_email: string;
+          target_first_name: string;
+          target_language?: string;
+          target_last_name: string;
+          target_marketing_opt_in?: boolean;
+          target_note?: string;
+          target_phone: string;
+          target_postal_code: string;
+          target_service_id: string;
+          target_slug: string;
+          target_starts_at: string;
+          target_street_address: string;
+          target_website?: string;
+          target_referral_code?: string;
+        };
+        Returns: Json;
+      };
+      save_booking_page: {
+        Args: {
+          target_enabled: boolean;
+          target_headline?: string;
+          target_intro?: string;
+          target_slug: string;
+          target_tenant_id: string;
+        };
+        Returns: Database['public']['Tables']['booking_pages']['Row'];
+      };
+      set_service_online_booking: {
+        Args: { target_enabled: boolean; target_service_id: string };
+        Returns: undefined;
+      };
+      apply_booking_request: {
+        Args: { target_request_id: string };
+        Returns: string;
+      };
+      dismiss_booking_request: {
+        Args: { target_request_id: string };
+        Returns: string;
+      };
       get_public_work_report: { Args: { report_token: string }; Returns: Json };
       get_push_notification_cron_status: {
         Args: never;
@@ -3857,7 +4528,10 @@ export type Database = {
         | 'owner_daily_summary'
         | 'owner_weekly_summary'
         | 'quote_reminder'
-        | 'weather_risk_alert';
+        | 'weather_risk_alert'
+        | 'booking_request_owner'
+        | 'booking_request_customer'
+        | 'weather_campaign_ready';
       work_report_status: 'draft' | 'sent' | 'void';
     };
     CompositeTypes: {
@@ -4128,6 +4802,9 @@ export const Constants = {
         'owner_weekly_summary',
         'quote_reminder',
         'weather_risk_alert',
+        'booking_request_owner',
+        'booking_request_customer',
+        'weather_campaign_ready',
       ],
       work_report_status: ['draft', 'sent', 'void'],
     },

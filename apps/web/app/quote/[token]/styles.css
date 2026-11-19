@@ -273,3 +273,53 @@
   background: #eef4ff;
   color: #0d4cc4;
 }
+
+.referral-invite {
+  display: grid;
+  gap: 8px;
+  margin: 24px 0 8px;
+  padding: 18px;
+  border: 1px solid #bbf7d0;
+  border-radius: 16px;
+  background: #f0fdf4;
+  color: #14532d;
+}
+
+.referral-invite h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.referral-invite p {
+  margin: 0;
+}
+
+.referral-invite-note {
+  font-size: 14px;
+}
+
+.referral-invite-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.referral-invite-row code {
+  padding: 9px 11px;
+  border: 1px dashed #86efac;
+  border-radius: 9px;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+
+.referral-invite-row button {
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: #15803d;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}

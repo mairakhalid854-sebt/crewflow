@@ -1,0 +1,129 @@
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { notFound } from 'next/navigation';
+
+import { LanguageSwitch } from '../../../components/language-switch';
+import {
+  bookingCopy,
+  bookingSlugPattern,
+  formatPrice,
+  publicBookingPageSchema,
+  referralCodePattern,
+  referralOfferSchema,
+} from '../../../lib/booking/public-booking';
+import { publicCopy, resolvePublicLocale } from '../../../lib/i18n/public-copy';
+import { createClient } from '../../../lib/supabase/server';
+import { BookingFlow } from './booking-flow';
+import './styles.css';
+
+export const dynamic = 'force-dynamic';
+
+async function loadPage(slug: string) {
+  if (!bookingSlugPattern.test(slug)) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('get_public_booking_page', {
+    target_slug: slug,
+  });
+  if (error || !data) return null;
+  const parsed = publicBookingPageSchema.safeParse(data);
+  return parsed.success ? parsed.data : null;
+}
+
+async function loadOffer(slug: string, code: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('get_public_referral_offer', {
+    target_code: code,
+    target_slug: slug,
+  });
+  if (error || !data) return null;
+  const parsed = referralOfferSchema.safeParse(data);
+  return parsed.success ? parsed.data : null;
+}
+
+export async function generateMetadata({
+  params,
+}: Readonly<{ params: Promise<{ slug: string }> }>): Promise<Metadata> {
+  const page = await loadPage((await params).slug.toLowerCase());
+  if (!page) return { title: 'Online booking', robots: { index: false } };
+  return {
+    title: `Book online | ${page.business_name}`,
+    description:
+      page.intro ??
+      `Book a visit with ${page.business_name}. Pick a service and an open time.`,
+  };
+}
+
+export default async function PublicBookingPage({
+  params,
+  searchParams,
+}: Readonly<{
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ lang?: string; ref?: string }>;
+}>) {
+  const slug = (await params).slug.toLowerCase();
+  const query = await searchParams;
+  const locale = resolvePublicLocale(
+    query.lang,
+    (await headers()).get('accept-language'),
+  );
+  const page = await loadPage(slug);
+  if (!page) notFound();
+  const referralCode =
+    query.ref && referralCodePattern.test(query.ref)
+      ? query.ref.toUpperCase()
+      : undefined;
+  const offer = referralCode ? await loadOffer(slug, referralCode) : null;
+  const t = bookingCopy(locale);
+  const common = publicCopy(locale).common;
+  const place = [page.city, page.state_code].filter(Boolean).join(', ');
+
+  return (
+    <main className="public-booking-shell" lang={locale}>
+      <section className="public-booking-card">
+        <header className="public-booking-header">
+          <div>
+            <p className="public-booking-kicker">{t.bookOnline}</p>
+            <h1>{page.headline ?? t.defaultHeadline(page.business_name)}</h1>
+            <p className="public-booking-business">
+              {page.business_name}
+              {place ? ` · ${place}` : ''}
+            </p>
+            {page.intro ? (
+              <p className="public-booking-intro">{page.intro}</p>
+            ) : null}
+          </div>
+          <LanguageSwitch
+            label={common.languageLabel}
+            locale={locale}
+            path={`/book/${page.slug}`}
+          />
+        </header>
+
+        {offer ? (
+          <aside className="public-booking-referral" role="note">
+            <strong>{t.referredBy(offer.referrer_name)}</strong>
+            {offer.friend_reward_cents > 0 ? (
+              <span>
+                {t.referralReward(
+                  formatPrice(offer.friend_reward_cents, locale),
+                )}
+              </span>
+            ) : null}
+            {offer.reward_note ? <span>{offer.reward_note}</span> : null}
+          </aside>
+        ) : null}
+
+        <BookingFlow
+          locale={locale}
+          page={page}
+          referralCode={offer ? referralCode : undefined}
+        />
+
+        <footer className="public-booking-footer">
+          {page.business_phone ? <p>{t.callUs(page.business_phone)}</p> : null}
+          <p>{t.poweredBy}</p>
+        </footer>
+      </section>
+    </main>
+  );
+}

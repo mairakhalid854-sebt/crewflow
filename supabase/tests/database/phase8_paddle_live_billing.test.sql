@@ -138,8 +138,8 @@ SELECT is(
     SELECT code || ':' || amount_cents
     FROM public.list_owner_paddle_plans('paddle')
   ),
-  ARRAY['starter_monthly:4900', 'growth_monthly:11900', 'pro_monthly:19900'],
-  'Live catalog shows the 2026-11 monthly prices'
+  ARRAY['starter_monthly:7900', 'growth_monthly:14900', 'pro_monthly:24900'],
+  'Live catalog shows the 2026-11-19 monthly prices'
 );
 
 SELECT is(

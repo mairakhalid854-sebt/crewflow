@@ -1,0 +1,148 @@
+.memberships-admin .workspace-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.membership-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.membership-stats > div {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.membership-stats span,
+.membership-muted,
+.membership-list small {
+  color: #64748b;
+}
+
+.membership-stats strong {
+  font-size: 26px;
+}
+
+.membership-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.membership-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.membership-list li > span {
+  display: grid;
+  gap: 2px;
+}
+
+.membership-run {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.membership-plans {
+  display: grid;
+  gap: 12px;
+}
+
+.membership-plan {
+  padding: 14px 16px;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.membership-plan > summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  cursor: pointer;
+}
+
+.membership-plan > summary span {
+  color: #64748b;
+}
+
+.membership-plan-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.membership-plan-form .primary-button {
+  justify-self: start;
+}
+
+.membership-wide {
+  grid-column: 1 / -1;
+}
+
+.membership-cancel summary {
+  color: #b42318;
+  cursor: pointer;
+}
+
+.membership-cancel form {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  min-width: 220px;
+}
+
+.membership-cancel label {
+  display: grid;
+  gap: 4px;
+}
+
+.membership-card {
+  margin-top: 24px;
+}
+
+.membership-enroll {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.membership-enroll label {
+  display: grid;
+  gap: 4px;
+}
+
+.membership-current {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.membership-current li {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f0f6ff;
+}
