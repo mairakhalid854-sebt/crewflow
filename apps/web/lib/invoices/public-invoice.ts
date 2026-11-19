@@ -15,6 +15,8 @@ export const publicInvoiceSchema = z.object({
   customer_name: z.string(),
   discount_cents: z.number().int().nonnegative(),
   due_at: z.string(),
+  // Older database projections did not include the review link.
+  google_review_url: z.url().nullable().optional().default(null),
   invoice_id: z.uuid(),
   invoice_number: z.number().int().positive(),
   items: z.array(publicInvoiceItemSchema).min(1),

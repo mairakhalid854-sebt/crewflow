@@ -147,6 +147,41 @@ export function CompanySettingsForm({
         </div>
       </section>
 
+      <section className="settings-section" aria-labelledby="google-reviews">
+        <div className="settings-section-heading">
+          <h2 id="google-reviews">Google reviews</h2>
+          <p>
+            Add your Google review link once. Every invoice and receipt PDF, and
+            the customer&apos;s invoice page, will ask the customer to leave you
+            a Google review.
+          </p>
+        </div>
+        <div className="form-grid">
+          <label className="form-span-2">
+            <span>Google review link</span>
+            <input
+              aria-describedby="googleReviewUrl-help googleReviewUrl-error"
+              aria-invalid={Boolean(state.fieldErrors?.googleReviewUrl)}
+              defaultValue={settings.google_review_url ?? ''}
+              inputMode="url"
+              maxLength={500}
+              name="googleReviewUrl"
+              placeholder="https://g.page/r/your-business/review"
+              type="text"
+            />
+            <small id="googleReviewUrl-help">
+              In your Google Business Profile, click{' '}
+              <strong>Ask for reviews</strong> and copy the link. Leave empty to
+              stop asking for reviews.
+            </small>
+            <FieldError
+              errors={state.fieldErrors?.googleReviewUrl}
+              id="googleReviewUrl-error"
+            />
+          </label>
+        </div>
+      </section>
+
       <section className="settings-section" aria-labelledby="service-address">
         <div className="settings-section-heading">
           <h2 id="service-address">Service address</h2>

@@ -23,26 +23,32 @@ export async function GET(
   if (invoiceError) throw new Error('Invoice could not be loaded.');
   if (!invoice) return new Response(null, { status: 404 });
 
-  const [customerResult, jobResult, linesResult] = await Promise.all([
-    supabase
-      .from('customers')
-      .select('first_name, last_name')
-      .eq('id', invoice.customer_id)
-      .eq('tenant_id', context.tenantId)
-      .single(),
-    supabase
-      .from('jobs')
-      .select('title')
-      .eq('id', invoice.job_id)
-      .eq('tenant_id', context.tenantId)
-      .single(),
-    supabase
-      .from('invoice_line_items')
-      .select('*')
-      .eq('invoice_id', invoice.id)
-      .eq('tenant_id', context.tenantId)
-      .order('position'),
-  ]);
+  const [customerResult, jobResult, linesResult, settingsResult] =
+    await Promise.all([
+      supabase
+        .from('customers')
+        .select('first_name, last_name')
+        .eq('id', invoice.customer_id)
+        .eq('tenant_id', context.tenantId)
+        .single(),
+      supabase
+        .from('jobs')
+        .select('title')
+        .eq('id', invoice.job_id)
+        .eq('tenant_id', context.tenantId)
+        .single(),
+      supabase
+        .from('invoice_line_items')
+        .select('*')
+        .eq('invoice_id', invoice.id)
+        .eq('tenant_id', context.tenantId)
+        .order('position'),
+      supabase
+        .from('tenant_settings')
+        .select('google_review_url')
+        .eq('tenant_id', context.tenantId)
+        .maybeSingle(),
+    ]);
   if (customerResult.error || jobResult.error || linesResult.error) {
     throw new Error('Invoice PDF details could not be loaded.');
   }
@@ -52,6 +58,8 @@ export async function GET(
     customerName: `${customerResult.data.first_name} ${customerResult.data.last_name}`,
     discountCents: invoice.discount_cents,
     dueAt: invoice.due_at,
+    // A missing review link must never block the invoice PDF.
+    googleReviewUrl: settingsResult.data?.google_review_url ?? null,
     invoiceNumber: invoice.invoice_number,
     items: (linesResult.data ?? []).map((item) => ({
       description: item.description,

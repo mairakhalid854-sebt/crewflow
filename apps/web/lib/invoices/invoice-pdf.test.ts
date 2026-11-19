@@ -1,4 +1,4 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFArray, PDFDict, PDFDocument, PDFName, PDFString } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -67,5 +67,35 @@ describe('invoice PDF', () => {
     expect(document.getPageCount()).toBeGreaterThan(1);
     expect(document.getTitle()).toBe('Receipt INV-000042');
     expect(invoicePdfFileName(paidInvoice)).toBe('receipt-INV-000042.pdf');
+  });
+
+  it('adds a clickable Google review link when the business saved one', async () => {
+    const reviewUrl = 'https://g.page/r/CrewFlowReview123/review';
+    const reviewLinks = async (data: InvoicePdfData) => {
+      const document = await PDFDocument.load(await createInvoicePdf(data));
+      const annots = document
+        .getPage(document.getPageCount() - 1)
+        .node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+      if (!annots) return [];
+      return annots.asArray().map((ref) => {
+        const action = document.context
+          .lookup(ref, PDFDict)
+          .lookup(PDFName.of('A'), PDFDict);
+        return action.lookup(PDFName.of('URI'), PDFString).decodeText();
+      });
+    };
+
+    expect(
+      await reviewLinks({ ...invoice, googleReviewUrl: reviewUrl }),
+    ).toEqual([reviewUrl]);
+    expect(await reviewLinks(invoice)).toEqual([]);
+    expect(
+      await reviewLinks({
+        ...invoice,
+        googleReviewUrl: reviewUrl,
+        status: 'void',
+        voidReason: 'Duplicate',
+      }),
+    ).toEqual([]);
   });
 });
