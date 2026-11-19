@@ -1,0 +1,58 @@
+.campaign-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.campaign-card > header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.campaign-card > header span,
+.campaign-hint {
+  color: #64748b;
+}
+
+.campaign-draft {
+  display: grid;
+  gap: 12px;
+}
+
+.campaign-draft label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.campaign-draft input,
+.campaign-draft textarea {
+  font: inherit;
+  font-weight: 400;
+}
+
+.campaign-hint {
+  margin: 0;
+  font-size: 14px;
+}
+
+.campaign-actions,
+.campaign-create {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.campaign-create {
+  margin-top: 8px;
+}
+
+.campaign-check {
+  margin-top: 12px;
+}
