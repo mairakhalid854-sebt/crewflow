@@ -10,6 +10,7 @@ import {
 } from '../lib/voice/voice-actions';
 import {
   matchField,
+  matchFieldStrict,
   matchLeadingField,
   normalizeSpokenValue,
   parseFillCommand,
@@ -105,13 +106,17 @@ function fillField(field: Field, label: string, rawValue: string): FillResult {
   const name = label.replace(/\s*\*$/, '');
   if (field instanceof HTMLSelectElement) {
     return selectOption(field, rawValue)
-      ? { message: `${name} set to ${rawValue}.`, ok: true }
+      ? { form: field.form, message: `${name} set to ${rawValue}.`, ok: true }
       : { message: `"${rawValue}" is not a choice for ${name}.`, ok: false };
   }
   if (field instanceof HTMLInputElement && field.type === 'checkbox') {
     const on = /^(yes|on|true|checked|tick|allow)$/i.test(rawValue.trim());
     setChecked(field, on);
-    return { message: `${name} ${on ? 'checked' : 'unchecked'}.`, ok: true };
+    return {
+      form: field.form,
+      message: `${name} ${on ? 'checked' : 'unchecked'}.`,
+      ok: true,
+    };
   }
   const value = normalizeSpokenValue(rawValue, fieldType(field));
   setNativeValue(field, value);
@@ -120,48 +125,75 @@ function fillField(field: Field, label: string, rawValue: string): FillResult {
 }
 
 // Returns undefined when the text is not a form command for this page, so the
-// caller can try navigation instead.
+// caller can try navigation instead. With apply=false nothing on the page is
+// changed; the result only says whether the text is a form command here.
 export function tryVoiceFill(
   text: string,
   exclude: HTMLElement | null,
+  apply = true,
 ): FillResult | undefined {
   if (typeof document === 'undefined') return undefined;
   const fields = pageFields(exclude);
   if (fields.length === 0) return undefined;
   const labels = fields.map(labelText);
+  const plain = (label: string) => label.replace(/\s*\*$/, '');
 
   const command = parseFillCommand(text);
-  if (command) {
+  if (command?.kind === 'focus') {
+    const index = matchFieldStrict(command.field, labels);
+    const field = index === undefined ? undefined : fields[index];
+    const label = index === undefined ? undefined : labels[index];
+    if (field && label) {
+      if (apply) field.focus();
+      return {
+        form: field.form,
+        message: `${plain(label)} selected.`,
+        ok: true,
+      };
+    }
+  } else if (command) {
     const index = matchField(command.field, labels);
     const field = index === undefined ? undefined : fields[index];
     const label = index === undefined ? undefined : labels[index];
     if (field && label) {
+      const isCheckbox =
+        field instanceof HTMLInputElement && field.type === 'checkbox';
       if (command.kind === 'clear') {
-        if (field instanceof HTMLInputElement && field.type === 'checkbox') {
-          setChecked(field, false);
-        } else if (!(field instanceof HTMLSelectElement)) {
-          setNativeValue(field, '');
+        if (apply) {
+          if (isCheckbox) setChecked(field, false);
+          else if (!(field instanceof HTMLSelectElement)) {
+            setNativeValue(field, '');
+          }
         }
-        return { message: `${label.replace(/\s*\*$/, '')} cleared.`, ok: true };
+        return {
+          form: field.form,
+          message: `${plain(label)} cleared.`,
+          ok: true,
+        };
       }
       if (command.kind === 'check') {
-        if (field instanceof HTMLInputElement && field.type === 'checkbox') {
-          setChecked(field, command.checked);
-          return {
-            message: `${label} ${command.checked ? 'checked' : 'unchecked'}.`,
-            ok: true,
-          };
-        }
-        return undefined;
+        if (!isCheckbox) return undefined;
+        if (apply) setChecked(field, command.checked);
+        return {
+          form: field.form,
+          message: `${label} ${command.checked ? 'checked' : 'unchecked'}.`,
+          ok: true,
+        };
       }
-      return fillField(field, label, command.value);
+      return apply
+        ? fillField(field, label, command.value)
+        : { form: field.form, message: '', ok: true };
     }
   }
 
   const leading = matchLeadingField(text, labels);
   const field = leading ? fields[leading.index] : undefined;
   const label = leading ? labels[leading.index] : undefined;
-  if (leading && field && label) return fillField(field, label, leading.value);
+  if (leading && field && label) {
+    return apply
+      ? fillField(field, label, leading.value)
+      : { form: field.form, message: '', ok: true };
+  }
 
   if (command?.kind === 'fill') {
     return {
