@@ -201,11 +201,11 @@ INSERT INTO public.quotes (
 ) VALUES
   (
     '77000000-0000-4000-8000-000000000001', '22000000-0000-4000-8000-000000000001', '55000000-0000-4000-8000-000000000001', '44000000-0000-4000-8000-000000000001', 'sent',
-    45000, 0, 0, 0, 45000, '2026-11-20T14:00:00Z', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '2026-10-21T14:00:00Z'
+    45000, 0, 0, 0, 45000, '2099-11-20T14:00:00Z', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '2026-10-21T14:00:00Z'
   ),
   (
     '77000000-0000-4000-8000-000000000002', '22000000-0000-4000-8000-000000000001', '55000000-0000-4000-8000-000000000003', '44000000-0000-4000-8000-000000000003', 'sent',
-    30000, 0, 0, 0, 30000, '2026-11-20T14:00:00Z', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', '2026-10-21T14:00:00Z'
+    30000, 0, 0, 0, 30000, '2099-11-20T14:00:00Z', 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', '2026-10-21T14:00:00Z'
   ),
   (
     '77000000-0000-4000-8000-000000000004', '22000000-0000-4000-8000-000000000001', '55000000-0000-4000-8000-000000000002', '44000000-0000-4000-8000-000000000002', 'sent',
@@ -213,7 +213,7 @@ INSERT INTO public.quotes (
   ),
   (
     '77000000-0000-4000-8000-000000000005', '22000000-0000-4000-8000-000000000001', '55000000-0000-4000-8000-000000000002', '44000000-0000-4000-8000-000000000002', 'sent',
-    12500, 0, 0, 0, 12500, '2026-11-20T14:00:00Z', 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', '2026-10-17T14:00:00Z'
+    12500, 0, 0, 0, 12500, '2099-11-20T14:00:00Z', 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', '2026-10-17T14:00:00Z'
   );
 
 INSERT INTO public.quotes (
@@ -223,7 +223,7 @@ INSERT INTO public.quotes (
 ) VALUES (
   '77000000-0000-4000-8000-000000000003', '22000000-0000-4000-8000-000000000001',
   '55000000-0000-4000-8000-000000000004', '44000000-0000-4000-8000-000000000001',
-  'accepted', 10000, 0, 0, 0, 10000, '2026-11-20T14:00:00Z', 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+  'accepted', 10000, 0, 0, 0, 10000, '2099-11-20T14:00:00Z', 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
   '2026-10-21T14:00:00Z', '2026-10-22T14:00:00Z'
 );
 
