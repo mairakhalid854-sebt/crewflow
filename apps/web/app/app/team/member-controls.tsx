@@ -9,6 +9,7 @@ import {
   type TeamActionState,
   updateMemberRoleAction,
 } from './actions';
+import { confirmAction } from '../../../lib/ui/confirm-action';
 
 type MembershipRole = Database['public']['Enums']['membership_role'];
 const initialState: TeamActionState = { status: 'idle' };
@@ -60,7 +61,7 @@ export function MemberControls({
           action={deactivateAction}
           onSubmit={(event) => {
             if (
-              !window.confirm(
+              !confirmAction(
                 'Deactivate this team member now? Their CrewFlow360 access will stop immediately.',
               )
             ) {

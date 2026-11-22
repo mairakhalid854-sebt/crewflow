@@ -7,6 +7,7 @@ import { createClient } from '../../../lib/supabase/client';
 
 import { bytesToHex, validateKnowledgeFile } from './knowledge-upload';
 import styles from './knowledge.module.css';
+import { confirmAction } from '../../../lib/ui/confirm-action';
 
 interface VersionTarget {
   readonly id: string;
@@ -174,9 +175,7 @@ export function ArchiveKnowledgeButton({ documentId }: { documentId: string }) {
 
   async function archive() {
     if (
-      !window.confirm(
-        'Archive this document version? Its evidence is retained.',
-      )
+      !confirmAction('Archive this document version? Its evidence is retained.')
     )
       return;
     setPending(true);
