@@ -7,8 +7,15 @@ import {
   resolveVoiceCommand,
   type VoiceRole,
 } from '../lib/voice/voice-commands';
-import { parseVoiceText, voiceHelpText } from '../lib/voice/voice-parser';
+import { parseConfirmReply } from '../lib/voice/voice-actions';
+import {
+  type ParsedVoiceCommand,
+  parseVoiceText,
+  voiceHelpText,
+} from '../lib/voice/voice-parser';
+import { preconfirmNextAction } from '../lib/ui/confirm-action';
 import styles from './voice-assistant.module.css';
+import { findPageAction, pressControl, tryVoiceFill } from './voice-form-fill';
 
 // CrewFlow360 voice control. Uses the browser's built-in speech recognition
 // and speech synthesis, so there is no third-party account or cost. Off unless
@@ -41,17 +48,27 @@ function recognitionConstructor(): RecognitionConstructor | undefined {
     : undefined;
 }
 
-function speak(text: string) {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+function speak(text: string, onEnd?: () => void) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    onEnd?.();
+    return;
+  }
   try {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.rate = 1.05;
+    if (onEnd) utterance.onend = () => onEnd();
     window.speechSynthesis.speak(utterance);
   } catch {
     // Spoken replies are optional; the text reply is always shown.
+    onEnd?.();
   }
+}
+
+interface PendingPress {
+  readonly element: HTMLElement;
+  readonly label: string;
 }
 
 type MicAccess = 'granted' | 'blocked' | 'missing' | 'unknown';
@@ -114,6 +131,16 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
   const [supported, setSupported] = useState(true);
   const [blocked, setBlocked] = useState(false);
   const [checkingMic, setCheckingMic] = useState(false);
+  const [pending, setPendingState] = useState<PendingPress | null>(null);
+  // Speech results arrive in callbacks created on an earlier render, so the
+  // confirmation they answer is read from a ref.
+  const pendingRef = useRef<PendingPress | null>(null);
+  function setPending(next: PendingPress | null) {
+    pendingRef.current = next;
+    setPendingState(next);
+  }
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const lastFormRef = useRef<HTMLFormElement | null>(null);
 
   useEffect(() => {
     setSupported(Boolean(recognitionConstructor()));
@@ -122,19 +149,106 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
 
   useEffect(() => {
     recognitionRef.current?.abort();
+    pendingRef.current = null;
+    setPendingState(null);
+    lastFormRef.current = null;
   }, [pathname]);
 
   if (!enabled) return null;
 
-  function run(text: string) {
-    setHeard(text);
-    const parsed = parseVoiceText(text);
-    if (!parsed) {
-      const message = `Sorry, I didn't understand "${text}". Say "help" to hear what I can do.`;
-      setReply(message);
-      speak("Sorry, I didn't understand that.");
+  function say(message: string, spoken = message) {
+    setReply(message);
+    speak(spoken);
+  }
+
+  function press(element: HTMLElement, label: string, confirmed = false) {
+    setPending(null);
+    if (!element.isConnected) {
+      say('That button is no longer on the page.');
       return;
     }
+    // Only a press the user just confirmed may skip the page's own prompt.
+    if (confirmed) preconfirmNextAction();
+    pressControl(element);
+    say(`Done: ${label}.`);
+  }
+
+  function askToConfirm(element: HTMLElement, label: string) {
+    setPending({ element, label });
+    const question = `Are you sure you want to ${label.toLowerCase()}?`;
+    setReply(`${question} Say yes or no, or use the buttons.`);
+    speak(`${question} Say yes or no.`, () => void listen());
+  }
+
+  function run(text: string) {
+    setHeard(text);
+
+    const waiting = pendingRef.current;
+    if (waiting) {
+      const answer = parseConfirmReply(text);
+      if (answer === 'yes') {
+        press(waiting.element, waiting.label, true);
+        return;
+      }
+      setPending(null);
+      if (answer === 'no') {
+        say('Cancelled. Nothing was changed.');
+        return;
+      }
+    }
+
+    const parsed = parseVoiceText(text);
+    if (parsed?.command === 'help' || parsed?.command === 'goBack') {
+      runNavigation(parsed);
+      return;
+    }
+
+    const fill = tryVoiceFill(text, rootRef.current);
+    if (fill?.ok) {
+      if (fill.form) lastFormRef.current = fill.form;
+      say(fill.message);
+      return;
+    }
+
+    const action = findPageAction(text, rootRef.current, lastFormRef.current);
+    if (action?.kind === 'press') {
+      if (action.confirm) askToConfirm(action.element, action.label);
+      else press(action.element, action.label);
+      return;
+    }
+
+    if (parsed) {
+      runNavigation(parsed);
+      return;
+    }
+
+    // "open Hassaan Khan": a link or button with that text on this page.
+    const openTarget = text
+      .trim()
+      .match(/^(?:please )?(?:open|show|view|go to)(?: the| my)? (.+)$/i)?.[1];
+    if (openTarget) {
+      const link = findPageAction(`click ${openTarget}`, rootRef.current, null);
+      if (link?.kind === 'press' && !link.confirm) {
+        press(link.element, link.label);
+        return;
+      }
+    }
+
+    if (action?.kind === 'message') {
+      say(action.message);
+      return;
+    }
+    if (fill) {
+      say(fill.message);
+      return;
+    }
+    say(
+      `Sorry, I didn't understand "${text}". Say "help" to hear what I can do.`,
+      "Sorry, I didn't understand that.",
+    );
+  }
+
+  function runNavigation(parsed: ParsedVoiceCommand) {
     if (parsed.command === 'help') {
       setReply(voiceHelpText);
       speak(voiceHelpText);
@@ -170,7 +284,7 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
     }
     if (checkingMic) return;
     setOpen(true);
-    setReply('');
+    if (!pendingRef.current) setReply('');
     setHeard('');
     setCheckingMic(true);
     const access = await requestMicrophone();
@@ -232,7 +346,7 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
   }
 
   return (
-    <div className={styles.root}>
+    <div className={styles.root} ref={rootRef}>
       {open ? (
         <section
           aria-label="Voice control"
@@ -263,6 +377,40 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
             </p>
           ) : null}
           {reply ? <p className={styles.reply}>{reply}</p> : null}
+          {pending ? (
+            <div
+              aria-label="Confirm voice action"
+              className={styles.confirm}
+              role="alertdialog"
+            >
+              <p>
+                Confirm: <strong>{pending.label}</strong>
+              </p>
+              <div className={styles.confirmButtons}>
+                <button
+                  className={styles.confirmYes}
+                  onClick={() => {
+                    recognitionRef.current?.abort();
+                    press(pending.element, pending.label, true);
+                  }}
+                  type="button"
+                >
+                  Yes, {pending.label.toLowerCase()}
+                </button>
+                <button
+                  className={styles.retry}
+                  onClick={() => {
+                    recognitionRef.current?.abort();
+                    setPending(null);
+                    say('Cancelled. Nothing was changed.');
+                  }}
+                  type="button"
+                >
+                  No
+                </button>
+              </div>
+            </div>
+          ) : null}
           {blocked ? (
             <div className={styles.hint}>
               <ol className={styles.steps}>

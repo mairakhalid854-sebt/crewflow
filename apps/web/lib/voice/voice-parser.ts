@@ -158,4 +158,4 @@ function sameWords(spoken: string, words: string): boolean {
 }
 
 export const voiceHelpText =
-  'You can say: open jobs, go to dispatch, show scheduled jobs, find customer John Smith, create a new job, or go back.';
+  'You can say: open customers, add a new customer, first name John, email is john at gmail dot com, save, click Create quote, edit, archive this job, or go back. Deleting or sending always asks you to confirm.';
