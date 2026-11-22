@@ -1,6 +1,7 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
+import { confirmAction } from '../../../lib/ui/confirm-action';
 
 function ArchiveSubmitButton() {
   const { pending } = useFormStatus();
@@ -23,9 +24,7 @@ export function ArchiveCustomerButton({
       action={action}
       onSubmit={(event) => {
         if (
-          !window.confirm(
-            'Archive this customer? You can retain their history.',
-          )
+          !confirmAction('Archive this customer? You can retain their history.')
         ) {
           event.preventDefault();
         }

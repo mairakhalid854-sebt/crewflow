@@ -1,6 +1,7 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
+import { confirmAction } from '../../../lib/ui/confirm-action';
 
 function ArchiveSubmitButton() {
   const { pending } = useFormStatus();
@@ -24,7 +25,7 @@ export function ArchiveJobButton({
       className="archive-job-form"
       onSubmit={(event) => {
         if (
-          !window.confirm(
+          !confirmAction(
             'Archive this job? Its customer history and activity will remain intact.',
           )
         ) {
