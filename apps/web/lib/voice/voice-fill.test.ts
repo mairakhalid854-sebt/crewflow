@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   matchField,
+  matchFieldStrict,
   matchLeadingField,
   normalizeSpokenValue,
   parseFillCommand,
@@ -31,6 +32,8 @@ describe('parseFillCommand', () => {
     ['enter email as john at gmail dot com', 'email', 'john at gmail dot com'],
     ['city: Austin', 'city', 'Austin'],
     ['change the zip code field to 78701', 'zip code', '78701'],
+    ['first name put Hassaan', 'first name', 'Hassaan'],
+    ['last name should be Khan', 'last name', 'Khan'],
   ])('fills for "%s"', (spoken, field, value) => {
     expect(parseFillCommand(spoken)).toEqual({ field, kind: 'fill', value });
   });
@@ -52,8 +55,16 @@ describe('parseFillCommand', () => {
     });
   });
 
+  it('moves to a field', () => {
+    expect(parseFillCommand('go to last name')).toEqual({
+      field: 'last name',
+      kind: 'focus',
+    });
+    expect(matchFieldStrict('last name', customerLabels)).toBe(1);
+    expect(matchFieldStrict('customers', ['Customer *'])).toBeUndefined();
+  });
+
   it('ignores navigation commands', () => {
-    expect(parseFillCommand('go to customers')).toBeUndefined();
     expect(parseFillCommand('add a new customer')).toBeUndefined();
   });
 });
@@ -90,6 +101,9 @@ describe('matchLeadingField', () => {
       index: 8,
       value: '78701',
     });
+    expect(
+      matchLeadingField('go to last name Hassaan', customerLabels),
+    ).toEqual({ index: 1, value: 'Hassaan' });
     expect(matchLeadingField('phone 555 1234', customerLabels)).toEqual({
       index: 3,
       value: '555 1234',

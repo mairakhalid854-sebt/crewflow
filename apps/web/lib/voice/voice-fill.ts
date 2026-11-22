@@ -1,7 +1,6 @@
-// Voice form filling. Turns "first name Hassaan" or "set email to
-// john at gmail dot com" into "put this value in that field" on the page that
-// is open. It only fills fields; saving stays a click, so a misheard command
-// can never create or change a record by itself.
+// Voice form filling. Turns "first name Hassaan", "first name put Hassaan" or
+// "set email to john at gmail dot com" into "put this value in that field" on
+// the page that is open. Saving is a separate "save" command.
 
 export type FillCommand =
   | { readonly kind: 'fill'; readonly field: string; readonly value: string }
@@ -10,12 +9,15 @@ export type FillCommand =
       readonly kind: 'check';
       readonly field: string;
       readonly checked: boolean;
-    };
+    }
+  | { readonly kind: 'focus'; readonly field: string };
 
 const FILL_VERB =
   /^(?:please )?(?:add|set|put|enter|type|write|fill(?: in)?|change|update|make|use|insert)(?: the| a| an| my)? (.+?) (?:as|to|is|equals|with|=|:)\s*(.+)$/i;
 const FIELD_IS_VALUE =
-  /^(?:the |my )?(.+?)\s*(?: is | as | equals |:|=)\s*(.+)$/i;
+  /^(?:the |my )?(.+?)\s*(?: is | as | equals | equal to | put | should be | will be | set to | to be |:|=)\s*(.+)$/i;
+const FOCUS =
+  /^(?:please )?(?:go to|move to|jump to|focus(?: on)?)(?: the)? (.+?)$/i;
 const CLEAR = /^(?:please )?(?:clear|empty|erase)(?: the)? (.+?)$/i;
 const CHECK =
   /^(?:please )?(check|tick|select|enable|turn on|uncheck|untick|unselect|deselect|disable|turn off)(?: the)? (.+?)$/i;
@@ -59,7 +61,27 @@ export function parseFillCommand(input: string): FillCommand | undefined {
       return { field, kind: 'fill', value };
     }
   }
+
+  const focus = text.match(FOCUS);
+  if (focus?.[1]) return { field: tidyField(focus[1]), kind: 'focus' };
   return undefined;
+}
+
+// Strict match for "go to <field>": only a label that is, or starts with,
+// what was said, so "go to customers" still opens the Customers page.
+export function matchFieldStrict(
+  spoken: string,
+  labels: readonly string[],
+): number | undefined {
+  const target = normalizeLabel(spoken);
+  if (!target) return undefined;
+  const normalized = labels.map(normalizeLabel);
+  const exact = normalized.indexOf(target);
+  if (exact >= 0) return exact;
+  const starts = normalized.findIndex((label) =>
+    label.startsWith(`${target} `),
+  );
+  return starts >= 0 ? starts : undefined;
 }
 
 export function normalizeLabel(label: string): string {
@@ -139,7 +161,7 @@ export function matchLeadingField(
     .trim()
     .replace(/\s+/g, ' ')
     .replace(
-      /^(?:please )?(?:add|set|put|enter|type|write|fill(?: in)?|insert)(?: the| a| an| my)? /i,
+      /^(?:please )?(?:add|set|put|enter|type|write|fill(?: in)?|insert|go to|move to|jump to)(?: the| a| an| my)? /i,
       '',
     );
   const lower = text.toLowerCase();
