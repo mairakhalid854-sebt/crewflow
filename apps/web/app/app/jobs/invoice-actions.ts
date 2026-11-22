@@ -153,10 +153,9 @@ export async function requestAiInvoiceProposalAction(
           : 'Invoice proposal created from trusted pricing. AI review was unavailable, so the deterministic proposal was kept.'
         : result.proposal_result === 'unchanged'
           ? 'This job already has an active invoice.'
-          : result.provider_reviewed
-            ? 'Invoice drafting needs human input. The AI-reviewed escalation is recorded in AI Operations.'
-            : (result.result_message ??
-              'Invoice drafting needs human input. Review the trace in AI Operations.'),
+          : `AI could not draft this invoice. ${
+              result.result_message ?? 'Review the trace in AI Operations.'
+            } You can still create the invoice yourself.`,
     status: result.proposal_result === 'escalated' ? 'error' : 'success',
   };
 }

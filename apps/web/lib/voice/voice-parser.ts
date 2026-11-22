@@ -131,17 +131,30 @@ export function parseVoiceText(input: string): ParsedVoiceCommand | undefined {
   }
 
   const verb =
-    /^(?:please )?(?:open|show|go to|goto|take me to|navigate to|bring up|view|create|add|make|start)(?: me)?(?: the| my| a| an)? /;
-  const target = verb.test(text) ? text.replace(verb, '') : text;
-  const page = PAGE_WORDS.find(
-    ([words]) =>
-      target === words ||
-      target === `${words} page` ||
-      target === `${words} screen`,
-  );
+    /^(?:please )?(?:can you |could you )?(?:open|show|go to|goto|go|take me to|navigate to|bring up|view|create|add|make|start)(?: me)?(?: to)?(?: the| my| a| an)? /;
+  const hasVerb = verb.test(text);
+  const target = (hasVerb ? text.replace(verb, '') : text)
+    .replace(/(?: (?:please|now|for me))+$/, '')
+    .replace(/(?: (?:page|screen|tab|section|area|menu))+$/, '')
+    .trim();
+  const page = PAGE_WORDS.find(([words]) => sameWords(target, words));
   if (page) return { command: 'navigate', page: page[1] };
 
+  // "open settings for the company": a known page name inside a short command
+  // that started with a navigation verb.
+  if (hasVerb && target.split(' ').length <= 5) {
+    const contained = PAGE_WORDS.find(([words]) =>
+      new RegExp(`(?:^| )${words}s?(?: |$)`).test(target),
+    );
+    if (contained) return { command: 'navigate', page: contained[1] };
+  }
+
   return undefined;
+}
+
+// Treats singular and plural as the same ("setting" = "settings").
+function sameWords(spoken: string, words: string): boolean {
+  return spoken === words || `${spoken}s` === words || spoken === `${words}s`;
 }
 
 export const voiceHelpText =

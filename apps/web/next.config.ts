@@ -8,7 +8,9 @@ const securityHeaders = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(self), geolocation=(), microphone=()',
+    // microphone=(self) is required for voice control; an empty list blocks
+    // the mic for the whole site even when the browser permission is allowed.
+    value: 'camera=(self), geolocation=(), microphone=(self)',
   },
   { key: 'X-DNS-Prefetch-Control', value: 'off' },
   { key: 'X-Permitted-Cross-Domain-Policies', value: 'none' },
