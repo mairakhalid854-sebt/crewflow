@@ -3,17 +3,19 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 
+import { preconfirmNextAction } from '../lib/ui/confirm-action';
+import { parseConfirmReply, parsePageAction } from '../lib/voice/voice-actions';
 import {
   resolveVoiceCommand,
   type VoiceRole,
 } from '../lib/voice/voice-commands';
-import { parseConfirmReply } from '../lib/voice/voice-actions';
+import { parseFillCommand } from '../lib/voice/voice-fill';
 import {
   type ParsedVoiceCommand,
   parseVoiceText,
   voiceHelpText,
 } from '../lib/voice/voice-parser';
-import { preconfirmNextAction } from '../lib/ui/confirm-action';
+import { splitCommands } from '../lib/voice/voice-segments';
 import styles from './voice-assistant.module.css';
 import { findPageAction, pressControl, tryVoiceFill } from './voice-form-fill';
 
@@ -30,7 +32,12 @@ type Recognition = {
   interimResults: boolean;
   maxAlternatives: number;
   continuous: boolean;
-  onresult: ((event: { results: RecognitionResultList }) => void) | null;
+  onresult:
+    | ((event: {
+        readonly resultIndex: number;
+        readonly results: RecognitionResultList;
+      }) => void)
+    | null;
   onerror: ((event: { error: string }) => void) | null;
   onend: (() => void) | null;
   start: () => void;
@@ -58,7 +65,10 @@ function speak(text: string, onEnd?: () => void) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.rate = 1.05;
-    if (onEnd) utterance.onend = () => onEnd();
+    if (onEnd) {
+      utterance.onend = () => onEnd();
+      utterance.onerror = () => onEnd();
+    }
     window.speechSynthesis.speak(utterance);
   } catch {
     // Spoken replies are optional; the text reply is always shown.
@@ -113,11 +123,18 @@ const blockedMessage =
 const errorMessages: Record<string, string> = {
   'not-allowed': blockedMessage,
   'service-not-allowed': blockedMessage,
-  'no-speech': "I didn't hear anything. Tap the mic and try again.",
   'audio-capture': 'No microphone was found. You can type a command instead.',
   network:
     'Voice needs an internet connection. You can type a command instead.',
 };
+
+const STOP_WORDS =
+  /^(?:please )?(?:stop|stop listening|stop voice|turn off voice|mic off|that's all|that is all|bas)$/i;
+
+// Common field names, so "add a new customer and first name Hassaan" splits
+// even before the new customer form is on screen.
+const FIELD_WORDS =
+  /^(?:first name|last name|name|email|phone|mobile|address|street|city|state|zip|postal code|notes?|title|description|price|quantity|customer|service|priority|date|time)\b/i;
 
 export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
   const router = useRouter();
@@ -132,33 +149,74 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
   const [blocked, setBlocked] = useState(false);
   const [checkingMic, setCheckingMic] = useState(false);
   const [pending, setPendingState] = useState<PendingPress | null>(null);
-  // Speech results arrive in callbacks created on an earlier render, so the
-  // confirmation they answer is read from a ref.
+  // Speech results arrive in callbacks created on an earlier render, so
+  // anything they read lives in refs.
   const pendingRef = useRef<PendingPress | null>(null);
-  function setPending(next: PendingPress | null) {
-    pendingRef.current = next;
-    setPendingState(next);
-  }
   const rootRef = useRef<HTMLDivElement | null>(null);
   const lastFormRef = useRef<HTMLFormElement | null>(null);
+  // True while hands-free listening is on: recognition restarts itself after
+  // each pause until the user taps the mic or says "stop listening".
+  const sessionRef = useRef(false);
+  // True while the assistant is talking, so it does not hear itself.
+  const speakingRef = useRef(false);
+  // Replies from one sentence with several commands, shown together.
+  const batchRef = useRef<string[] | null>(null);
+  // Commands said after a page change ("add a new customer and first name
+  // Hassaan") wait here until the new page has rendered.
+  const queuedRef = useRef<string[]>([]);
+  const navigatedRef = useRef(false);
+  const runAllRef = useRef<(commands: readonly string[]) => void>(() => {});
 
   useEffect(() => {
     setSupported(Boolean(recognitionConstructor()));
-    return () => recognitionRef.current?.abort();
+    return () => {
+      sessionRef.current = false;
+      recognitionRef.current?.abort();
+    };
   }, []);
 
   useEffect(() => {
-    recognitionRef.current?.abort();
+    if (!sessionRef.current) recognitionRef.current?.abort();
     pendingRef.current = null;
     setPendingState(null);
     lastFormRef.current = null;
+    const queued = queuedRef.current;
+    queuedRef.current = [];
+    if (queued.length === 0) return;
+    const timer = window.setTimeout(() => runAllRef.current(queued), 700);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   if (!enabled) return null;
 
+  function setPending(next: PendingPress | null) {
+    pendingRef.current = next;
+    setPendingState(next);
+  }
+
+  function speakOut(text: string, onEnd?: () => void) {
+    speakingRef.current = true;
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      // A short gap so the tail of the reply is not heard as a command.
+      window.setTimeout(() => {
+        speakingRef.current = false;
+        onEnd?.();
+      }, 250);
+    };
+    window.setTimeout(finish, 1500 + text.length * 90);
+    speak(text, finish);
+  }
+
   function say(message: string, spoken = message) {
+    if (batchRef.current) {
+      batchRef.current.push(message);
+      return;
+    }
     setReply(message);
-    speak(spoken);
+    speakOut(spoken);
   }
 
   function press(element: HTMLElement, label: string, confirmed = false) {
@@ -176,13 +234,17 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
   function askToConfirm(element: HTMLElement, label: string) {
     setPending({ element, label });
     const question = `Are you sure you want to ${label.toLowerCase()}?`;
+    if (batchRef.current) {
+      batchRef.current.push(`${question} Say yes or no.`);
+      return;
+    }
     setReply(`${question} Say yes or no, or use the buttons.`);
-    speak(`${question} Say yes or no.`, () => void listen());
+    speakOut(`${question} Say yes or no.`, () => {
+      if (!sessionRef.current) void startListening();
+    });
   }
 
   function run(text: string) {
-    setHeard(text);
-
     const waiting = pendingRef.current;
     if (waiting) {
       const answer = parseConfirmReply(text);
@@ -250,39 +312,152 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
 
   function runNavigation(parsed: ParsedVoiceCommand) {
     if (parsed.command === 'help') {
-      setReply(voiceHelpText);
-      speak(voiceHelpText);
+      say(voiceHelpText);
       return;
     }
     const action = resolveVoiceCommand(parsed, role);
     if (!action) {
-      setReply('Your role cannot open that page.');
-      speak('Sorry, your role cannot open that page.');
+      say('Your role cannot open that page.');
       return;
     }
+    navigatedRef.current = true;
     if (action.kind === 'back') {
-      setReply('Going back.');
-      speak('Going back.');
+      say('Going back.');
       router.back();
       return;
     }
-    setReply(`Opening ${action.label}.`);
-    speak(`Opening ${action.label}.`);
+    say(`Opening ${action.label}.`);
     router.push(action.href);
   }
 
-  async function listen() {
+  // Does this piece of a sentence stand on its own as a command? Used to
+  // split "first name Hassaan and last name Khan" without breaking values.
+  function isCommand(piece: string): boolean {
+    return (
+      Boolean(parseVoiceText(piece)) ||
+      Boolean(parsePageAction(piece)) ||
+      Boolean(parseFillCommand(piece)) ||
+      Boolean(tryVoiceFill(piece, rootRef.current, false)?.ok) ||
+      FIELD_WORDS.test(piece)
+    );
+  }
+
+  function runAll(commands: readonly string[]) {
+    batchRef.current = [];
+    navigatedRef.current = false;
+    let index = 0;
+    for (; index < commands.length; index += 1) {
+      const command = commands[index];
+      if (command) run(command);
+      if (navigatedRef.current) break;
+    }
+    const replies = batchRef.current;
+    batchRef.current = null;
+    queuedRef.current = navigatedRef.current ? commands.slice(index + 1) : [];
+    if (replies.length === 0) return;
+    const text = replies.join(' ');
+    setReply(text);
+    if (pendingRef.current) {
+      speakOut(replies.at(-1) ?? text, () => {
+        if (!sessionRef.current) void startListening();
+      });
+    } else {
+      speakOut(replies.length > 2 ? `Done, ${replies.length} steps.` : text);
+    }
+  }
+  runAllRef.current = runAll;
+
+  function handleUtterance(text: string) {
+    const clean = text.trim();
+    if (!clean) return;
+    setHeard(clean);
+    if (STOP_WORDS.test(clean)) {
+      stopListening();
+      say('Stopped listening.');
+      return;
+    }
+    runAll(splitCommands(clean, isCommand));
+  }
+
+  function stopListening() {
+    sessionRef.current = false;
+    recognitionRef.current?.abort();
+    recognitionRef.current = null;
+    setListening(false);
+  }
+
+  function startRecognition() {
+    const Constructor = recognitionConstructor();
+    if (!Constructor || !sessionRef.current) return;
+    const recognition = new Constructor();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = true;
+    let handled = -1;
+    recognition.onresult = (event) => {
+      const results = Array.from(event.results);
+      for (let index = event.resultIndex; index < results.length; index += 1) {
+        const result = results[index];
+        const transcript = result?.[0]?.transcript.trim() ?? '';
+        if (!result || !transcript) continue;
+        if (speakingRef.current) {
+          // The assistant is talking: whatever was heard is its own voice.
+          if (result.isFinal) handled = Math.max(handled, index);
+          continue;
+        }
+        if (!result.isFinal) {
+          setHeard(transcript);
+        } else if (index > handled) {
+          handled = index;
+          handleUtterance(transcript);
+        }
+      }
+    };
+    recognition.onerror = (event) => {
+      if (event.error === 'aborted' || event.error === 'no-speech') return;
+      if (
+        event.error === 'not-allowed' ||
+        event.error === 'service-not-allowed'
+      ) {
+        setBlocked(true);
+      }
+      stopListening();
+      setReply(
+        errorMessages[event.error] ??
+          'Voice is not available right now. You can type a command.',
+      );
+    };
+    recognition.onend = () => {
+      if (recognitionRef.current !== recognition) return;
+      if (!sessionRef.current) {
+        setListening(false);
+        return;
+      }
+      // Browsers end recognition after a pause; keep listening.
+      window.setTimeout(() => {
+        if (sessionRef.current && recognitionRef.current === recognition) {
+          startRecognition();
+        }
+      }, 250);
+    };
+    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+      setListening(true);
+    } catch {
+      stopListening();
+    }
+  }
+
+  async function startListening() {
     const Constructor = recognitionConstructor();
     if (!Constructor) {
       setSupported(false);
       setOpen(true);
       return;
     }
-    if (listening) {
-      recognitionRef.current?.abort();
-      return;
-    }
-    if (checkingMic) return;
+    if (sessionRef.current || checkingMic) return;
     setOpen(true);
     if (!pendingRef.current) setReply('');
     setHeard('');
@@ -299,50 +474,21 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
       return;
     }
     setBlocked(false);
-    const recognition = new Constructor();
-    recognition.lang = 'en-US';
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = false;
-    recognition.onresult = (event) => {
-      const results = Array.from(event.results);
-      const transcript = results
-        .map((result) => result[0]?.transcript ?? '')
-        .join(' ')
-        .trim();
-      setHeard(transcript);
-      if (results.at(-1)?.isFinal && transcript) run(transcript);
-    };
-    recognition.onerror = (event) => {
-      if (event.error === 'aborted') return;
-      if (
-        event.error === 'not-allowed' ||
-        event.error === 'service-not-allowed'
-      ) {
-        setBlocked(true);
-      }
-      setReply(
-        errorMessages[event.error] ??
-          'Voice is not available right now. You can type a command.',
-      );
-    };
-    recognition.onend = () => setListening(false);
-    recognitionRef.current = recognition;
-    try {
-      recognition.start();
-      setListening(true);
-    } catch {
-      setListening(false);
-    }
+    sessionRef.current = true;
+    startRecognition();
+  }
+
+  function toggleListening() {
+    if (sessionRef.current) stopListening();
+    else void startListening();
   }
 
   function submitTyped(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text = typed.trim();
     if (!text) return;
-    recognitionRef.current?.abort();
     setTyped('');
-    run(text);
+    handleUtterance(text);
   }
 
   return (
@@ -359,7 +505,7 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
               aria-label="Close voice control"
               className={styles.close}
               onClick={() => {
-                recognitionRef.current?.abort();
+                stopListening();
                 setOpen(false);
               }}
               type="button"
@@ -370,7 +516,12 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
           {checkingMic ? (
             <p className={styles.hint}>Waiting for microphone permission…</p>
           ) : null}
-          {listening ? <p className={styles.listening}>Listening…</p> : null}
+          {listening ? (
+            <p className={styles.listening}>
+              Listening… keep talking. Say &quot;stop listening&quot; or tap the
+              mic to stop.
+            </p>
+          ) : null}
           {heard ? (
             <p className={styles.heard}>
               <span>You said</span> “{heard}”
@@ -389,10 +540,7 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
               <div className={styles.confirmButtons}>
                 <button
                   className={styles.confirmYes}
-                  onClick={() => {
-                    recognitionRef.current?.abort();
-                    press(pending.element, pending.label, true);
-                  }}
+                  onClick={() => press(pending.element, pending.label, true)}
                   type="button"
                 >
                   Yes, {pending.label.toLowerCase()}
@@ -400,7 +548,6 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
                 <button
                   className={styles.retry}
                   onClick={() => {
-                    recognitionRef.current?.abort();
                     setPending(null);
                     say('Cancelled. Nothing was changed.');
                   }}
@@ -423,7 +570,7 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
               </ol>
               <button
                 className={styles.retry}
-                onClick={() => void listen()}
+                onClick={() => void startListening()}
                 type="button"
               >
                 Try again
@@ -446,7 +593,7 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
             <input
               autoComplete="off"
               id="voice-command-input"
-              maxLength={200}
+              maxLength={300}
               onChange={(event) => setTyped(event.target.value)}
               placeholder="Type a command, e.g. open jobs"
               value={typed}
@@ -459,8 +606,8 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
         aria-label={listening ? 'Stop listening' : 'Start voice control'}
         aria-pressed={listening}
         className={`${styles.mic} ${listening ? styles.micActive : ''}`}
-        onClick={() => void listen()}
-        title="Voice control"
+        onClick={toggleListening}
+        title={listening ? 'Stop listening' : 'Voice control'}
         type="button"
       >
         <svg aria-hidden="true" height="24" viewBox="0 0 24 24" width="24">
