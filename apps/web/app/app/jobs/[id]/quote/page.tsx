@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { requireTenantContext } from '../../../../../lib/auth/tenant-context';
 import { createClient } from '../../../../../lib/supabase/server';
@@ -76,7 +76,10 @@ export default async function JobQuotePage({
     .is('archived_at', null)
     .maybeSingle();
   if (jobError) throw new Error('Job could not be loaded.');
-  if (!job || !['new', 'quoted'].includes(job.status)) notFound();
+  if (!job) notFound();
+  // Past the quoting stage: send the user back to the job, where the Quote
+  // panel explains why, instead of a bare 404.
+  if (!['new', 'quoted'].includes(job.status)) redirect(`/app/jobs/${job.id}`);
 
   const [draftResult, serviceResult, tenantResult] = await Promise.all([
     supabase

@@ -54,11 +54,48 @@ function speak(text: string) {
   }
 }
 
+type MicAccess = 'granted' | 'blocked' | 'missing' | 'unknown';
+
+async function permissionState(): Promise<PermissionState | undefined> {
+  try {
+    const status = await navigator.permissions.query({
+      name: 'microphone',
+    });
+    return status.state;
+  } catch {
+    return undefined;
+  }
+}
+
+// Asks the browser for the microphone before speech recognition starts. When
+// the permission is still "ask", this shows the browser's Allow/Block popup.
+// The test stream is closed right away; recognition opens its own.
+async function requestMicrophone(): Promise<MicAccess> {
+  if (typeof navigator === 'undefined') return 'unknown';
+  if ((await permissionState()) === 'granted') return 'granted';
+  if (!navigator.mediaDevices?.getUserMedia) return 'unknown';
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    for (const track of stream.getTracks()) track.stop();
+    return 'granted';
+  } catch (error) {
+    const name = error instanceof DOMException ? error.name : '';
+    if (name === 'NotAllowedError' || name === 'SecurityError') {
+      return 'blocked';
+    }
+    if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+      return 'missing';
+    }
+    return 'unknown';
+  }
+}
+
+const blockedMessage =
+  'Microphone access is blocked for this site. Allow it, then tap "Try again". You can also type a command below.';
+
 const errorMessages: Record<string, string> = {
-  'not-allowed':
-    'Microphone access is blocked. Allow the microphone in your browser, or type a command.',
-  'service-not-allowed':
-    'Microphone access is blocked. Allow the microphone in your browser, or type a command.',
+  'not-allowed': blockedMessage,
+  'service-not-allowed': blockedMessage,
   'no-speech': "I didn't hear anything. Tap the mic and try again.",
   'audio-capture': 'No microphone was found. You can type a command instead.',
   network:
@@ -75,6 +112,8 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
   const [reply, setReply] = useState('');
   const [typed, setTyped] = useState('');
   const [supported, setSupported] = useState(true);
+  const [blocked, setBlocked] = useState(false);
+  const [checkingMic, setCheckingMic] = useState(false);
 
   useEffect(() => {
     setSupported(Boolean(recognitionConstructor()));
@@ -118,7 +157,7 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
     router.push(action.href);
   }
 
-  function listen() {
+  async function listen() {
     const Constructor = recognitionConstructor();
     if (!Constructor) {
       setSupported(false);
@@ -129,6 +168,23 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
       recognitionRef.current?.abort();
       return;
     }
+    if (checkingMic) return;
+    setOpen(true);
+    setReply('');
+    setHeard('');
+    setCheckingMic(true);
+    const access = await requestMicrophone();
+    setCheckingMic(false);
+    if (access === 'blocked') {
+      setBlocked(true);
+      setReply(blockedMessage);
+      return;
+    }
+    if (access === 'missing') {
+      setReply(errorMessages['audio-capture'] ?? '');
+      return;
+    }
+    setBlocked(false);
     const recognition = new Constructor();
     recognition.lang = 'en-US';
     recognition.interimResults = true;
@@ -145,6 +201,12 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
     };
     recognition.onerror = (event) => {
       if (event.error === 'aborted') return;
+      if (
+        event.error === 'not-allowed' ||
+        event.error === 'service-not-allowed'
+      ) {
+        setBlocked(true);
+      }
       setReply(
         errorMessages[event.error] ??
           'Voice is not available right now. You can type a command.',
@@ -152,9 +214,6 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
     };
     recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
-    setOpen(true);
-    setReply('');
-    setHeard('');
     try {
       recognition.start();
       setListening(true);
@@ -194,6 +253,9 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
               ×
             </button>
           </header>
+          {checkingMic ? (
+            <p className={styles.hint}>Waiting for microphone permission…</p>
+          ) : null}
           {listening ? <p className={styles.listening}>Listening…</p> : null}
           {heard ? (
             <p className={styles.heard}>
@@ -201,6 +263,25 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
             </p>
           ) : null}
           {reply ? <p className={styles.reply}>{reply}</p> : null}
+          {blocked ? (
+            <div className={styles.hint}>
+              <ol className={styles.steps}>
+                <li>Click the lock icon left of the web address.</li>
+                <li>Set Microphone to Allow.</li>
+                <li>
+                  On Windows or Mac, check privacy settings let the browser use
+                  the microphone.
+                </li>
+              </ol>
+              <button
+                className={styles.retry}
+                onClick={() => void listen()}
+                type="button"
+              >
+                Try again
+              </button>
+            </div>
+          ) : null}
           {!heard && !reply && !listening ? (
             <p className={styles.hint}>{voiceHelpText}</p>
           ) : null}
@@ -230,7 +311,7 @@ export function VoiceAssistant({ role }: { readonly role: VoiceRole }) {
         aria-label={listening ? 'Stop listening' : 'Start voice control'}
         aria-pressed={listening}
         className={`${styles.mic} ${listening ? styles.micActive : ''}`}
-        onClick={listen}
+        onClick={() => void listen()}
         title="Voice control"
         type="button"
       >

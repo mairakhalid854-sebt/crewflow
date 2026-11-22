@@ -109,6 +109,22 @@
   color: #5b6b86;
 }
 
+.steps {
+  margin: 6px 0 8px;
+  padding-left: 20px;
+}
+
+.retry {
+  padding: 6px 12px;
+  border: 1px solid #1769f4;
+  border-radius: 8px;
+  background: #fff;
+  color: #1769f4;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .form {
   display: flex;
   gap: 8px;

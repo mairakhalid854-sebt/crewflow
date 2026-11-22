@@ -16,10 +16,12 @@ type WorkReport = Tables<'work_reports'>;
 const initialState: WorkReportActionState = { status: 'idle' };
 
 export function WorkReportPanel({
+  fieldNoteCount,
   jobId,
   jobStatus,
   report,
 }: Readonly<{
+  fieldNoteCount: number;
   jobId: string;
   jobStatus: string;
   report?: WorkReport;
@@ -70,6 +72,18 @@ export function WorkReportPanel({
           ) : null}
         </div>
       </div>
+
+      {jobCanReport &&
+      fieldNoteCount === 0 &&
+      (!report || report.status === 'draft') &&
+      !proposalState.message ? (
+        <p className="form-help">
+          This job has no technician field notes, so the AI draft has nothing to
+          work from. Field notes are added by the technician in the mobile app
+          when they start or finish the job. You can still write the report with
+          Create report.
+        </p>
+      ) : null}
 
       {proposalState.message ? (
         <p
