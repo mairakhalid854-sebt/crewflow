@@ -13,12 +13,18 @@ type QuoteLineItem = Tables<'quote_line_items'>;
 
 const initialState: QuoteFormState = { status: 'idle' };
 
+// The quote editor (and the AI quote assistant on it) only opens for jobs that
+// are still New or Quoted; the database rejects quotes for later stages.
+const quotableJobStatuses: readonly string[] = ['new', 'quoted'];
+
 export function QuotePanel({
   jobId,
+  jobStatus,
   lines,
   quote,
 }: Readonly<{
   jobId: string;
+  jobStatus: string;
   lines: readonly QuoteLineItem[];
   quote?: Quote;
 }>) {
@@ -27,6 +33,7 @@ export function QuotePanel({
     initialState,
   );
   const [copied, setCopied] = useState(false);
+  const jobIsQuotable = quotableJobStatuses.includes(jobStatus);
   const canCreateRevision =
     quote && ['sent', 'declined', 'expired', 'void'].includes(quote.status);
 
@@ -37,7 +44,8 @@ export function QuotePanel({
           <h2>Quote</h2>
           <p>Customer pricing and secure acceptance.</p>
         </div>
-        {quote?.status === 'draft' || !quote || canCreateRevision ? (
+        {jobIsQuotable &&
+        (quote?.status === 'draft' || !quote || canCreateRevision) ? (
           <Link className="secondary-button" href={`/app/jobs/${jobId}/quote`}>
             {quote?.status === 'draft'
               ? 'Edit draft'
@@ -48,8 +56,21 @@ export function QuotePanel({
         ) : null}
       </div>
 
+      {!jobIsQuotable &&
+      (!quote || quote.status === 'draft' || canCreateRevision) ? (
+        <p className="form-help">
+          Quotes, including AI quote drafts, can only be created while the job
+          is New or Quoted. This job has moved past quoting.
+        </p>
+      ) : null}
+
       {!quote ? (
-        <p className="form-help">No quote has been created for this job.</p>
+        jobIsQuotable ? (
+          <p className="form-help">
+            No quote has been created for this job. Open Create quote to write
+            one or draft it with AI.
+          </p>
+        ) : null
       ) : (
         <>
           <div className="quote-summary-row">

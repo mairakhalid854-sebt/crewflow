@@ -124,10 +124,9 @@ export async function requestAiReportProposalAction(
           : 'Report proposal created from trusted evidence. AI review was unavailable, so the deterministic proposal was kept.'
         : result.proposal_result === 'unchanged'
           ? 'The existing report draft already matches the trusted evidence.'
-          : result.provider_reviewed
-            ? 'Report drafting needs human input. The AI-reviewed escalation is recorded in AI Operations.'
-            : (result.result_message ??
-              'Report drafting needs human input. Review the trace in AI Operations.'),
+          : `AI could not draft this report. ${
+              result.result_message ?? 'Review the trace in AI Operations.'
+            } AI drafts only from the technician's field notes, which they add in the mobile app when they start or finish the job. Use Create report to write it yourself.`,
     status: result.proposal_result === 'escalated' ? 'error' : 'success',
   };
 }

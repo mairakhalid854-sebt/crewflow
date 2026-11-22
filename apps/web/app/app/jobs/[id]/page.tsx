@@ -479,10 +479,12 @@ export default async function JobDetailPage({
         <>
           <QuotePanel
             jobId={job.id}
+            jobStatus={job.status}
             lines={quoteLines ?? []}
             quote={latestQuote}
           />
           <WorkReportPanel
+            fieldNoteCount={(workNotesResult.data ?? []).length}
             jobId={job.id}
             jobStatus={job.status}
             report={reportResult.data ?? undefined}

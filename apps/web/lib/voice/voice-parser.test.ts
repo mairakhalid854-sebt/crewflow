@@ -12,6 +12,13 @@ describe('parseVoiceText', () => {
     ['Create a new job', 'new-job'],
     ['add a new customer', 'new-customer'],
     ['open profit guard', 'profit'],
+    ['go to setting screen', 'settings'],
+    ['Go to settings.', 'settings'],
+    ['setting', 'settings'],
+    ['open the customer page please', 'customers'],
+    ['can you open invoices for me', 'invoices'],
+    ['go to the team section', 'team'],
+    ['open settings for the company', 'settings'],
   ])('navigates for "%s"', (spoken, page) => {
     expect(parseVoiceText(spoken)).toEqual({ command: 'navigate', page });
   });
