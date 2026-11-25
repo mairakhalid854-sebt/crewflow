@@ -2,7 +2,14 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useActionState, useMemo, useState, useTransition } from 'react';
+import {
+  type FormEvent,
+  startTransition,
+  useActionState,
+  useMemo,
+  useState,
+  useTransition,
+} from 'react';
 
 import type { Tables } from '@crewflow/database';
 
@@ -136,8 +143,24 @@ export function JobForm({
     });
   }
 
+  // React resets a form after its action runs. Text inputs are re-synced from
+  // state, but a controlled <select> keeps the browser's reset value (the
+  // first option), so after a server error the form would show, and on the
+  // next submit send, a different customer, service, priority, or technician.
+  // Submitting through a transition skips that reset.
+  function submitWithoutReset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => formAction(formData));
+  }
+
   return (
-    <form action={formAction} className="resource-form" id="job-form">
+    <form
+      action={formAction}
+      className="resource-form"
+      id="job-form"
+      onSubmit={submitWithoutReset}
+    >
       {job ? <input name="jobId" type="hidden" value={job.id} /> : null}
 
       <div className="form-grid">
