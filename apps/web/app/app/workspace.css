@@ -278,9 +278,19 @@
 
 .resource-search input,
 .resource-search select,
+/* .form-grid fields outside a .resource-form (booking page, referrals,
+   membership plans, invoice payments) used the browser's default look:
+   thin selects and monospace text areas. Give them the same field style. */
 .resource-form input,
 .resource-form select,
-.resource-form textarea {
+.resource-form textarea,
+.form-grid
+  input:not([type='checkbox']):not([type='radio']):not([type='hidden']):not(
+    [type='file']
+  ),
+.form-grid select,
+.form-grid textarea,
+.invoice-ledger-form textarea {
   width: 100%;
   padding: 11px 12px;
   border: 1px solid #bdcec5;
@@ -993,9 +1003,11 @@
   gap: 7px;
 }
 
+/* Two columns: the start and end date-time pickers need about 210px each and
+   overlapped when four columns shared the panel width. */
 .time-off-form {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: end;
   gap: 14px;
 }
@@ -1003,6 +1015,11 @@
 .time-off-form label {
   display: grid;
   gap: 7px;
+  min-width: 0;
+}
+
+.time-off-form > .primary-button {
+  justify-self: start;
 }
 
 .time-off-form label > span {
@@ -1128,7 +1145,10 @@
 
 .dispatch-layout {
   display: grid;
-  grid-template-columns: 260px minmax(700px, 1fr);
+  /* The board scrolls inside itself (.dispatch-board overflow-x: auto), so
+     its column may shrink. A 700px minimum pushed the whole page wider than
+     a 1280px laptop screen and added a page-level horizontal scrollbar. */
+  grid-template-columns: 260px minmax(0, 1fr);
   align-items: start;
   gap: 16px;
 }
@@ -1672,6 +1692,17 @@
   margin-top: 22px;
   padding-top: 22px;
   border-top: 1px solid #d0ddd5;
+}
+
+.invoice-ledger-form > label {
+  display: grid;
+  gap: 7px;
+}
+
+.invoice-ledger-form > label > span {
+  color: #385247;
+  font-size: 0.84rem;
+  font-weight: 800;
 }
 
 .invoice-ledger-form h3,

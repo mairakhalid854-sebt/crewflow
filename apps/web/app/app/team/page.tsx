@@ -166,8 +166,8 @@ export default async function TeamPage() {
             <div>
               <h2>Recent invitations</h2>
               <p>
-                Pending means the CrewFlow360 invitation is not accepted yet.
-                Vercel deployment access does not activate a team member.
+                Pending means the person has not accepted the invitation yet.
+                They join your team once they open the link and sign in.
               </p>
             </div>
           </div>

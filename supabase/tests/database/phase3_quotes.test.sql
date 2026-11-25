@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
 
-SELECT plan(9);
+SELECT plan(10);
 
 INSERT INTO auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -95,6 +95,13 @@ SELECT is(
   public.get_public_quote(current_setting('crewflow.quote_token'))->>'status',
   'sent',
   'Anonymous customer can read only the token-scoped public projection'
+);
+SELECT ok(
+  coalesce(
+    public.get_public_quote(current_setting('crewflow.quote_token'))->>'company_time_zone',
+    ''
+  ) <> '',
+  'Public quote includes the company time zone for date display'
 );
 SELECT is(
   public.decide_public_quote(current_setting('crewflow.quote_token'), 'accepted'),

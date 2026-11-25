@@ -49,6 +49,24 @@ describe('public quote data', () => {
     ).toBe(false);
   });
 
+  it('keeps the company time zone so expiry shows the company date', () => {
+    const quote = publicQuoteSchema.parse({
+      ...validQuote,
+      company_time_zone: 'America/Denver',
+      // 11:59 PM on Dec 8 in Denver is already Dec 9 in UTC.
+      expires_at: '2026-12-09T06:59:00.000Z',
+    });
+    const shown = new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'long',
+      timeZone: quote.company_time_zone,
+    }).format(new Date(quote.expires_at));
+    expect(shown).toBe('December 8, 2026');
+  });
+
+  it('still accepts a quote without a time zone during rollout', () => {
+    expect(publicQuoteSchema.safeParse(validQuote).success).toBe(true);
+  });
+
   it('formats integer cents as USD', () => {
     expect(formatUsd(12_990)).toBe('$129.90');
   });
