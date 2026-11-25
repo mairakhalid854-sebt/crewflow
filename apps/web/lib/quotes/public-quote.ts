@@ -11,6 +11,9 @@ const publicQuoteItemSchema = z.object({
 export const publicQuoteSchema = z.object({
   accepted_at: z.string().nullable(),
   company_name: z.string(),
+  // Optional so the page keeps working if the web app deploys before the
+  // 202611240001 migration reaches the database.
+  company_time_zone: z.string().min(1).optional(),
   currency_code: z.literal('USD'),
   customer_name: z.string(),
   declined_at: z.string().nullable(),

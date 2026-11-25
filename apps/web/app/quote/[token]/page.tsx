@@ -64,6 +64,7 @@ export default async function PublicQuotePage({
             {t.quote.expires}{' '}
             {new Intl.DateTimeFormat(dateLocale(locale), {
               dateStyle: 'long',
+              timeZone: quote.company_time_zone,
             }).format(new Date(quote.expires_at))}
           </p>
         </div>

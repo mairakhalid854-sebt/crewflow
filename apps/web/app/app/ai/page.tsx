@@ -6,7 +6,7 @@ import { requireTenantContext } from '../../../lib/auth/tenant-context';
 import { createClient } from '../../../lib/supabase/server';
 
 import styles from './ai.module.css';
-import { humanize, proposedChangeLines } from './ai-presenters';
+import { humanize, readableChangeLines } from './ai-presenters';
 import { ApprovalDecisionForm } from './approval-decision-form';
 import { AutopilotPanel } from './autopilot-panel';
 import { DispatcherExecutionForm } from './dispatcher-execution-form';
@@ -144,8 +144,13 @@ export default async function AiOperationsPage() {
     ]),
   );
 
+  // A pending request past its expiry can no longer be decided; the database
+  // marks it expired lazily, so show it as expired right away.
+  const now = new Date();
+  const isExpired = (approval: Approval) =>
+    approval.status === 'pending' && new Date(approval.expires_at) <= now;
   const pendingApprovals = approvals.filter(
-    (approval) => approval.status === 'pending',
+    (approval) => approval.status === 'pending' && !isExpired(approval),
   );
   const estimatedSpend = runs.reduce(
     (total, run) => total + run.estimated_cost_cents,
@@ -211,18 +216,18 @@ export default async function AiOperationsPage() {
         {approvals.length ? (
           <div className={styles.cardList}>
             {approvals.map((approval) => {
-              const changeLines = proposedChangeLines(
+              const changeLines = readableChangeLines(
                 approval.proposed_changes,
+                context.timeZone,
               );
+              const expired = isExpired(approval);
+              const shownStatus = expired ? 'expired' : approval.status;
               return (
                 <article className={styles.approvalCard} key={approval.id}>
                   <div className={styles.cardHeader}>
                     <div>
-                      <span
-                        className={styles.status}
-                        data-status={approval.status}
-                      >
-                        {humanize(approval.status)}
+                      <span className={styles.status} data-status={shownStatus}>
+                        {humanize(shownStatus)}
                       </span>
                       <h3>{humanize(approval.action_kind)}</h3>
                       <p>
@@ -232,9 +237,14 @@ export default async function AiOperationsPage() {
                         {formatDate(approval.expires_at, context.timeZone)}
                       </p>
                     </div>
-                    <span className={styles.policyTag}>
-                      State {approval.target_state_version ?? 'not supplied'}
-                    </span>
+                    {approval.target_state_version ? (
+                      <span
+                        className={styles.policyTag}
+                        title={`Record version ${approval.target_state_version}`}
+                      >
+                        Ref {approval.target_state_version.slice(0, 8)}
+                      </span>
+                    ) : null}
                   </div>
 
                   <div className={styles.explanationGrid}>
@@ -253,14 +263,21 @@ export default async function AiOperationsPage() {
                     <dl>
                       {changeLines.map((line, index) => (
                         <div key={`${line.path}-${index}`}>
-                          <dt>{humanize(line.path)}</dt>
+                          <dt>{line.path}</dt>
                           <dd>{line.value}</dd>
                         </div>
                       ))}
                     </dl>
                   </div>
 
-                  {approval.status === 'pending' ? (
+                  {expired ? (
+                    <div className={styles.decisionRecord}>
+                      <p>
+                        This request expired before anyone decided. Nothing was
+                        changed.
+                      </p>
+                    </div>
+                  ) : approval.status === 'pending' ? (
                     <ApprovalDecisionForm approvalId={approval.id} />
                   ) : (
                     <div className={styles.decisionRecord}>
